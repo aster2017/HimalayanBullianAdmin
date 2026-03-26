@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Himalayan Bullion — React + Ynex Implementation Plan</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-dark: #3730a3;
+    --primary-light: #e0e7ff;
+    --secondary: #0ea5e9;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #6366f1;
+    --dark: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --sidebar-w: 280px;
+    --gold: #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--dark);
+    line-height: 1.6;
+    display: flex;
+  }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: var(--sidebar-w);
+    background: var(--dark);
+    color: #cbd5e1;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    padding-bottom: 2rem;
+  }
+  #sidebar .logo {
+    padding: 1.4rem 1.5rem;
+    border-bottom: 1px solid #334155;
+    display: flex; align-items: center; gap: .75rem;
+  }
+  #sidebar .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--gold), #fbbf24);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 800; color: white;
+  }
+  #sidebar .logo-text { font-size: .95rem; font-weight: 700; color: white; line-height: 1.2; }
+  #sidebar .logo-sub  { font-size: .7rem; color: #94a3b8; }
+
+  #sidebar .nav-group { margin-top: 1.25rem; }
+  #sidebar .nav-label {
+    padding: .4rem 1.5rem;
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #475569;
+  }
+  #sidebar a {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .55rem 1.5rem;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: .82rem;
+    border-left: 3px solid transparent;
+    transition: all .15s;
+  }
+  #sidebar a:hover, #sidebar a.active {
+    color: white;
+    background: #334155;
+    border-left-color: var(--gold);
+  }
+  #sidebar a .badge {
+    margin-left: auto;
+    background: var(--primary);
+    color: white;
+    font-size: .6rem;
+    padding: .15rem .45rem;
+    border-radius: 20px;
+  }
+
+  /* ── Main ── */
+  #main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    max-width: calc(100vw - var(--sidebar-w));
+    padding: 2.5rem 3rem;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='28'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .page-header h1 { font-size: 1.8rem; font-weight: 800; position: relative; }
+  .page-header p  { opacity: .85; margin-top: .5rem; font-size: .95rem; position: relative; }
+  .page-header .meta { display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap; }
+  .page-header .meta span {
+    background: rgba(255,255,255,.15);
+    padding: .3rem .9rem;
+    border-radius: 20px;
+    font-size: .75rem;
+    font-weight: 600;
+    position: relative;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .card-header {
+    display: flex; align-items: center; gap: .75rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-header .icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+  }
+  .card-header h2 { font-size: 1.05rem; font-weight: 700; }
+  .card-header p  { font-size: .8rem; color: var(--muted); margin-top: .1rem; }
+
+  /* ── Phases ── */
+  .phase-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+
+  .phase-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .phase-header {
+    padding: 1rem 1.25rem;
+    display: flex; align-items: center; gap: .75rem;
+  }
+  .phase-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+  }
+  .phase-title  { font-size: .9rem; font-weight: 700; }
+  .phase-body   { padding: 0 1.25rem 1.25rem; }
+  .phase-body ul { list-style: none; }
+  .phase-body ul li {
+    padding: .3rem 0;
+    font-size: .8rem;
+    color: var(--muted);
+    display: flex; align-items: flex-start; gap: .5rem;
+  }
+  .phase-body ul li::before { content: '→'; color: var(--primary); flex-shrink: 0; margin-top: .05rem; }
+
+  /* ── Timeline ── */
+  .timeline { position: relative; padding-left: 2.5rem; }
+  .timeline::before {
+    content: '';
+    position: absolute; left: .75rem; top: 0; bottom: 0;
+    width: 2px; background: var(--border);
+  }
+  .tl-item { position: relative; margin-bottom: 1.75rem; }
+  .tl-dot {
+    position: absolute; left: -2.5rem; top: .2rem;
+    width: 1.5rem; height: 1.5rem;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .65rem; color: white; font-weight: 700;
+    border: 3px solid var(--card);
+  }
+  .tl-title { font-size: .9rem; font-weight: 700; margin-bottom: .4rem; }
+  .tl-desc  { font-size: .8rem; color: var(--muted); }
+
+  /* ── File tree ── */
+  .file-tree {
+    background: #0f172a;
+    color: #94a3b8;
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: .78rem;
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+  .file-tree .dir  { color: #60a5fa; font-weight: 600; }
+  .file-tree .file { color: #a3e635; }
+  .file-tree .note { color: #64748b; }
+  .file-tree .api  { color: #fb923c; }
+  .file-tree .type { color: #c084fc; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  th {
+    background: #f1f5f9;
+    padding: .7rem 1rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: .65rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+    color: var(--dark);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: .2rem .65rem;
+    border-radius: 20px;
+    font-size: .7rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-primary { background: #ede9fe; color: var(--primary); }
+  .badge-success { background: #d1fae5; color: #059669; }
+  .badge-warning { background: #fef3c7; color: #d97706; }
+  .badge-danger  { background: #fee2e2; color: #dc2626; }
+  .badge-info    { background: #e0f2fe; color: #0284c7; }
+  .badge-dark    { background: #1e293b; color: #e2e8f0; }
+  .badge-gold    { background: #fef3c7; color: var(--gold); }
+
+  /* ── Code ── */
+  .code-block {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: .78rem;
+    line-height: 1.8;
+    overflow-x: auto;
+    position: relative;
+    margin: .75rem 0;
+  }
+  .code-block .kw  { color: #c084fc; }
+  .code-block .str { color: #86efac; }
+  .code-block .cmt { color: #475569; font-style: italic; }
+  .code-block .fn  { color: #60a5fa; }
+  .code-block .obj { color: #fbbf24; }
+  .code-block .num { color: #fb923c; }
+  .copy-btn {
+    position: absolute; top: .75rem; right: .75rem;
+    background: #334155; color: #94a3b8; border: none;
+    padding: .25rem .7rem; border-radius: 6px; font-size: .7rem;
+    cursor: pointer;
+  }
+  .copy-btn:hover { background: #475569; color: white; }
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    display: flex; gap: .75rem;
+    align-items: flex-start;
+    font-size: .83rem;
+  }
+  .callout-icon { font-size: 1.2rem; flex-shrink: 0; line-height: 1.4; }
+  .callout-info    { background: #eff6ff; border-left: 4px solid #3b82f6; }
+  .callout-success { background: #f0fdf4; border-left: 4px solid #22c55e; }
+  .callout-warning { background: #fffbeb; border-left: 4px solid #f59e0b; }
+  .callout-tip     { background: #fdf4ff; border-left: 4px solid #a855f7; }
+
+  /* ── Section headers ── */
+  .section-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--dark);
+    margin: 2.5rem 0 1.25rem;
+    display: flex; align-items: center; gap: .75rem;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1; height: 2px;
+    background: linear-gradient(to right, var(--border), transparent);
+  }
+
+  /* ── Package list ── */
+  .pkg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .75rem; }
+  .pkg-item {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .75rem 1rem;
+    display: flex; align-items: flex-start; gap: .6rem;
+  }
+  .pkg-icon { font-size: 1.2rem; flex-shrink: 0; }
+  .pkg-name { font-size: .82rem; font-weight: 700; color: var(--dark); }
+  .pkg-desc { font-size: .73rem; color: var(--muted); margin-top: .1rem; }
+
+  /* ── Route table highlight ── */
+  .route-public  { background: #f0fdf4; }
+  .route-admin   { background: #eff6ff; }
+  .route-portal  { background: #fdf4ff; }
+
+  /* ── Screen wireframe ── */
+  .screen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+  .screen-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .screen-bar {
+    background: var(--primary);
+    color: white;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .4rem .8rem;
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .screen-body {
+    background: #f8fafc;
+    padding: .75rem;
+    min-height: 100px;
+    font-size: .72rem;
+    color: var(--muted);
+  }
+  .screen-row   { background: white; border: 1px solid var(--border); border-radius: 4px; padding: .35rem .6rem; margin-bottom: .35rem; }
+  .screen-stat  { background: white; border-radius: 6px; padding: .5rem; text-align: center; border: 1px solid var(--border); }
+  .screen-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: .35rem; margin-bottom: .5rem; }
+
+  /* ── API endpoint tags ── */
+  .ep { display: flex; align-items: center; gap: .5rem; margin: .3rem 0; font-size: .78rem; }
+  .ep .method { padding: .15rem .55rem; border-radius: 4px; font-weight: 700; font-size: .68rem; width: 52px; text-align: center; flex-shrink: 0; }
+  .get    { background: #d1fae5; color: #059669; }
+  .post   { background: #dbeafe; color: #1d4ed8; }
+  .put    { background: #fef3c7; color: #92400e; }
+  .delete { background: #fee2e2; color: #991b1b; }
+
+  /* ── Stack diagram ── */
+  .stack { display: flex; flex-direction: column; gap: .5rem; }
+  .stack-layer {
+    border-radius: 8px;
+    padding: .6rem 1rem;
+    font-size: .82rem;
+    font-weight: 600;
+    display: flex; align-items: center; gap: .5rem;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    #sidebar { display: none; }
+    #main { margin-left: 0; max-width: 100vw; padding: 1.5rem; }
+    .phase-grid { grid-template-columns: 1fr; }
+    .screen-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════════ -->
+<nav id="sidebar">
+  <div class="logo">
+    <div class="logo-icon">HB</div>
+    <div>
+      <div class="logo-text">Himalayan Bullion</div>
+      <div class="logo-sub">React + Ynex Plan</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Overview</div>
+    <a href="#overview" class="active">📋 Project Overview</a>
+    <a href="#architecture">🏗️ Architecture</a>
+    <a href="#tech-stack">🛠️ Tech Stack</a>
+    <a href="#folder-structure">📂 Folder Structure</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Phases</div>
+    <a href="#phase1">Phase 1 — Foundation</a>
+    <a href="#phase2">Phase 2 — Auth & Layout</a>
+    <a href="#phase3">Phase 3 — Dashboard</a>
+    <a href="#phase4">Phase 4 — Orders</a>
+    <a href="#phase5">Phase 5 — Invoices & Payments</a>
+    <a href="#phase6">Phase 6 — Items & Customers</a>
+    <a href="#phase7">Phase 7 — Reports & Settings</a>
+    <a href="#phase8">Phase 8 — Customer Portal</a>
+    <a href="#phase9">Phase 9 — Polish & Deploy</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-label">Reference</div>
+    <a href="#routes">🗺️ Route Map</a>
+    <a href="#api-mapping">🔌 API Mapping</a>
+    <a href="#state">🗂️ State Management</a>
+    <a href="#ynex-components">🎨 Ynex Components</a>
+    <a href="#conventions">📐 Conventions</a>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════ -->
+<main id="main">
+
+  <!-- ── Page Header ── -->
+  <div class="page-header">
+    <h1>React + Ynex UI Implementation Plan</h1>
+    <p>Complete phase-by-phase blueprint for migrating Himalayan Bullion from Razor Pages to a React SPA — backed by the existing .NET 9 API.</p>
+    <div class="meta">
+      <span>📅 Prepared March 2026</span>
+      <span>⚛️ React 18 + TypeScript</span>
+      <span>🎨 Ynex Template</span>
+      <span>🔌 60+ API Endpoints</span>
+      <span>9 Phases</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 1 — OVERVIEW
+  ══════════════════════════════════════════════ -->
+  <div id="overview" class="section-title">📋 Project Overview</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#ede9fe">🎯</div>
+      <div><h2>What We Are Building</h2><p>React SPA consuming existing .NET 9 REST API — no backend changes required</p></div>
+    </div>
+    <p style="margin-bottom:1rem;font-size:.85rem;color:var(--muted)">
+      The existing Razor Pages frontend will be replaced with a modern React single-page application built on the <strong>Ynex</strong> admin dashboard template.
+      The <code>HimalayanBullion.Api</code> project remains unchanged — it already exposes all required endpoints with JWT authentication and policy-based authorization.
+      The React app will talk exclusively to the API over HTTPS.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Dimension</th><th>Current (Razor Pages)</th><th>Target (React + Ynex)</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Rendering</strong></td><td>Server-side (SSR)</td><td>Client-side SPA (CSR)</td></tr>
+          <tr><td><strong>Auth</strong></td><td>Cookie / Identity</td><td>JWT stored in httpOnly cookie or memory</td></tr>
+          <tr><td><strong>API</strong></td><td>Razor Pages own DbContext</td><td>100% via <code>/api/*</code> endpoints</td></tr>
+          <tr><td><strong>Styling</strong></td><td>Bootstrap + custom CSS</td><td>Ynex + Tailwind CSS</td></tr>
+          <tr><td><strong>State</strong></td><td>ViewModels / TempData</td><td>Redux Toolkit + React Query</td></tr>
+          <tr><td><strong>Routing</strong></td><td>Razor Page routes</td><td>React Router v6</td></tr>
+          <tr><td><strong>Forms</strong></td><td>Model binding</td><td>React Hook Form + Zod validation</td></tr>
+          <tr><td><strong>Tables</strong></td><td>Hand-rolled HTML</td><td>TanStack Table v8</td></tr>
+          <tr><td><strong>Charts</strong></td><td>Chart.js CDN</td><td>Recharts / ApexCharts</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-icon">💡</div>
+    <div><strong>Backend stays untouched.</strong> All 60+ API endpoints in <code>HimalayanBullion.Api</code> are consumed as-is. The only backend change needed is adding a CORS policy to allow the React dev server origin during development.</div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 2 — ARCHITECTURE
+  ══════════════════════════════════════════════ -->
+  <div id="architecture" class="section-title">🏗️ Architecture</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#d1fae5">🏗️</div>
+      <div><h2>High-Level Architecture</h2><p>Two decoupled projects communicating over REST + JWT</p></div>
+    </div>
+
+    <div class="stack" style="max-width:700px">
+      <div class="stack-layer" style="background:#ede9fe;color:#4f46e5">
+        🌐 Browser — React SPA (Ynex Template) &nbsp;|&nbsp; Port 5173 (dev) / Nginx (prod)
+      </div>
+      <div style="text-align:center;font-size:.8rem;color:var(--muted)">⬇ HTTPS + JWT Bearer Token ⬇</div>
+      <div class="stack-layer" style="background:#d1fae5;color:#059669">
+        🔌 HimalayanBullion.Api (.NET 9 Web API) &nbsp;|&nbsp; Port 5001 — All existing controllers
+      </div>
+      <div style="text-align:center;font-size:.8rem;color:var(--muted)">⬇ EF Core ⬇</div>
+      <div class="stack-layer" style="background:#dbeafe;color:#1d4ed8">
+        🗄️ SQL Server + Hangfire + Zoho API + ConnectIPS
+      </div>
+    </div>
+
+    <div style="margin-top:1.5rem">
+      <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">React App Internal Layers</h3>
+      <div class="stack">
+        <div class="stack-layer" style="background:#f8fafc;border:1px solid var(--border);color:var(--dark)">🎨 Pages / Views &nbsp;(Ynex layout + page components)</div>
+        <div class="stack-layer" style="background:#f8fafc;border:1px solid var(--border);color:var(--dark)">🧩 Feature Modules &nbsp;(orders, invoices, payments, items, customers, reports, settings, portal)</div>
+        <div class="stack-layer" style="background:#f8fafc;border:1px solid var(--border);color:var(--dark)">🗂️ State Layer &nbsp;(Redux Toolkit slices + React Query hooks)</div>
+        <div class="stack-layer" style="background:#f8fafc;border:1px solid var(--border);color:var(--dark)">🔌 API Layer &nbsp;(Axios instance + typed service functions per controller)</div>
+        <div class="stack-layer" style="background:#f8fafc;border:1px solid var(--border);color:var(--dark)">🛡️ Auth Guard &nbsp;(PrivateRoute + role/permission checks)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 3 — TECH STACK
+  ══════════════════════════════════════════════ -->
+  <div id="tech-stack" class="section-title">🛠️ Tech Stack</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#fef3c7">🛠️</div>
+      <div><h2>Dependencies &amp; Libraries</h2><p>All packages needed for the React SPA</p></div>
+    </div>
+
+    <div class="pkg-grid">
+      <div class="pkg-item"><div class="pkg-icon">⚛️</div><div><div class="pkg-name">react + react-dom 18</div><div class="pkg-desc">Core UI library</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">📘</div><div><div class="pkg-name">TypeScript 5</div><div class="pkg-desc">Full static typing across the app</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">⚡</div><div><div class="pkg-name">Vite 5</div><div class="pkg-desc">Build tool + dev server (fast HMR)</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">🎨</div><div><div class="pkg-name">Ynex Template</div><div class="pkg-desc">Admin dashboard — layouts, sidebar, components</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">💅</div><div><div class="pkg-name">Tailwind CSS 3</div><div class="pkg-desc">Utility-first CSS (bundled with Ynex)</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">🗺️</div><div><div class="pkg-name">react-router-dom v6</div><div class="pkg-desc">Client-side routing + nested routes</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">🗂️</div><div><div class="pkg-name">@reduxjs/toolkit + react-redux</div><div class="pkg-desc">Global auth state, UI state</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">🔄</div><div><div class="pkg-name">@tanstack/react-query v5</div><div class="pkg-desc">Server state, caching, pagination, refetch</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">🌐</div><div><div class="pkg-name">axios</div><div class="pkg-desc">HTTP client with interceptors for JWT refresh</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">📋</div><div><div class="pkg-name">react-hook-form + @hookform/resolvers</div><div class="pkg-desc">Form state with minimal re-renders</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">✅</div><div><div class="pkg-name">zod</div><div class="pkg-desc">Schema validation — forms + API responses</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">📊</div><div><div class="pkg-name">@tanstack/react-table v8</div><div class="pkg-desc">Headless table — sorting, filtering, pagination</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">📈</div><div><div class="pkg-name">recharts</div><div class="pkg-desc">Chart library for dashboard and reports</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">📅</div><div><div class="pkg-name">date-fns</div><div class="pkg-desc">Date formatting and manipulation</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">🔔</div><div><div class="pkg-name">react-hot-toast</div><div class="pkg-desc">Toast notifications for actions</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">🖨️</div><div><div class="pkg-name">react-to-print</div><div class="pkg-desc">Invoice print view</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">📤</div><div><div class="pkg-name">xlsx (SheetJS)</div><div class="pkg-desc">Export tables to Excel</div></div></div>
+      <div class="pkg-item"><div class="pkg-icon">🔍</div><div><div class="pkg-name">react-select</div><div class="pkg-desc">Searchable dropdowns (customers, items)</div></div></div>
+    </div>
+
+    <div class="callout callout-tip" style="margin-top:1rem">
+      <div class="callout-icon">🎨</div>
+      <div><strong>Ynex Template Setup:</strong> Purchase Ynex from ThemeForest → extract the React variant → copy the <code>src/</code> folder into your project → replace the demo routes/pages with the modules described in this plan.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 4 — FOLDER STRUCTURE
+  ══════════════════════════════════════════════ -->
+  <div id="folder-structure" class="section-title">📂 Folder Structure</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#e0f2fe">📂</div>
+      <div><h2>Recommended Project Layout</h2><p>Feature-first organization following Ynex conventions</p></div>
+    </div>
+
+    <div class="file-tree">
+<span class="dir">himalayan-bullion-react/</span>
+├── <span class="dir">public/</span>                          <span class="note"># static assets, favicon</span>
+├── <span class="dir">src/</span>
+│   ├── <span class="dir">api/</span>                         <span class="note"># all Axios service files (one per API controller)</span>
+│   │   ├── <span class="file">axiosInstance.ts</span>          <span class="note"># base URL, JWT interceptor, refresh token logic</span>
+│   │   ├── <span class="api">authApi.ts</span>                <span class="note"># POST /api/auth/login, register, refresh-token</span>
+│   │   ├── <span class="api">ordersApi.ts</span>              <span class="note"># GET/POST/PUT/DELETE /api/orders</span>
+│   │   ├── <span class="api">invoicesApi.ts</span>            <span class="note"># GET /api/invoices, download PDF</span>
+│   │   ├── <span class="api">paymentsApi.ts</span>            <span class="note"># GET/POST /api/payments, initiate, verify</span>
+│   │   ├── <span class="api">itemsApi.ts</span>               <span class="note"># CRUD /api/items, featured, sync</span>
+│   │   ├── <span class="api">productsApi.ts</span>            <span class="note"># GET /api/products (public catalog)</span>
+│   │   ├── <span class="api">addressesApi.ts</span>           <span class="note"># CRUD /api/addresses</span>
+│   │   ├── <span class="api">syncApi.ts</span>                <span class="note"># POST /api/sync/*, GET /api/sync/logs</span>
+│   │   ├── <span class="api">syncHealthApi.ts</span>          <span class="note"># GET /api/sync/health, errors, entity-maps</span>
+│   │   └── <span class="api">zohoApi.ts</span>                <span class="note"># GET /api/zoho/status, sync, logs</span>
+│   │
+│   ├── <span class="dir">store/</span>                       <span class="note"># Redux Toolkit</span>
+│   │   ├── <span class="file">index.ts</span>                  <span class="note"># configureStore()</span>
+│   │   ├── <span class="file">authSlice.ts</span>              <span class="note"># token, user, permissions</span>
+│   │   └── <span class="file">uiSlice.ts</span>                <span class="note"># sidebar state, theme</span>
+│   │
+│   ├── <span class="dir">hooks/</span>                       <span class="note"># reusable React Query + custom hooks</span>
+│   │   ├── <span class="file">useOrders.ts</span>
+│   │   ├── <span class="file">useInvoices.ts</span>
+│   │   ├── <span class="file">usePayments.ts</span>
+│   │   ├── <span class="file">useItems.ts</span>
+│   │   ├── <span class="file">useCustomers.ts</span>
+│   │   ├── <span class="file">useSync.ts</span>
+│   │   └── <span class="file">usePermission.ts</span>          <span class="note"># hasPermission(user, 'Orders.Create')</span>
+│   │
+│   ├── <span class="dir">types/</span>                       <span class="note"># TypeScript interfaces mirroring all DTOs</span>
+│   │   ├── <span class="type">auth.types.ts</span>
+│   │   ├── <span class="type">order.types.ts</span>
+│   │   ├── <span class="type">invoice.types.ts</span>
+│   │   ├── <span class="type">payment.types.ts</span>
+│   │   ├── <span class="type">item.types.ts</span>
+│   │   ├── <span class="type">sync.types.ts</span>
+│   │   └── <span class="type">common.types.ts</span>            <span class="note"># ApiResponse, PagedResult, etc.</span>
+│   │
+│   ├── <span class="dir">components/</span>                  <span class="note"># shared UI building blocks</span>
+│   │   ├── <span class="dir">ui/</span>                       <span class="note"># Button, Badge, Modal, Spinner...</span>
+│   │   ├── <span class="dir">table/</span>                    <span class="note"># DataTable, Pagination, ColumnFilter</span>
+│   │   ├── <span class="dir">form/</span>                     <span class="note"># FormInput, FormSelect, FormDatePicker</span>
+│   │   ├── <span class="dir">layout/</span>                   <span class="note"># Sidebar, Topbar, Breadcrumb (Ynex-based)</span>
+│   │   ├── <span class="dir">guards/</span>
+│   │   │   ├── <span class="file">AuthGuard.tsx</span>         <span class="note"># redirect to /login if no token</span>
+│   │   │   └── <span class="file">PermissionGuard.tsx</span>   <span class="note"># render null if missing permission</span>
+│   │   └── <span class="dir">charts/</span>                   <span class="note"># RevenueChart, PaymentPieChart, etc.</span>
+│   │
+│   ├── <span class="dir">features/</span>                    <span class="note"># feature modules — each owns its pages, hooks, schemas</span>
+│   │   ├── <span class="dir">auth/</span>
+│   │   │   ├── <span class="file">LoginPage.tsx</span>
+│   │   │   ├── <span class="file">RegisterPage.tsx</span>
+│   │   │   ├── <span class="file">ForgotPasswordPage.tsx</span>
+│   │   │   └── <span class="file">ResetPasswordPage.tsx</span>
+│   │   ├── <span class="dir">dashboard/</span>
+│   │   │   └── <span class="file">DashboardPage.tsx</span>
+│   │   ├── <span class="dir">orders/</span>
+│   │   │   ├── <span class="file">OrdersListPage.tsx</span>
+│   │   │   ├── <span class="file">OrderCreatePage.tsx</span>
+│   │   │   ├── <span class="file">OrderDetailPage.tsx</span>
+│   │   │   └── <span class="file">orderSchemas.ts</span>       <span class="note"># Zod schema for create form</span>
+│   │   ├── <span class="dir">invoices/</span>
+│   │   │   ├── <span class="file">InvoicesListPage.tsx</span>
+│   │   │   ├── <span class="file">InvoiceDetailPage.tsx</span>
+│   │   │   └── <span class="file">InvoicePrintPage.tsx</span>
+│   │   ├── <span class="dir">payments/</span>
+│   │   │   ├── <span class="file">PaymentsListPage.tsx</span>
+│   │   │   └── <span class="file">PaymentCreatePage.tsx</span>
+│   │   ├── <span class="dir">items/</span>
+│   │   │   ├── <span class="file">ItemsListPage.tsx</span>
+│   │   │   ├── <span class="file">ItemCreatePage.tsx</span>
+│   │   │   └── <span class="file">ItemEditPage.tsx</span>
+│   │   ├── <span class="dir">customers/</span>
+│   │   │   ├── <span class="file">CustomersListPage.tsx</span>
+│   │   │   ├── <span class="file">CustomerDetailPage.tsx</span>
+│   │   │   └── <span class="file">CustomerEditPage.tsx</span>
+│   │   ├── <span class="dir">reports/</span>
+│   │   │   ├── <span class="file">ReportsDashboard.tsx</span>
+│   │   │   ├── <span class="file">CustomerRevenuePage.tsx</span>
+│   │   │   ├── <span class="file">InvoiceOverduePage.tsx</span>
+│   │   │   ├── <span class="file">PaymentAgingPage.tsx</span>
+│   │   │   └── <span class="file">SalesVelocityPage.tsx</span>
+│   │   ├── <span class="dir">settings/</span>
+│   │   │   ├── <span class="file">SyncDashboardPage.tsx</span>
+│   │   │   ├── <span class="file">SyncConflictsPage.tsx</span>
+│   │   │   ├── <span class="file">AuditLogPage.tsx</span>
+│   │   │   └── <span class="file">ZohoSettingsPage.tsx</span>
+│   │   └── <span class="dir">portal/</span>                   <span class="note"># customer-facing portal (separate layout)</span>
+│   │       ├── <span class="file">PortalLayout.tsx</span>
+│   │       ├── <span class="file">PortalDashboard.tsx</span>
+│   │       ├── <span class="file">PortalOrdersPage.tsx</span>
+│   │       ├── <span class="file">PortalInvoicesPage.tsx</span>
+│   │       ├── <span class="file">PortalInvoiceDetailPage.tsx</span>
+│   │       ├── <span class="file">PortalPaymentsPage.tsx</span>
+│   │       └── <span class="file">PortalProfilePage.tsx</span>
+│   │
+│   ├── <span class="file">router.tsx</span>                   <span class="note"># All routes (admin + portal) via React Router v6</span>
+│   ├── <span class="file">App.tsx</span>                      <span class="note"># QueryClientProvider + ReduxProvider + RouterProvider</span>
+│   └── <span class="file">main.tsx</span>                     <span class="note"># ReactDOM.createRoot()</span>
+│
+├── <span class="file">vite.config.ts</span>               <span class="note"># proxy /api → http://localhost:5001</span>
+├── <span class="file">tailwind.config.ts</span>
+├── <span class="file">tsconfig.json</span>
+└── <span class="file">package.json</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PHASES OVERVIEW GRID
+  ══════════════════════════════════════════════ -->
+  <div class="section-title">🗓️ All 9 Phases at a Glance</div>
+
+  <div class="phase-grid">
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-num" style="background:#6366f1">1</div>
+        <div><div class="phase-title">Foundation &amp; Setup</div><span class="badge badge-info">~1 day</span></div>
+      </div>
+      <div class="phase-body"><ul>
+        <li>Scaffold Vite + React + TypeScript project</li>
+        <li>Install Ynex template + Tailwind CSS</li>
+        <li>Configure Vite proxy for /api</li>
+        <li>Set up Redux Toolkit store</li>
+        <li>Set up React Query client</li>
+        <li>Create Axios instance with JWT interceptor</li>
+        <li>Define all TypeScript types from DTOs</li>
+        <li>Add CORS to .NET API for localhost:5173</li>
+      </ul></div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-num" style="background:#0ea5e9">2</div>
+        <div><div class="phase-title">Auth &amp; Layout Shell</div><span class="badge badge-info">~2 days</span></div>
+      </div>
+      <div class="phase-body"><ul>
+        <li>Login / Register / Forgot / Reset pages</li>
+        <li>AuthGuard + PermissionGuard HOC</li>
+        <li>Ynex sidebar with dynamic permission-filtered nav</li>
+        <li>Topbar with user avatar + logout</li>
+        <li>JWT refresh token interceptor loop</li>
+        <li>Persistent login via localStorage token</li>
+        <li>Auth Redux slice (user, token, permissions)</li>
+      </ul></div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-num" style="background:#10b981">3</div>
+        <div><div class="phase-title">Dashboard</div><span class="badge badge-info">~2 days</span></div>
+      </div>
+      <div class="phase-body"><ul>
+        <li>KPI stat cards (orders, revenue, invoices, payments)</li>
+        <li>Revenue trend chart (Recharts AreaChart)</li>
+        <li>Recent orders mini-table</li>
+        <li>Recent payments mini-table</li>
+        <li>Overdue invoices alert panel</li>
+        <li>Sync health status banner</li>
+        <li>Quick action buttons</li>
+      </ul></div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-num" style="background:#f59e0b">4</div>
+        <div><div class="phase-title">Orders Module</div><span class="badge badge-warning">~3 days</span></div>
+      </div>
+      <div class="phase-body"><ul>
+        <li>Orders list — TanStack Table with server pagination</li>
+        <li>Status filter dropdown + search</li>
+        <li>Create Order form (multi-line-item + dynamic totals)</li>
+        <li>Order detail page with status badge timeline</li>
+        <li>Convert to Invoice action with confirmation</li>
+        <li>Permission guards on Create/Edit actions</li>
+      </ul></div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-num" style="background:#ef4444">5</div>
+        <div><div class="phase-title">Invoices &amp; Payments</div><span class="badge badge-warning">~3 days</span></div>
+      </div>
+      <div class="phase-body"><ul>
+        <li>Invoices list with status + date filters</li>
+        <li>Invoice detail — line items + payment history</li>
+        <li>Invoice print / PDF download via API</li>
+        <li>Payments list with method filter</li>
+        <li>Create Payment form (link to invoice)</li>
+        <li>ConnectIPS initiate + callback flow UI</li>
+      </ul></div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-num" style="background:#8b5cf6">6</div>
+        <div><div class="phase-title">Items &amp; Customers</div><span class="badge badge-warning">~3 days</span></div>
+      </div>
+      <div class="phase-body"><ul>
+        <li>Items list with image thumbnails + stock badges</li>
+        <li>Create / Edit item form with image upload</li>
+        <li>Manual Zoho sync trigger per item</li>
+        <li>Customers list with search</li>
+        <li>Customer detail — address book + order history</li>
+        <li>Create / Edit customer + address management</li>
+      </ul></div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-num" style="background:#ec4899">7</div>
+        <div><div class="phase-title">Reports &amp; Settings</div><span class="badge badge-warning">~3 days</span></div>
+      </div>
+      <div class="phase-body"><ul>
+        <li>Reports hub with 4 report pages</li>
+        <li>Charts: bar, area, pie for each report</li>
+        <li>Export to Excel buttons</li>
+        <li>Sync Dashboard — health, logs, error queue</li>
+        <li>Sync Conflicts resolution UI</li>
+        <li>Audit Log with filters + JSON diff modal</li>
+        <li>Zoho connection status + OAuth reconnect</li>
+      </ul></div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-num" style="background:#14b8a6">8</div>
+        <div><div class="phase-title">Customer Portal</div><span class="badge badge-warning">~3 days</span></div>
+      </div>
+      <div class="phase-body"><ul>
+        <li>Separate PortalLayout (minimal, customer-friendly)</li>
+        <li>Portal dashboard — balance due + recent activity</li>
+        <li>View own orders + invoices</li>
+        <li>Pay invoice — ConnectIPS gateway redirect</li>
+        <li>Payment history</li>
+        <li>Profile + address management</li>
+        <li>Role-based: only 'Customer' role sees portal</li>
+      </ul></div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-num" style="background:#64748b">9</div>
+        <div><div class="phase-title">Polish &amp; Deploy</div><span class="badge badge-dark">~2 days</span></div>
+      </div>
+      <div class="phase-body"><ul>
+        <li>Loading skeletons on all tables/cards</li>
+        <li>Error boundary + 404 / 403 pages</li>
+        <li>Optimistic UI updates on mutations</li>
+        <li>React Query stale-while-revalidate tuning</li>
+        <li>Production Vite build + Nginx config</li>
+        <li>Docker multi-stage build for React app</li>
+        <li>E2E smoke tests (Playwright)</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       DETAILED PHASE SECTIONS
+  ══════════════════════════════════════════════ -->
+
+  <!-- PHASE 1 -->
+  <div id="phase1" class="section-title">Phase 1 — Foundation &amp; Setup</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#ede9fe;font-size:1.3rem">⚡</div>
+      <div><h2>Project Bootstrap</h2><p>Get a working skeleton before writing any feature code</p></div>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--primary)">1</div>
+        <div class="tl-title">Scaffold Vite Project</div>
+        <div class="tl-desc">
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+npm create vite@latest himalayan-bullion-react -- --template react-ts
+cd himalayan-bullion-react
+npm install
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--primary)">2</div>
+        <div class="tl-title">Install Ynex + Tailwind</div>
+        <div class="tl-desc">Copy the Ynex React <code>src/</code> assets (layouts, components, CSS variables) into your project. Configure <code>tailwind.config.ts</code> to extend Ynex's design tokens.</div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--primary)">3</div>
+        <div class="tl-title">Install Core Dependencies</div>
+        <div class="tl-desc">
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+npm install axios @tanstack/react-query @tanstack/react-table \
+  @reduxjs/toolkit react-redux react-router-dom \
+  react-hook-form @hookform/resolvers zod \
+  recharts date-fns react-hot-toast react-select \
+  react-to-print xlsx
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--primary)">4</div>
+        <div class="tl-title">Configure Vite API Proxy</div>
+        <div class="tl-desc">
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cmt">// vite.config.ts</span>
+server: {
+  proxy: {
+    <span class="str">'/api'</span>: {
+      target: <span class="str">'https://localhost:5001'</span>,
+      changeOrigin: <span class="kw">true</span>,
+      secure: <span class="kw">false</span>,
+    }
+  }
+}
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--primary)">5</div>
+        <div class="tl-title">Axios Instance with JWT Interceptor</div>
+        <div class="tl-desc">
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cmt">// src/api/axiosInstance.ts</span>
+<span class="kw">const</span> api = axios.<span class="fn">create</span>({ baseURL: <span class="str">'/api'</span> });
+
+api.interceptors.request.<span class="fn">use</span>((config) => {
+  <span class="kw">const</span> token = store.<span class="fn">getState</span>().auth.token;
+  <span class="kw">if</span> (token) config.headers.Authorization = <span class="str">`Bearer ${token}`</span>;
+  <span class="kw">return</span> config;
+});
+
+<span class="cmt">// 401 → attempt refresh → retry original request</span>
+api.interceptors.response.<span class="fn">use</span>(
+  (res) => res,
+  <span class="kw">async</span> (error) => {
+    <span class="kw">if</span> (error.response?.status === <span class="num">401</span>) {
+      <span class="kw">await</span> store.<span class="fn">dispatch</span>(<span class="fn">refreshTokenThunk</span>());
+      <span class="kw">return</span> api(error.config);
+    }
+    <span class="kw">return</span> Promise.<span class="fn">reject</span>(error);
+  }
+);
+          </div>
+        </div>
+      </div>
+
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--primary)">6</div>
+        <div class="tl-title">Add CORS to .NET API (one-time backend change)</div>
+        <div class="tl-desc">In <code>HimalayanBullion.Api/Program.cs</code> add:
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+builder.Services.AddCors(o => o.<span class="fn">AddPolicy</span>(<span class="str">"ReactApp"</span>, p => p
+    .<span class="fn">WithOrigins</span>(<span class="str">"http://localhost:5173"</span>, <span class="str">"https://yourdomain.com"</span>)
+    .<span class="fn">AllowAnyHeader</span>()
+    .<span class="fn">AllowAnyMethod</span>()
+    .<span class="fn">AllowCredentials</span>()));
+
+app.<span class="fn">UseCors</span>(<span class="str">"ReactApp"</span>); <span class="cmt">// before UseAuthorization</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 2 -->
+  <div id="phase2" class="section-title">Phase 2 — Auth &amp; Layout Shell</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#dbeafe">🔐</div>
+      <div><h2>Authentication + Navigation Shell</h2><p>JWT auth flow + Ynex sidebar with permission-filtered links</p></div>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Pages to Build</h3>
+    <div class="table-wrap" style="margin-bottom:1rem">
+      <table>
+        <thead><tr><th>Page</th><th>Route</th><th>API Calls</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Login</td><td><code>/login</code></td><td>POST /api/auth/login</td><td>Store JWT in Redux + localStorage</td></tr>
+          <tr><td>Register</td><td><code>/register</code></td><td>POST /api/auth/register</td><td>Redirect to login on success</td></tr>
+          <tr><td>Forgot Password</td><td><code>/forgot-password</code></td><td>— (email sent server-side)</td><td>Show confirmation message</td></tr>
+          <tr><td>Reset Password</td><td><code>/reset-password?token=</code></td><td>— (link from email)</td><td>Parse token from query string</td></tr>
+          <tr><td>Access Denied</td><td><code>/403</code></td><td>—</td><td>Shown by PermissionGuard</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Auth Redux Slice Structure</h3>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cmt">// store/authSlice.ts</span>
+<span class="kw">interface</span> <span class="obj">AuthState</span> {
+  token: <span class="kw">string</span> | <span class="kw">null</span>;
+  refreshToken: <span class="kw">string</span> | <span class="kw">null</span>;
+  user: <span class="obj">UserDto</span> | <span class="kw">null</span>;
+  permissions: <span class="kw">string</span>[];   <span class="cmt">// e.g. ['Orders.View', 'Orders.Create', ...]</span>
+  isAuthenticated: <span class="kw">boolean</span>;
+}
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:1rem 0 .75rem">Sidebar Navigation (Permission-Filtered)</h3>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cmt">// Each nav item has a required permission</span>
+<span class="kw">const</span> navItems = [
+  { label: <span class="str">'Dashboard'</span>,    icon: <span class="str">'grid'</span>,    path: <span class="str">'/'</span>,              permission: <span class="kw">null</span> },
+  { label: <span class="str">'Orders'</span>,       icon: <span class="str">'package'</span>, path: <span class="str">'/orders'</span>,        permission: <span class="str">'Orders.View'</span> },
+  { label: <span class="str">'Invoices'</span>,     icon: <span class="str">'file-text'</span>,path: <span class="str">'/invoices'</span>,      permission: <span class="str">'Invoices.View'</span> },
+  { label: <span class="str">'Payments'</span>,     icon: <span class="str">'credit-card'</span>,path: <span class="str">'/payments'</span>,     permission: <span class="str">'Payments.View'</span> },
+  { label: <span class="str">'Items'</span>,        icon: <span class="str">'box'</span>,     path: <span class="str">'/items'</span>,         permission: <span class="str">'Items.View'</span> },
+  { label: <span class="str">'Customers'</span>,    icon: <span class="str">'users'</span>,   path: <span class="str">'/customers'</span>,     permission: <span class="str">'Customers.View'</span> },
+  { label: <span class="str">'Reports'</span>,      icon: <span class="str">'bar-chart'</span>,path: <span class="str">'/reports'</span>,      permission: <span class="str">'Reports.View'</span> },
+  { label: <span class="str">'Sync'</span>,         icon: <span class="str">'refresh-cw'</span>,path:<span class="str">'/settings/sync'</span>,permission: <span class="str">'Sync.View'</span> },
+  { label: <span class="str">'Audit Log'</span>,    icon: <span class="str">'shield'</span>,  path: <span class="str">'/settings/audit'</span>, permission: <span class="str">'Settings.View'</span> },
+];
+<span class="cmt">// Filter: navItems.filter(i => !i.permission || permissions.includes(i.permission))</span>
+    </div>
+  </div>
+
+  <!-- PHASE 3 -->
+  <div id="phase3" class="section-title">Phase 3 — Dashboard</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#d1fae5">📊</div>
+      <div><h2>Admin Dashboard</h2><p>KPI cards, charts, quick-access panels</p></div>
+    </div>
+
+    <div class="screen-grid">
+      <div class="screen-card">
+        <div class="screen-bar">📦 KPI Cards Row</div>
+        <div class="screen-body">
+          <div class="screen-stats">
+            <div class="screen-stat"><strong>142</strong><br><small>Orders</small></div>
+            <div class="screen-stat"><strong>NPR 4.2M</strong><br><small>Revenue</small></div>
+            <div class="screen-stat"><strong>38</strong><br><small>Open Invoices</small></div>
+            <div class="screen-stat"><strong>5</strong><br><small>Overdue</small></div>
+          </div>
+          <small>Data from GET /api/orders, /api/invoices, /api/payments</small>
+        </div>
+      </div>
+
+      <div class="screen-card">
+        <div class="screen-bar">📈 Revenue Trend (Last 30 Days)</div>
+        <div class="screen-body">
+          <div style="background:white;border:1px solid var(--border);border-radius:4px;height:80px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.7rem">
+            Recharts AreaChart — daily invoice totals
+          </div>
+          <small style="margin-top:.3rem;display:block">Aggregated from invoices list sorted by date</small>
+        </div>
+      </div>
+
+      <div class="screen-card">
+        <div class="screen-bar">🕐 Recent Orders</div>
+        <div class="screen-body">
+          <div class="screen-row">SO-2026-001 · John D. · NPR 45,000 · <span class="badge badge-warning" style="font-size:.6rem">Pending</span></div>
+          <div class="screen-row">SO-2026-002 · Priya S. · NPR 82,000 · <span class="badge badge-success" style="font-size:.6rem">Confirmed</span></div>
+          <div class="screen-row">SO-2026-003 · Ram B. · NPR 21,000 · <span class="badge badge-info" style="font-size:.6rem">Draft</span></div>
+          <small>GET /api/orders?pageSize=5</small>
+        </div>
+      </div>
+
+      <div class="screen-card">
+        <div class="screen-bar">⚡ Sync Health Banner</div>
+        <div class="screen-body">
+          <div class="screen-row" style="background:#f0fdf4;border-color:#86efac;color:#059669">✅ Zoho sync healthy — Last: 5 min ago</div>
+          <div class="screen-row" style="background:#fffbeb;border-color:#fbbf24;color:#92400e">⚠ 2 conflicts pending resolution</div>
+          <small>GET /api/sync/health</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 4 -->
+  <div id="phase4" class="section-title">Phase 4 — Orders Module</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#fef3c7">📦</div>
+      <div><h2>Orders CRUD</h2><p>List, create, detail, convert to invoice</p></div>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">API Endpoints Used</h3>
+    <div class="ep"><span class="method get">GET</span> /api/orders?page=1&amp;pageSize=20&amp;status=Draft</div>
+    <div class="ep"><span class="method get">GET</span> /api/orders/{id}</div>
+    <div class="ep"><span class="method post">POST</span> /api/orders</div>
+    <div class="ep"><span class="method put">PUT</span> /api/orders/{id}</div>
+    <div class="ep"><span class="method delete">DELETE</span> /api/orders/{id}</div>
+    <div class="ep"><span class="method post">POST</span> /api/orders/{id}/convert-to-invoice</div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:1rem 0 .75rem">Create Order Form — Key Requirements</h3>
+    <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+      <li style="padding:.3rem 0">→ Customer searchable dropdown (react-select) — fetches customers from API</li>
+      <li style="padding:.3rem 0">→ Dynamic line items — add/remove rows, each row searches items by name/SKU</li>
+      <li style="padding:.3rem 0">→ Real-time totals calculation: SubTotal, Tax (%), Discount, Total</li>
+      <li style="padding:.3rem 0">→ Billing / Shipping address selectors (from customer's addresses)</li>
+      <li style="padding:.3rem 0">→ Zod schema validates: at least 1 line item, quantity &gt; 0, rate &gt; 0</li>
+      <li style="padding:.3rem 0">→ Submit maps to <code>CreateSalesOrderDto</code></li>
+    </ul>
+
+    <div class="callout callout-warning">
+      <div class="callout-icon">⚠️</div>
+      <div>The existing API does not expose a <strong>customers list endpoint</strong> directly. Use <code>GET /api/auth/me</code> for the logged-in user's profile. For the admin orders form, fetch users from <code>GET /api/users</code> if available, or extend the API with a <code>/api/customers</code> endpoint that returns a list of users with the Customer role.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 5 -->
+  <div id="phase5" class="section-title">Phase 5 — Invoices &amp; Payments</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#fee2e2">💳</div>
+      <div><h2>Invoices &amp; Payments</h2><p>View, download PDFs, record payments, ConnectIPS gateway</p></div>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Invoice PDF Download</h3>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cmt">// src/api/invoicesApi.ts</span>
+<span class="kw">export const</span> <span class="fn">downloadInvoicePdf</span> = <span class="kw">async</span> (id: <span class="kw">string</span>) => {
+  <span class="kw">const</span> response = <span class="kw">await</span> api.<span class="fn">get</span>(<span class="str">`/invoices/${id}/download`</span>, {
+    responseType: <span class="str">'blob'</span>
+  });
+  <span class="kw">const</span> url = URL.<span class="fn">createObjectURL</span>(response.data);
+  <span class="kw">const</span> a = document.<span class="fn">createElement</span>(<span class="str">'a'</span>);
+  a.href = url; a.download = <span class="str">`invoice-${id}.pdf`</span>;
+  a.<span class="fn">click</span>();
+  URL.<span class="fn">revokeObjectURL</span>(url);
+};
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:1rem 0 .75rem">ConnectIPS Payment Flow</h3>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot" style="background:#ef4444">1</div>
+        <div class="tl-title">User clicks "Pay via ConnectIPS" on invoice</div>
+        <div class="tl-desc">Calls POST /api/payments/initiate → returns <code>redirectUrl</code> + <code>qrCode</code></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot" style="background:#ef4444">2</div>
+        <div class="tl-title">React opens ConnectIPS gateway in new tab or redirects</div>
+        <div class="tl-desc">Use <code>window.location.href = response.redirectUrl</code></div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot" style="background:#ef4444">3</div>
+        <div class="tl-title">ConnectIPS posts back to <code>/Payments/ConnectIPSCallback</code></div>
+        <div class="tl-desc">This hits the existing Razor Page callback (unchanged). After success, redirect user back to portal invoice page.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot" style="background:#ef4444">4</div>
+        <div class="tl-title">React portal page polls / shows updated status</div>
+        <div class="tl-desc">GET /api/payments/order/{orderId}/status — show success toast + reload invoice</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 6 -->
+  <div id="phase6" class="section-title">Phase 6 — Items &amp; Customers</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#fdf4ff">💎</div>
+      <div><h2>Inventory Items &amp; Customer Management</h2><p>Full CRUD with Zoho sync integration</p></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+      <div>
+        <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Items Module</h3>
+        <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+          <li style="padding:.25rem 0">→ Grid view (thumbnail cards) + list view (table) toggle</li>
+          <li style="padding:.25rem 0">→ Category filter + search by name/SKU</li>
+          <li style="padding:.25rem 0">→ Stock on hand badge (green/amber/red by level)</li>
+          <li style="padding:.25rem 0">→ Create/Edit form with image upload (base64 or presigned URL)</li>
+          <li style="padding:.25rem 0">→ "Sync to Zoho" button → POST /api/items/{id}/sync</li>
+          <li style="padding:.25rem 0">→ <span class="badge badge-gold">PermissionGuard</span> Items.Create / Items.Edit / Items.Delete</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Customers Module</h3>
+        <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+          <li style="padding:.25rem 0">→ Customers list with avatar initials + search</li>
+          <li style="padding:.25rem 0">→ Customer detail: profile info + address book + order history tabs</li>
+          <li style="padding:.25rem 0">→ Address management: add/edit/delete/set-default</li>
+          <li style="padding:.25rem 0">→ Create/Edit form with validation (phone number format)</li>
+          <li style="padding:.25rem 0">→ Zoho contact sync status badge</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE 7 -->
+  <div id="phase7" class="section-title">Phase 7 — Reports &amp; Settings</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#fce7f3">📈</div>
+      <div><h2>Reports, Sync Dashboard, Audit Log</h2><p>Data visualization + operational tools</p></div>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Reports Pages</h3>
+    <div class="table-wrap" style="margin-bottom:1.25rem">
+      <table>
+        <thead><tr><th>Report</th><th>Route</th><th>Chart Type</th><th>Data Source</th></tr></thead>
+        <tbody>
+          <tr><td>Customer Revenue</td><td><code>/reports/customer-revenue</code></td><td>Bar chart (customer vs revenue)</td><td>GET /api/invoices (aggregated client-side)</td></tr>
+          <tr><td>Overdue Invoices</td><td><code>/reports/overdue</code></td><td>Table + aging buckets</td><td>GET /api/invoices?status=Overdue</td></tr>
+          <tr><td>Payment Aging</td><td><code>/reports/payment-aging</code></td><td>Horizontal bar per bucket</td><td>GET /api/payments (aggregated)</td></tr>
+          <tr><td>Sales Velocity</td><td><code>/reports/sales-velocity</code></td><td>Area chart (daily sales)</td><td>GET /api/orders (time-series)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Audit Log Page</h3>
+    <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+      <li style="padding:.25rem 0">→ Filter: Entity Type (dropdown), Username (text), Action (Created/Updated/Deleted), Date range</li>
+      <li style="padding:.25rem 0">→ Table columns: Timestamp, User, Action badge, Entity, Entity ID, IP Address, "View Diff" button</li>
+      <li style="padding:.25rem 0">→ "View Diff" opens modal with JSON before/after side-by-side (syntax-highlighted)</li>
+      <li style="padding:.25rem 0">→ Server-side pagination (50/page)</li>
+      <li style="padding:.25rem 0">→ <strong>Note:</strong> Audit log data requires a dedicated API endpoint — extend <code>GET /api/audit-log</code> in the .NET API (minor addition)</li>
+    </ul>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:1rem 0 .75rem">Sync Dashboard</h3>
+    <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+      <li style="padding:.25rem 0">→ Health summary card: GET /api/sync/health</li>
+      <li style="padding:.25rem 0">→ Entity map stats table: GET /api/sync/entity-maps</li>
+      <li style="padding:.25rem 0">→ Error queue: GET /api/sync/errors — with retry button per error</li>
+      <li style="padding:.25rem 0">→ Sync log table with filters: GET /api/zoho/sync/logs</li>
+      <li style="padding:.25rem 0">→ Manual sync triggers: POST /api/sync/full (with job ID toast)</li>
+      <li style="padding:.25rem 0">→ Zoho connection card: GET /api/zoho/status + disconnect button</li>
+    </ul>
+  </div>
+
+  <!-- PHASE 8 -->
+  <div id="phase8" class="section-title">Phase 8 — Customer Portal</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#d1fae5">🏪</div>
+      <div><h2>Customer-Facing Portal</h2><p>Separate layout, limited API scope, self-service payments</p></div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">💡</div>
+      <div>The portal shares the same React app but uses a <strong>different layout component</strong> (<code>PortalLayout.tsx</code>) — no admin sidebar, simplified topbar, customer-branded header. Route prefix: <code>/portal/*</code>. Only users with the <code>Customer</code> role can access portal routes.</div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:1rem">
+      <table>
+        <thead><tr><th>Page</th><th>Route</th><th>API Endpoints</th></tr></thead>
+        <tbody class="route-portal">
+          <tr><td>Portal Dashboard</td><td><code>/portal</code></td><td>GET /api/invoices (balance due), GET /api/orders (recent)</td></tr>
+          <tr><td>My Orders</td><td><code>/portal/orders</code></td><td>GET /api/orders (own orders only — filtered by auth)</td></tr>
+          <tr><td>My Invoices</td><td><code>/portal/invoices</code></td><td>GET /api/invoices (own)</td></tr>
+          <tr><td>Invoice Detail + Pay</td><td><code>/portal/invoices/:id</code></td><td>GET /api/invoices/:id, POST /api/payments/initiate</td></tr>
+          <tr><td>Payment History</td><td><code>/portal/payments</code></td><td>GET /api/payments (own)</td></tr>
+          <tr><td>My Profile</td><td><code>/portal/profile</code></td><td>GET /api/auth/profile, PUT /api/auth/profile</td></tr>
+          <tr><td>My Addresses</td><td><code>/portal/addresses</code></td><td>GET/POST/PUT/DELETE /api/addresses</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PHASE 9 -->
+  <div id="phase9" class="section-title">Phase 9 — Polish &amp; Deploy</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#f1f5f9">✨</div>
+      <div><h2>Production Readiness</h2><p>Performance, error handling, containerisation</p></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+      <div>
+        <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">UX Polish</h3>
+        <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+          <li style="padding:.25rem 0">→ Skeleton loaders on all list/detail pages</li>
+          <li style="padding:.25rem 0">→ Optimistic updates on status changes</li>
+          <li style="padding:.25rem 0">→ Error boundary wrapping each feature route</li>
+          <li style="padding:.25rem 0">→ 404 / 403 / 500 error pages matching Ynex style</li>
+          <li style="padding:.25rem 0">→ Keyboard shortcuts (K for search, N for new order)</li>
+          <li style="padding:.25rem 0">→ Dark mode toggle (Ynex supports it natively)</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Deployment</h3>
+        <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+          <li style="padding:.25rem 0">→ <code>npm run build</code> → <code>dist/</code> served by Nginx</li>
+          <li style="padding:.25rem 0">→ Dockerfile: node:20 build stage → nginx:alpine serve stage</li>
+          <li style="padding:.25rem 0">→ Nginx config: <code>try_files $uri /index.html</code> for SPA routing</li>
+          <li style="padding:.25rem 0">→ Environment variables via <code>VITE_API_BASE_URL</code></li>
+          <li style="padding:.25rem 0">→ GitHub Actions: build + lint + Playwright smoke tests on PR</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:1.25rem 0 .75rem">Nginx SPA Config (Production)</h3>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+server {
+  listen 80;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  location /api/ {
+    proxy_pass https://himalayan-bullion-api:5001/api/;
+  }
+
+  location / {
+    try_files $uri $uri/ /index.html;  # SPA fallback
+  }
+}
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       ROUTE MAP
+  ══════════════════════════════════════════════ -->
+  <div id="routes" class="section-title">🗺️ Complete Route Map</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#e0f2fe">🗺️</div>
+      <div><h2>React Router v6 Route Definitions</h2><p>All routes with guard requirements</p></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Route</th><th>Component</th><th>Guard</th><th>Layout</th></tr></thead>
+        <tbody>
+          <!-- Public -->
+          <tr class="route-public"><td><code>/login</code></td><td>LoginPage</td><td>Public only (redirect if authed)</td><td>Auth Layout</td></tr>
+          <tr class="route-public"><td><code>/register</code></td><td>RegisterPage</td><td>Public only</td><td>Auth Layout</td></tr>
+          <tr class="route-public"><td><code>/forgot-password</code></td><td>ForgotPasswordPage</td><td>Public only</td><td>Auth Layout</td></tr>
+          <tr class="route-public"><td><code>/reset-password</code></td><td>ResetPasswordPage</td><td>Public only</td><td>Auth Layout</td></tr>
+          <!-- Admin -->
+          <tr class="route-admin"><td><code>/</code></td><td>DashboardPage</td><td>AuthGuard</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/orders</code></td><td>OrdersListPage</td><td>Orders.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/orders/new</code></td><td>OrderCreatePage</td><td>Orders.Create</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/orders/:id</code></td><td>OrderDetailPage</td><td>Orders.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/invoices</code></td><td>InvoicesListPage</td><td>Invoices.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/invoices/:id</code></td><td>InvoiceDetailPage</td><td>Invoices.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/invoices/:id/print</code></td><td>InvoicePrintPage</td><td>Invoices.View</td><td>None (print)</td></tr>
+          <tr class="route-admin"><td><code>/payments</code></td><td>PaymentsListPage</td><td>Payments.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/payments/new</code></td><td>PaymentCreatePage</td><td>Payments.Create</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/items</code></td><td>ItemsListPage</td><td>Items.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/items/new</code></td><td>ItemCreatePage</td><td>Items.Create</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/items/:id/edit</code></td><td>ItemEditPage</td><td>Items.Edit</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/customers</code></td><td>CustomersListPage</td><td>Customers.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/customers/:id</code></td><td>CustomerDetailPage</td><td>Customers.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/customers/new</code></td><td>CustomerCreatePage</td><td>Customers.Create</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/reports</code></td><td>ReportsDashboard</td><td>Reports.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/reports/customer-revenue</code></td><td>CustomerRevenuePage</td><td>Reports.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/reports/overdue</code></td><td>InvoiceOverduePage</td><td>Reports.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/reports/payment-aging</code></td><td>PaymentAgingPage</td><td>Reports.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/reports/sales-velocity</code></td><td>SalesVelocityPage</td><td>Reports.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/settings/sync</code></td><td>SyncDashboardPage</td><td>Sync.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/settings/conflicts</code></td><td>SyncConflictsPage</td><td>Sync.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/settings/audit</code></td><td>AuditLogPage</td><td>Settings.View</td><td>AdminLayout</td></tr>
+          <tr class="route-admin"><td><code>/settings/zoho</code></td><td>ZohoSettingsPage</td><td>Settings.Zoho</td><td>AdminLayout</td></tr>
+          <!-- Portal -->
+          <tr class="route-portal"><td><code>/portal</code></td><td>PortalDashboard</td><td>Customer role</td><td>PortalLayout</td></tr>
+          <tr class="route-portal"><td><code>/portal/orders</code></td><td>PortalOrdersPage</td><td>Customer role</td><td>PortalLayout</td></tr>
+          <tr class="route-portal"><td><code>/portal/invoices</code></td><td>PortalInvoicesPage</td><td>Customer role</td><td>PortalLayout</td></tr>
+          <tr class="route-portal"><td><code>/portal/invoices/:id</code></td><td>PortalInvoiceDetailPage</td><td>Customer role</td><td>PortalLayout</td></tr>
+          <tr class="route-portal"><td><code>/portal/payments</code></td><td>PortalPaymentsPage</td><td>Customer role</td><td>PortalLayout</td></tr>
+          <tr class="route-portal"><td><code>/portal/profile</code></td><td>PortalProfilePage</td><td>Customer role</td><td>PortalLayout</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:.75rem;display:flex;gap:.75rem;font-size:.75rem">
+      <span style="display:flex;align-items:center;gap:.4rem"><span style="width:14px;height:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:3px"></span> Public</span>
+      <span style="display:flex;align-items:center;gap:.4rem"><span style="width:14px;height:14px;background:#eff6ff;border:1px solid #93c5fd;border-radius:3px"></span> Admin (policy-gated)</span>
+      <span style="display:flex;align-items:center;gap:.4rem"><span style="width:14px;height:14px;background:#fdf4ff;border:1px solid #d8b4fe;border-radius:3px"></span> Customer Portal</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       API MAPPING
+  ══════════════════════════════════════════════ -->
+  <div id="api-mapping" class="section-title">🔌 API Mapping</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#fef3c7">🔌</div>
+      <div><h2>React Feature → API Endpoint Mapping</h2><p>Every page and the exact endpoints it consumes</p></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Feature</th><th>Operation</th><th>Method</th><th>Endpoint</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="3"><strong>Auth</strong></td><td>Login</td><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">POST</span></td><td><code>/api/auth/login</code></td></tr>
+          <tr><td>Get current user</td><td><span class="badge badge-success">GET</span></td><td><code>/api/auth/me</code></td></tr>
+          <tr><td>Refresh token</td><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">POST</span></td><td><code>/api/auth/refresh-token</code></td></tr>
+          <tr><td rowspan="4"><strong>Orders</strong></td><td>List (paginated)</td><td><span class="badge badge-success">GET</span></td><td><code>/api/orders?page&status</code></td></tr>
+          <tr><td>Detail</td><td><span class="badge badge-success">GET</span></td><td><code>/api/orders/{id}</code></td></tr>
+          <tr><td>Create</td><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">POST</span></td><td><code>/api/orders</code></td></tr>
+          <tr><td>Convert → Invoice</td><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">POST</span></td><td><code>/api/orders/{id}/convert-to-invoice</code></td></tr>
+          <tr><td rowspan="3"><strong>Invoices</strong></td><td>List</td><td><span class="badge badge-success">GET</span></td><td><code>/api/invoices?page&status</code></td></tr>
+          <tr><td>Detail</td><td><span class="badge badge-success">GET</span></td><td><code>/api/invoices/{id}</code></td></tr>
+          <tr><td>Download PDF</td><td><span class="badge badge-success">GET</span></td><td><code>/api/invoices/{id}/download</code> (blob)</td></tr>
+          <tr><td rowspan="4"><strong>Payments</strong></td><td>List</td><td><span class="badge badge-success">GET</span></td><td><code>/api/payments</code></td></tr>
+          <tr><td>Create (admin)</td><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">POST</span></td><td><code>/api/payments</code></td></tr>
+          <tr><td>Initiate ConnectIPS</td><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">POST</span></td><td><code>/api/payments/initiate</code></td></tr>
+          <tr><td>Order payment status</td><td><span class="badge badge-success">GET</span></td><td><code>/api/payments/order/{orderId}/status</code></td></tr>
+          <tr><td rowspan="3"><strong>Items</strong></td><td>List</td><td><span class="badge badge-success">GET</span></td><td><code>/api/items?page&search</code></td></tr>
+          <tr><td>Create/Edit</td><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">POST</span> / <span class="badge" style="background:#fef3c7;color:#92400e">PUT</span></td><td><code>/api/items</code> / <code>/api/items/{id}</code></td></tr>
+          <tr><td>Manual Zoho sync</td><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">POST</span></td><td><code>/api/items/{id}/sync</code></td></tr>
+          <tr><td rowspan="2"><strong>Sync</strong></td><td>Health</td><td><span class="badge badge-success">GET</span></td><td><code>/api/sync/health</code></td></tr>
+          <tr><td>Trigger full sync</td><td><span class="badge" style="background:#dbeafe;color:#1d4ed8">POST</span></td><td><code>/api/sync/full</code></td></tr>
+          <tr><td rowspan="2"><strong>Zoho</strong></td><td>Connection status</td><td><span class="badge badge-success">GET</span></td><td><code>/api/zoho/status</code></td></tr>
+          <tr><td>Sync logs</td><td><span class="badge badge-success">GET</span></td><td><code>/api/zoho/sync/logs</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       STATE MANAGEMENT
+  ══════════════════════════════════════════════ -->
+  <div id="state" class="section-title">🗂️ State Management Strategy</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#e0e7ff">🗂️</div>
+      <div><h2>Redux Toolkit + React Query Division of Responsibility</h2></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>What</th><th>How</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Auth token, user info, permissions</td><td>Redux Toolkit slice</td><td>Needed by interceptor + guards — must be global, synchronous</td></tr>
+          <tr><td>Sidebar open/close, theme</td><td>Redux Toolkit slice</td><td>Persistent UI state, not tied to server</td></tr>
+          <tr><td>Orders list, detail, pagination</td><td>React Query <code>useQuery</code></td><td>Automatic caching, background refetch, stale-while-revalidate</td></tr>
+          <tr><td>Create/Edit/Delete mutations</td><td>React Query <code>useMutation</code></td><td>Handles loading, error, success states + cache invalidation</td></tr>
+          <tr><td>Form state</td><td>React Hook Form</td><td>Minimal re-renders, Zod integration</td></tr>
+          <tr><td>Toast notifications</td><td>react-hot-toast</td><td>Fire-and-forget from mutation callbacks</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:.9rem;font-weight:700;margin:1rem 0 .75rem">Example: useOrders Hook</h3>
+    <div class="code-block">
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+<span class="cmt">// src/hooks/useOrders.ts</span>
+<span class="kw">export const</span> <span class="fn">useOrders</span> = (params: OrdersFilterParams) =>
+  useQuery({
+    queryKey: [<span class="str">'orders'</span>, params],
+    queryFn: () => ordersApi.<span class="fn">getAll</span>(params),
+    staleTime: <span class="num">30_000</span>,            <span class="cmt">// 30 seconds fresh</span>
+    placeholderData: keepPreviousData, <span class="cmt">// no layout shift on page change</span>
+  });
+
+<span class="kw">export const</span> <span class="fn">useCreateOrder</span> = () =>
+  useMutation({
+    mutationFn: ordersApi.<span class="fn">create</span>,
+    onSuccess: () => {
+      queryClient.<span class="fn">invalidateQueries</span>({ queryKey: [<span class="str">'orders'</span>] });
+      toast.<span class="fn">success</span>(<span class="str">'Order created successfully'</span>);
+    },
+    onError: (err) => toast.<span class="fn">error</span>(err.message),
+  });
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       YNEX COMPONENTS
+  ══════════════════════════════════════════════ -->
+  <div id="ynex-components" class="section-title">🎨 Ynex Component Usage</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#fdf4ff">🎨</div>
+      <div><h2>Ynex Template Components → Feature Mapping</h2></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Ynex Component</th><th>Used In</th><th>Customisation</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Main Layout (sidebar + topbar)</strong></td><td>All admin pages</td><td>Replace demo nav items with permission-filtered nav from Redux</td></tr>
+          <tr><td><strong>Auth Layout</strong></td><td>Login, Register, Forgot, Reset</td><td>Add Himalayan Bullion logo + gold accent colour</td></tr>
+          <tr><td><strong>Stat Cards</strong></td><td>Dashboard</td><td>Wire to real API data, add trend % badges</td></tr>
+          <tr><td><strong>Data Table</strong></td><td>Orders, Invoices, Payments, Items, Customers, Audit Log</td><td>Replace with TanStack Table v8 + Ynex table CSS classes</td></tr>
+          <tr><td><strong>Modal</strong></td><td>Confirm delete, Audit diff, ConnectIPS initiate</td><td>Use Ynex modal structure, add custom content</td></tr>
+          <tr><td><strong>Badge / Pill</strong></td><td>Status columns everywhere</td><td>Map API status strings to Ynex badge colour variants</td></tr>
+          <tr><td><strong>Breadcrumb</strong></td><td>All detail pages</td><td>Auto-generated from React Router location</td></tr>
+          <tr><td><strong>Skeleton Loader</strong></td><td>All pages during loading state</td><td>Wrap tables and cards in Ynex skeleton components</td></tr>
+          <tr><td><strong>Progress / Stepper</strong></td><td>Order status timeline, ConnectIPS flow</td><td>Map statuses to steps</td></tr>
+          <tr><td><strong>Charts (Ynex + Recharts)</strong></td><td>Dashboard + Reports</td><td>Use Recharts with Ynex colour tokens for consistency</td></tr>
+          <tr><td><strong>Portal Layout</strong></td><td>Customer portal</td><td>Ynex's minimal layout variant, replace sidebar with customer menu</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       CONVENTIONS
+  ══════════════════════════════════════════════ -->
+  <div id="conventions" class="section-title">📐 Conventions &amp; Standards</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#f1f5f9">📐</div>
+      <div><h2>Coding Conventions for the React Project</h2></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+      <div>
+        <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Naming</h3>
+        <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+          <li style="padding:.2rem 0">→ Components: <code>PascalCase.tsx</code></li>
+          <li style="padding:.2rem 0">→ Hooks: <code>camelCase.ts</code> prefixed with <code>use</code></li>
+          <li style="padding:.2rem 0">→ API files: <code>camelCase + Api.ts</code> (e.g. <code>ordersApi.ts</code>)</li>
+          <li style="padding:.2rem 0">→ Types: <code>PascalCase</code> interfaces, exported from <code>types/*.ts</code></li>
+          <li style="padding:.2rem 0">→ Zod schemas: <code>camelCaseSchema</code> (e.g. <code>createOrderSchema</code>)</li>
+        </ul>
+
+        <h3 style="font-size:.9rem;font-weight:700;margin:1rem 0 .75rem">Component Pattern</h3>
+        <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+          <li style="padding:.2rem 0">→ Every page = <code>features/module/PageName.tsx</code></li>
+          <li style="padding:.2rem 0">→ Shared UI = <code>components/ui/</code></li>
+          <li style="padding:.2rem 0">→ No inline API calls — always go through a hook</li>
+          <li style="padding:.2rem 0">→ No direct <code>axios</code> imports — use <code>axiosInstance</code></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 style="font-size:.9rem;font-weight:700;margin-bottom:.75rem">Security</h3>
+        <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+          <li style="padding:.2rem 0">→ Never store JWT in <code>localStorage</code> directly — use Redux with <code>sessionStorage</code> fallback or httpOnly cookie mode</li>
+          <li style="padding:.2rem 0">→ All admin routes behind <code>&lt;AuthGuard&gt;</code></li>
+          <li style="padding:.2rem 0">→ All permission-gated actions also checked server-side (API returns 403)</li>
+          <li style="padding:.2rem 0">→ Sanitise any HTML rendered from API data (use DOMPurify)</li>
+        </ul>
+
+        <h3 style="font-size:.9rem;font-weight:700;margin:1rem 0 .75rem">Error Handling Pattern</h3>
+        <ul style="font-size:.82rem;color:var(--muted);list-style:none">
+          <li style="padding:.2rem 0">→ API errors: extract <code>response.data.message</code> from <code>ApiResponse&lt;T&gt;</code></li>
+          <li style="padding:.2rem 0">→ Network errors: generic "Connection failed" toast</li>
+          <li style="padding:.2rem 0">→ 403: redirect to <code>/403</code> page</li>
+          <li style="padding:.2rem 0">→ 401 after refresh failure: clear auth + redirect to <code>/login</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout callout-success" style="margin-top:1rem">
+      <div class="callout-icon">✅</div>
+      <div><strong>Backend API Contract:</strong> The <code>ApiResponse&lt;T&gt;</code> wrapper is returned by every endpoint — always check <code>response.data.success</code> before accessing <code>response.data.data</code>. Create a typed Axios response interceptor that throws if <code>success === false</code>, so all hooks get a clean rejection to handle.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       API EXTENSIONS NEEDED
+  ══════════════════════════════════════════════ -->
+  <div class="section-title">⚠️ Minor API Extensions Needed</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="icon" style="background:#fef3c7">⚠️</div>
+      <div><h2>Small Backend Additions Required</h2><p>The existing API covers ~95% of needs — only 4 minor additions</p></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Missing Endpoint</th><th>Used By</th><th>Suggested Addition</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>List all customers (admin)</td>
+            <td>Orders Create form — customer dropdown</td>
+            <td>Add <code>GET /api/customers</code> → returns users with Customer role. Or expose <code>GET /api/auth/users?role=Customer</code></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Audit Log listing</td>
+            <td>AuditLog page</td>
+            <td>Add <code>GET /api/audit-log</code> with same filters as the Razor page (entity, user, action, date range, pagination)</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Sync Conflicts listing + resolve</td>
+            <td>SyncConflicts page</td>
+            <td>Add <code>GET /api/sync/conflicts</code> + <code>POST /api/sync/conflicts/{id}/resolve</code></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>CORS header</td>
+            <td>React dev server (localhost:5173)</td>
+            <td>Add CORS policy in <code>Api/Program.cs</code> (shown in Phase 1)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="margin-top:3rem;padding:1.5rem;text-align:center;border-top:1px solid var(--border);color:var(--muted);font-size:.8rem">
+    Himalayan Bullion — React + Ynex Implementation Plan &nbsp;·&nbsp; 9 Phases &nbsp;·&nbsp; ~22 development days &nbsp;·&nbsp; Prepared March 2026
+  </div>
+
+</main>
+
+<script>
+  // ── Scroll spy ──
+  const sections = document.querySelectorAll('[id]');
+  const navLinks = document.querySelectorAll('#sidebar a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`#sidebar a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+
+  // ── Copy to clipboard ──
+  function copyCode(btn) {
+    const block = btn.parentElement;
+    const code = block.innerText.replace('Copy\n', '').trim();
+    navigator.clipboard.writeText(code).then(() => {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+  }
+
+  // ── Smooth scroll ──
+  document.querySelectorAll('#sidebar a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>
