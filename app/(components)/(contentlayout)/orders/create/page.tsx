@@ -125,7 +125,7 @@ const CreateOrderPage = () => {
         <button
           type="button"
           onClick={() => router.push('/orders')}
-          className="ti-btn ti-btn-light mt-2 md:mt-0"
+          className="ti-btn ti-btn-light mt-2 md:mt-0 !opacity-100"
         >
           Back to Orders
         </button>
@@ -148,7 +148,7 @@ const CreateOrderPage = () => {
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="ti-btn ti-btn-primary !text-white"
+                    className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100"
                   >
                     <i className="ri-add-line inline-block me-2"></i>Add Item
                   </button>
@@ -223,7 +223,7 @@ const CreateOrderPage = () => {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveItem(index)}
-                                className="ti-btn ti-btn-sm ti-btn-danger !text-white"
+                                className="ti-btn ti-btn-danger !text-white !whitespace-nowrap"
                               >
                                 Remove
                               </button>
@@ -303,11 +303,11 @@ const CreateOrderPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="ti-btn ti-btn-primary !text-white disabled:opacity-50"
+                className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100 disabled:opacity-50"
               >
                 {isLoading ? 'Creating Order...' : 'Create Order'}
               </button>
-              <button type="button" onClick={() => router.push('/orders')} className="ti-btn ti-btn-light">
+              <button type="button" onClick={() => router.push('/orders')} className="ti-btn ti-btn-light !opacity-100">
                 Cancel
               </button>
             </div>
