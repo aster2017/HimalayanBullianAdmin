@@ -79,11 +79,11 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.items;
+        state.items = action.payload?.items || [];
         state.pagination = {
-          page: action.payload.pageNumber,
-          pageSize: action.payload.pageSize,
-          totalCount: action.payload.totalCount,
+          page: action.payload?.pageNumber || 1,
+          pageSize: action.payload?.pageSize || 20,
+          totalCount: action.payload?.totalCount || 0,
         };
       })
       .addCase(fetchOrders.rejected, (state, action) => {

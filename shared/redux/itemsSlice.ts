@@ -205,10 +205,10 @@ const itemsSlice = createSlice({
       })
       .addCase(fetchItems.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.list = action.payload.items;
-        state.totalCount = action.payload.totalCount;
-        state.currentPage = action.payload.pageNumber;
-        state.pageSize = action.payload.pageSize;
+        state.list = action.payload?.items || [];
+        state.totalCount = action.payload?.totalCount || 0;
+        state.currentPage = action.payload?.pageNumber || 1;
+        state.pageSize = action.payload?.pageSize || 20;
       })
       .addCase(fetchItems.rejected, (state, action) => {
         state.isLoading = false;
@@ -331,10 +331,10 @@ const itemsSlice = createSlice({
       })
       .addCase(searchItems.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.list = action.payload.items;
-        state.totalCount = action.payload.totalCount;
-        state.currentPage = action.payload.pageNumber;
-        state.pageSize = action.payload.pageSize;
+        state.list = action.payload?.items || [];
+        state.totalCount = action.payload?.totalCount || 0;
+        state.currentPage = action.payload?.pageNumber || 1;
+        state.pageSize = action.payload?.pageSize || 20;
       })
       .addCase(searchItems.rejected, (state, action) => {
         state.isLoading = false;
