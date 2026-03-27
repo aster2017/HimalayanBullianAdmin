@@ -65,9 +65,9 @@ const addressesSlice = createSlice({
       })
       .addCase(fetchAddresses.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
-        state.billingAddresses = action.payload.filter((a) => a.addressType === 'Billing' || a.addressType === 'Both');
-        state.shippingAddresses = action.payload.filter((a) => a.addressType === 'Shipping' || a.addressType === 'Both');
+        state.items = action.payload || [];
+        state.billingAddresses = (action.payload || []).filter((a) => a.addressType === 'Billing' || a.addressType === 'Both');
+        state.shippingAddresses = (action.payload || []).filter((a) => a.addressType === 'Shipping' || a.addressType === 'Both');
       })
       .addCase(fetchAddresses.rejected, (state, action) => {
         state.loading = false;
