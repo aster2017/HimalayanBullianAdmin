@@ -122,9 +122,13 @@ const CreateOrderPage = () => {
             Create Order
           </p>
         </div>
-        <Link href="/orders">
-          <button className="ti-btn ti-btn-light mt-2 md:mt-0">Back to Orders</button>
-        </Link>
+        <button
+          type="button"
+          onClick={() => router.push('/orders')}
+          className="ti-btn ti-btn-light mt-2 md:mt-0"
+        >
+          Back to Orders
+        </button>
       </div>
 
       {(error || validationError) && (
@@ -144,7 +148,7 @@ const CreateOrderPage = () => {
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="ti-btn ti-btn-sm ti-btn-primary !text-white"
+                    className="ti-btn ti-btn-primary !text-white"
                   >
                     <i className="ri-add-line inline-block me-2"></i>Add Item
                   </button>
@@ -303,11 +307,9 @@ const CreateOrderPage = () => {
               >
                 {isLoading ? 'Creating Order...' : 'Create Order'}
               </button>
-              <Link href="/orders">
-                <button type="button" className="ti-btn ti-btn-light">
-                  Cancel
-                </button>
-              </Link>
+              <button type="button" onClick={() => router.push('/orders')} className="ti-btn ti-btn-light">
+                Cancel
+              </button>
             </div>
           </div>
         </div>
