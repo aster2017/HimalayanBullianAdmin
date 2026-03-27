@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { fetchItems, deleteItem, searchItems, clearError } from '@/shared/redux/itemsSlice';
 import { ItemService } from '@/shared/services/itemService';
 import toast from 'react-hot-toast';
-import { StockStatus } from '@/shared/types';
+import { StockStatus, getStockStatus } from '@/shared/types';
 
 export default function ItemsPage() {
   useProtectedRoute();
@@ -85,17 +85,6 @@ export default function ItemsPage() {
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  // Get stock status badge
-  const getStockStatus = (currentStock: number, reorderLevel: number) => {
-    if (currentStock === 0) {
-      return { status: StockStatus.OutOfStock, label: 'Out of Stock', color: 'bg-red-500/10 text-red-800' };
-    } else if (currentStock <= reorderLevel) {
-      return { status: StockStatus.LowStock, label: 'Low Stock', color: 'bg-yellow-500/10 text-yellow-800' };
-    } else {
-      return { status: StockStatus.InStock, label: 'In Stock', color: 'bg-green-500/10 text-green-800' };
-    }
-  };
-
   if (isLoading && list.length === 0) {
     return (
       <div className="page-content">
@@ -115,22 +104,27 @@ export default function ItemsPage() {
     <div className="page-content">
       <div className="container-fluid">
         {/* Page Header */}
-        <div className="page-header d-print-none mb-6">
-          <div className="row align-items-center">
-            <div className="col">
-              <h2 className="page-title">Inventory</h2>
-              <p className="text-muted mt-2">Manage inventory items and stock levels.</p>
-            </div>
-            <div className="col-auto">
-              <div className="btn-list">
-                <Link href="/items" className="btn btn-primary">
-                  <i className="bx bx-refresh me-1"></i> Refresh
-                </Link>
-                <Link href="/" className="btn btn-success">
-                  <i className="bx bx-plus me-1"></i> Add Item (Coming Soon)
-                </Link>
-              </div>
-            </div>
+        <div className="md:flex block items-center justify-between my-[1.5rem] page-header-breadcrumb">
+          <div>
+            <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">
+              Inventory
+            </p>
+            <p className="font-normal text-[#8c9097] dark:text-white/50 text-[0.813rem]">
+              Manage inventory items and stock levels.
+            </p>
+          </div>
+          <div className="flex gap-2 mt-2 md:mt-0">
+            <button
+              onClick={() => router.push('/items')}
+              className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100"
+            >
+              <i className="ri-refresh-line inline-block me-2"></i>Refresh
+            </button>
+            <Link href="/items/create">
+              <button className="ti-btn ti-btn-success !text-white !bg-success !opacity-100">
+                <i className="ri-add-line inline-block me-2"></i>Add Item
+              </button>
+            </Link>
           </div>
         </div>
 
@@ -143,7 +137,7 @@ export default function ItemsPage() {
                 <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.total || totalCount}</h3>
               </div>
               <div className="text-3xl opacity-50">
-                <i className="bx bx-box"></i>
+                <i className="ri-inbox-line"></i>
               </div>
             </div>
           </div>
@@ -155,7 +149,7 @@ export default function ItemsPage() {
                 <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.lowStock || 0}</h3>
               </div>
               <div className="text-3xl opacity-50">
-                <i className="bx bx-error-circle"></i>
+                <i className="ri-error-warning-line"></i>
               </div>
             </div>
           </div>
@@ -167,7 +161,7 @@ export default function ItemsPage() {
                 <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.outOfStock || 0}</h3>
               </div>
               <div className="text-3xl opacity-50">
-                <i className="bx bx-x-circle"></i>
+                <i className="ri-close-circle-line"></i>
               </div>
             </div>
           </div>
@@ -179,7 +173,7 @@ export default function ItemsPage() {
                 <h3 className="text-3xl font-bold text-gray-900 mt-2">${(stats.totalValue || 0).toFixed(2)}</h3>
               </div>
               <div className="text-3xl opacity-50">
-                <i className="bx bx-chart-bar"></i>
+                <i className="ri-bar-chart-line"></i>
               </div>
             </div>
           </div>
@@ -187,18 +181,18 @@ export default function ItemsPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="alert alert-danger mb-4" role="alert">
-            <i className="bx bx-error-circle me-2"></i>
+          <div className="p-4 mb-4 bg-danger/40 text-sm border-t-4 border-danger text-danger/60 rounded-lg">
+            <i className="ri-error-warning-line me-2"></i>
             {error}
           </div>
         )}
 
         {/* Search Bar */}
-        <div className="card shadow-sm mb-6">
-          <div className="card-body p-4">
-            <div className="input-group">
+        <div className="box shadow-sm mb-6">
+          <div className="box-body p-4">
+            <div className="flex items-center gap-2 input-group">
               <span className="input-group-text">
-                <i className="bx bx-search-alt-2"></i>
+                <i className="ri-search-line"></i>
               </span>
               <input
                 type="text"
@@ -212,14 +206,14 @@ export default function ItemsPage() {
         </div>
 
         {/* Items Table */}
-        <div className="card shadow-sm">
-          <div className="card-header border-b p-4">
-            <h5 className="card-title mb-0">Items List</h5>
+        <div className="box shadow-sm">
+          <div className="box-header border-b p-4">
+            <h5 className="box-title mb-0">Items List</h5>
           </div>
           <div className="table-responsive">
-            <table className="table table-vcenter mb-0">
+            <table className="ti-custom-table ti-striped-table mb-0">
               <thead>
-                <tr className="bg-gray-50">
+                <tr>
                   <th className="text-sm font-semibold">Item Name</th>
                   <th className="text-sm font-semibold">SKU</th>
                   <th className="text-sm font-semibold">Category</th>
@@ -232,14 +226,24 @@ export default function ItemsPage() {
               </thead>
               <tbody>
                 {list.length > 0 ? (
-                  list.map((item) => {
-                    const stockStatus = getStockStatus(item.currentStock, item.reorderLevel);
+                  list.map((item: any) => {
+                    const stockStatus = getStockStatus(item.stockOnHand, item.reorderLevel);
+                    const statusColor =
+                      stockStatus === StockStatus.OutOfStock ? 'bg-red-500/10 text-red-800' :
+                      stockStatus === StockStatus.LowStock ? 'bg-yellow-500/10 text-yellow-800' :
+                      'bg-green-500/10 text-green-800';
+
+                    const statusLabel =
+                      stockStatus === StockStatus.OutOfStock ? 'Out of Stock' :
+                      stockStatus === StockStatus.LowStock ? 'Low Stock' :
+                      'In Stock';
+
                     return (
                       <tr key={item.id} className="hover:bg-gray-50 border-b">
                         <td className="font-semibold">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                              <i className="bx bx-box"></i>
+                              <i className="ri-inbox-line"></i>
                             </div>
                             <div>
                               <p className="font-semibold text-sm">{item.name}</p>
@@ -248,13 +252,13 @@ export default function ItemsPage() {
                         </td>
                         <td className="text-sm text-gray-600 font-mono">{item.sku}</td>
                         <td className="text-sm text-gray-600">{item.category || '-'}</td>
-                        <td className="text-sm font-semibold">{item.currentStock}</td>
+                        <td className="text-sm font-semibold">{item.stockOnHand}</td>
                         <td className="text-sm">
-                          <span className={`badge ${stockStatus.color} px-2 py-1 rounded`}>
-                            {stockStatus.label}
+                          <span className={`badge ${statusColor} px-2 py-1 rounded`}>
+                            {statusLabel}
                           </span>
                         </td>
-                        <td className="text-sm font-semibold">${item.unitPrice.toFixed(2)}</td>
+                        <td className="text-sm font-semibold">${(item.rate || 0).toFixed(2)}</td>
                         <td className="text-sm text-gray-600">{item.reorderLevel}</td>
                         <td className="text-sm">
                           <div className="flex items-center gap-2">
@@ -278,7 +282,7 @@ export default function ItemsPage() {
                 ) : (
                   <tr>
                     <td colSpan={8} className="text-center py-12 text-gray-500">
-                      <i className="bx bx-inbox text-4xl mb-2 block opacity-50"></i>
+                      <i className="ri-inbox-line text-4xl mb-2 block opacity-50"></i>
                       <p className="font-semibold">No items found</p>
                       <p className="text-sm">Try adjusting your search criteria</p>
                     </td>
@@ -290,7 +294,7 @@ export default function ItemsPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="card-footer border-t p-4">
+            <div className="box-footer border-t p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
                   Page {currentPage} of {totalPages} ({totalCount} total items)
@@ -301,7 +305,7 @@ export default function ItemsPage() {
                     disabled={currentPage === 1}
                     className="btn btn-sm btn-outline-primary disabled:opacity-50"
                   >
-                    <i className="bx bx-chevron-left"></i> Previous
+                    <i className="ri-arrow-left-s-line"></i> Previous
                   </button>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -330,7 +334,7 @@ export default function ItemsPage() {
                     disabled={currentPage === totalPages}
                     className="btn btn-sm btn-outline-primary disabled:opacity-50"
                   >
-                    Next <i className="bx bx-chevron-right"></i>
+                    Next <i className="ri-arrow-right-s-line"></i>
                   </button>
                 </div>
               </div>
@@ -356,7 +360,7 @@ export default function ItemsPage() {
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
-                className="btn btn-danger"
+                className="btn btn-danger !text-white !bg-danger !opacity-100"
               >
                 Delete
               </button>

@@ -10,6 +10,7 @@ import {
   UpdateItemRequest,
   StockAdjustmentRequest,
   ItemListResponse,
+  ItemStats,
   StockTransaction,
   ItemFilters,
 } from '@/shared/types';
@@ -167,29 +168,26 @@ export class ItemService {
   /**
    * Get item statistics
    */
-  static async getItemStats(): Promise<{ total: number; lowStock: number; outOfStock: number }> {
+  static async getItemStats(): Promise<ItemStats> {
     try {
-      const response = await apiClient.get('/items/stats');
-      return response.data.data || { total: 0, lowStock: 0, outOfStock: 0 };
+      const response = await apiClient.get<ApiResponse<ItemStats>>('/items/stats');
+      return response.data.data || { total: 0, lowStock: 0, outOfStock: 0, totalValue: 0 };
     } catch (error) {
       console.error('Error fetching item stats:', error);
-      return { total: 0, lowStock: 0, outOfStock: 0 };
+      return { total: 0, lowStock: 0, outOfStock: 0, totalValue: 0 };
     }
   }
 
   /**
-   * Search items by name or SKU
+   * Search items by name, SKU, or category
    */
   static async searchItems(searchTerm: string, page: number = 1, pageSize: number = 20): Promise<ItemListResponse> {
     try {
-      const response = await apiClient.get<ApiResponse<ItemListResponse>>('/items/search', {
-        params: { q: searchTerm, page, pageSize },
-      });
-      return response.data.data || { items: [], totalCount: 0, pageNumber: page, pageSize };
+      // Use the main /items endpoint with search query parameter
+      return await this.getItems(page, pageSize, { search: searchTerm });
     } catch (error) {
-      // Fallback to regular getItems if search endpoint doesn't exist
-      console.error('Search failed, falling back to list:', error);
-      return this.getItems(page, pageSize, { search: searchTerm });
+      console.error('Error searching items:', error);
+      return { items: [], totalCount: 0, pageNumber: page, pageSize };
     }
   }
 

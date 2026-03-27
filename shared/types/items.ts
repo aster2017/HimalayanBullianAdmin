@@ -3,24 +3,58 @@
  */
 
 /**
+ * Item Image
+ */
+export interface ItemImage {
+  id: string;
+  imageUrl: string;
+  thumbnailUrl?: string;
+  isPrimary: boolean;
+  displayOrder: number;
+}
+
+/**
  * Item/Product in inventory
+ * Fields match backend ItemDto exactly
  */
 export interface Item {
   id: string;
+  zohoItemId?: string;
   sku: string;
   name: string;
   description?: string;
   category?: string;
-  unitPrice: number;
-  costPrice?: number;
-  currentStock: number;
+  subCategory?: string;
+  weight?: number;         // in grams
+  purity?: string;         // e.g. "22K", "24K"
+  material?: string;       // e.g. "Gold", "Silver"
+  design?: string;
+  rate: number;            // Unit price in currency
+  costPrice: number;
+  taxName?: string;
+  taxPercentage: number;
+  discountPercentage?: number;
+  stockOnHand: number;     // Current stock quantity
   reorderLevel: number;
-  leadTimeDays?: number;
-  supplier?: string;
-  images?: string[];
+  unit?: string;           // e.g. "pcs", "grams", "set"
+  isActive: boolean;
+  isFeatured: boolean;
+  source?: string;         // Local, Zoho, ThirdParty
+  syncStatus?: string;     // Pending, InProgress, Success, Failed
+  lastSyncedAt?: string;
+  images?: ItemImage[];
   createdAt: string;
   updatedAt?: string;
-  isActive: boolean;
+}
+
+/**
+ * Item statistics
+ */
+export interface ItemStats {
+  total: number;
+  lowStock: number;
+  outOfStock: number;
+  totalValue: number;
 }
 
 /**
@@ -39,33 +73,53 @@ export interface StockTransaction {
 
 /**
  * Create item request
+ * Maps to backend CreateItemDto
  */
 export interface CreateItemRequest {
   sku: string;
   name: string;
   description?: string;
   category?: string;
-  unitPrice: number;
-  costPrice?: number;
-  currentStock: number;
+  subCategory?: string;
+  weight?: number;
+  purity?: string;
+  material?: string;
+  design?: string;
+  rate: number;
+  costPrice: number;
+  taxName?: string;
+  taxPercentage: number;
+  discountPercentage?: number;
+  stockOnHand: number;
   reorderLevel: number;
-  leadTimeDays?: number;
-  supplier?: string;
+  unit?: string;
+  isActive?: boolean;
+  isFeatured?: boolean;
 }
 
 /**
  * Update item request
+ * Maps to backend UpdateItemDto (excludes SKU which cannot be changed)
  */
 export interface UpdateItemRequest {
-  sku?: string;
   name?: string;
   description?: string;
   category?: string;
-  unitPrice?: number;
+  subCategory?: string;
+  weight?: number;
+  purity?: string;
+  material?: string;
+  design?: string;
+  rate?: number;
   costPrice?: number;
+  taxName?: string;
+  taxPercentage?: number;
+  discountPercentage?: number;
+  stockOnHand?: number;
   reorderLevel?: number;
-  leadTimeDays?: number;
-  supplier?: string;
+  unit?: string;
+  isActive?: boolean;
+  isFeatured?: boolean;
 }
 
 /**
