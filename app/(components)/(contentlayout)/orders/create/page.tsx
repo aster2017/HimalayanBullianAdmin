@@ -223,7 +223,7 @@ const CreateOrderPage = () => {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveItem(index)}
-                                className="ti-btn ti-btn-danger !text-white !whitespace-nowrap"
+                                className="ti-btn ti-btn-danger !text-white !whitespace-nowrap !bg-danger !opacity-100"
                               >
                                 Remove
                               </button>
