@@ -129,8 +129,8 @@ export class CustomerService {
    */
   static async searchCustomers(searchTerm: string, page: number = 1, pageSize: number = 20): Promise<CustomerListResponse> {
     try {
-      const response = await apiClient.get<ApiResponse<CustomerListResponse>>('/customers/search', {
-        params: { q: searchTerm, page, pageSize },
+      const response = await apiClient.get<ApiResponse<CustomerListResponse>>('/customers', {
+        params: { search: searchTerm, page, pageSize },
       });
       return response.data.data || { items: [], totalCount: 0, pageNumber: page, pageSize };
     } catch (error) {
@@ -145,7 +145,7 @@ export class CustomerService {
    */
   static async getCustomerStats(): Promise<{ total: number; newThisMonth: number; avgLifetimeValue: number }> {
     try {
-      const response = await apiClient.get('/customers/stats');
+      const response = await apiClient.get('/customers/stats/overview');
       return response.data.data || { total: 0, newThisMonth: 0, avgLifetimeValue: 0 };
     } catch (error) {
       console.error('Error fetching customer stats:', error);

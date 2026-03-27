@@ -103,59 +103,64 @@ export default function CustomersPage() {
     <div className="page-content">
       <div className="container-fluid">
         {/* Page Header */}
-        <div className="page-header d-print-none mb-6">
-          <div className="row align-items-center">
-            <div className="col">
-              <h2 className="page-title">Customers</h2>
-              <p className="text-muted mt-2">Manage all your customers and their information.</p>
-            </div>
-            <div className="col-auto">
-              <div className="btn-list">
-                <Link href="/customers" className="btn btn-primary">
-                  <i className="bx bx-refresh me-1"></i> Refresh
-                </Link>
-                <Link href="/" className="btn btn-success">
-                  <i className="bx bx-plus me-1"></i> Add Customer (Coming Soon)
-                </Link>
-              </div>
-            </div>
+        <div className="md:flex block items-center justify-between my-[1.5rem] page-header-breadcrumb">
+          <div>
+            <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">
+              Customers
+            </p>
+            <p className="font-normal text-[#8c9097] dark:text-white/50 text-[0.813rem]">
+              Manage all your customers and their information.
+            </p>
+          </div>
+          <div className="flex gap-2 mt-2 md:mt-0">
+            <button
+              onClick={() => router.push('/customers')}
+              className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100"
+            >
+              <i className="ri-refresh-line inline-block me-2"></i>Refresh
+            </button>
+            <Link href="/customers/create">
+              <button className="ti-btn ti-btn-success !text-white !bg-success !opacity-100">
+                <i className="ri-add-line inline-block me-2"></i>Add Customer
+              </button>
+            </Link>
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="card bg-blue-500/10 border-l-4 border-blue-500 p-6 rounded-lg shadow-sm">
+          <div className="box bg-blue-500/10 border-l-4 border-blue-500 p-6 rounded-lg shadow-sm">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Total Customers</p>
                 <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.total || totalCount}</h3>
               </div>
               <div className="text-3xl opacity-50">
-                <i className="bx bx-user-circle"></i>
+                <i className="ri-user-3-line"></i>
               </div>
             </div>
           </div>
 
-          <div className="card bg-green-500/10 border-l-4 border-green-500 p-6 rounded-lg shadow-sm">
+          <div className="box bg-green-500/10 border-l-4 border-green-500 p-6 rounded-lg shadow-sm">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">New This Month</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.newThisMonth}</h3>
+                <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.newThisMonth || 0}</h3>
               </div>
               <div className="text-3xl opacity-50">
-                <i className="bx bx-user-plus"></i>
+                <i className="ri-user-add-line"></i>
               </div>
             </div>
           </div>
 
-          <div className="card bg-purple-500/10 border-l-4 border-purple-500 p-6 rounded-lg shadow-sm">
+          <div className="box bg-purple-500/10 border-l-4 border-purple-500 p-6 rounded-lg shadow-sm">
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Avg Lifetime Value</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">${stats.avgLifetimeValue.toFixed(2)}</h3>
+                <h3 className="text-3xl font-bold text-gray-900 mt-2">${(stats.avgLifetimeValue || 0).toFixed(2)}</h3>
               </div>
               <div className="text-3xl opacity-50">
-                <i className="bx bx-chart-bar"></i>
+                <i className="ri-bar-chart-line"></i>
               </div>
             </div>
           </div>
@@ -163,18 +168,18 @@ export default function CustomersPage() {
 
         {/* Error Message */}
         {error && (
-          <div className="alert alert-danger mb-4" role="alert">
-            <i className="bx bx-error-circle me-2"></i>
+          <div className="p-4 mb-4 bg-danger/40 text-sm border-t-4 border-danger text-danger/60 rounded-lg">
+            <i className="ri-error-warning-line me-2"></i>
             {error}
           </div>
         )}
 
         {/* Search Bar */}
-        <div className="card shadow-sm mb-6">
-          <div className="card-body p-4">
-            <div className="input-group">
+        <div className="box shadow-sm mb-6">
+          <div className="box-body p-4">
+            <div className="flex items-center gap-2 input-group">
               <span className="input-group-text">
-                <i className="bx bx-search-alt-2"></i>
+                <i className="ri-search-line"></i>
               </span>
               <input
                 type="text"
@@ -188,14 +193,14 @@ export default function CustomersPage() {
         </div>
 
         {/* Customers Table */}
-        <div className="card shadow-sm">
-          <div className="card-header border-b p-4">
-            <h5 className="card-title mb-0">Customers List</h5>
+        <div className="box shadow-sm">
+          <div className="box-header border-b p-4">
+            <h5 className="box-title mb-0">Customers List</h5>
           </div>
           <div className="table-responsive">
-            <table className="table table-vcenter mb-0">
+            <table className="ti-custom-table ti-striped-table">
               <thead>
-                <tr className="bg-gray-50">
+                <tr>
                   <th className="text-sm font-semibold">Name</th>
                   <th className="text-sm font-semibold">Email</th>
                   <th className="text-sm font-semibold">Phone</th>
@@ -207,13 +212,13 @@ export default function CustomersPage() {
               </thead>
               <tbody>
                 {list.length > 0 ? (
-                  list.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-gray-50 border-b">
+                  list.map((customer: any) => (
+                    <tr key={customer.id}>
                       <td className="font-semibold">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                            {customer.firstName.charAt(0)}
-                            {customer.lastName.charAt(0)}
+                            {customer.firstName?.charAt(0)}
+                            {customer.lastName?.charAt(0)}
                           </div>
                           <div>
                             <p className="font-semibold text-sm">{customer.fullName}</p>
@@ -224,10 +229,10 @@ export default function CustomersPage() {
                       <td className="text-sm text-gray-600">{customer.phoneNumber || '-'}</td>
                       <td className="text-sm">
                         <span className="badge bg-blue-500/10 text-blue-800 px-2 py-1 rounded">
-                          {customer.totalOrders}
+                          {customer.totalOrders || 0}
                         </span>
                       </td>
-                      <td className="text-sm font-semibold">${customer.lifetimeValue.toFixed(2)}</td>
+                      <td className="text-sm font-semibold">${(customer.lifetimeValue || 0).toFixed(2)}</td>
                       <td className="text-sm text-gray-600">{new Date(customer.createdAt).toLocaleDateString()}</td>
                       <td className="text-sm">
                         <div className="flex items-center gap-2">
@@ -250,7 +255,7 @@ export default function CustomersPage() {
                 ) : (
                   <tr>
                     <td colSpan={7} className="text-center py-12 text-gray-500">
-                      <i className="bx bx-inbox text-4xl mb-2 block opacity-50"></i>
+                      <i className="ri-inbox-line text-4xl mb-2 block opacity-50"></i>
                       <p className="font-semibold">No customers found</p>
                       <p className="text-sm">Try adjusting your search criteria</p>
                     </td>
@@ -262,7 +267,7 @@ export default function CustomersPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="card-footer border-t p-4">
+            <div className="box-footer border-t p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
                   Page {currentPage} of {totalPages} ({totalCount} total customers)
@@ -273,7 +278,7 @@ export default function CustomersPage() {
                     disabled={currentPage === 1}
                     className="btn btn-sm btn-outline-primary disabled:opacity-50"
                   >
-                    <i className="bx bx-chevron-left"></i> Previous
+                    <i className="ri-arrow-left-s-line"></i> Previous
                   </button>
                   <div className="flex items-center gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -302,7 +307,7 @@ export default function CustomersPage() {
                     disabled={currentPage === totalPages}
                     className="btn btn-sm btn-outline-primary disabled:opacity-50"
                   >
-                    Next <i className="bx bx-chevron-right"></i>
+                    Next <i className="ri-arrow-right-s-line"></i>
                   </button>
                 </div>
               </div>
@@ -328,7 +333,7 @@ export default function CustomersPage() {
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
-                className="btn btn-danger"
+                className="btn btn-danger !text-white !bg-danger !opacity-100"
               >
                 Delete
               </button>
