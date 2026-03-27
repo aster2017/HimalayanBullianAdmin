@@ -152,7 +152,7 @@ export default function ItemsPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Low Stock Items</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.lowStock}</h3>
+                <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.lowStock || 0}</h3>
               </div>
               <div className="text-3xl opacity-50">
                 <i className="bx bx-error-circle"></i>
@@ -164,7 +164,7 @@ export default function ItemsPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Out of Stock</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.outOfStock}</h3>
+                <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.outOfStock || 0}</h3>
               </div>
               <div className="text-3xl opacity-50">
                 <i className="bx bx-x-circle"></i>
@@ -176,7 +176,7 @@ export default function ItemsPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Inventory Value</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">${stats.totalValue.toFixed(2)}</h3>
+                <h3 className="text-3xl font-bold text-gray-900 mt-2">${(stats.totalValue || 0).toFixed(2)}</h3>
               </div>
               <div className="text-3xl opacity-50">
                 <i className="bx bx-chart-bar"></i>
