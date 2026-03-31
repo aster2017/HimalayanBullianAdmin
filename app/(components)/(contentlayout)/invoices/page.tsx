@@ -124,8 +124,8 @@ const InvoicesPage = () => {
                     <td><span className="font-semibold">{invoice.invoiceNumber}</span></td>
                     <td className="text-[0.813rem]">{invoice.customerName || '-'}</td>
                     <td className="text-[0.75rem] text-[#8c9097]">{invoice.orderNumber || '-'}</td>
-                    <td>{new Date(invoice.invoiceDate).toLocaleDateString('en-GB')}</td>
-                    <td>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : '-'}</td>
+                    <td>{new Date(invoice.invoiceDate).toLocaleDateString('en-NP')}</td>
+                    <td>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-NP') : '-'}</td>
                     <td><span className="font-semibold">Rs. {invoice.totalAmount?.toLocaleString()}</span></td>
                     <td className="text-success">Rs. {(invoice.paidAmount || 0).toLocaleString()}</td>
                     <td className={invoice.balanceAmount > 0 ? 'text-danger' : ''}>

@@ -109,7 +109,7 @@ const ProductsPage = () => {
                   </p>
                   <div className="flex items-center justify-between mb-3">
                     <span className="font-semibold text-primary text-[1.125rem]">
-                      Rs. {product.price?.toLocaleString('en-PK')}
+                      Rs. {product.price?.toLocaleString('en-NP')}
                     </span>
                     {product.discountPrice && (
                       <span className="text-[0.75rem] bg-warning/20 text-warning px-2 py-1 rounded">

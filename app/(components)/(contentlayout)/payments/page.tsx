@@ -111,7 +111,7 @@ const PaymentsPage = () => {
                   <tr key={payment.id}>
                     <td><span className="font-semibold">{payment.paymentNumber}</span></td>
                     <td className="text-[0.813rem]">{payment.invoiceNumber || '-'}</td>
-                    <td>{new Date(payment.paymentDate).toLocaleDateString('en-GB')}</td>
+                    <td>{new Date(payment.paymentDate).toLocaleDateString('en-NP')}</td>
                     <td><span className="font-semibold text-success">Rs. {payment.amount?.toLocaleString()}</span></td>
                     <td>
                       <span className={`badge bg-${getMethodColor(payment.paymentMethod)}/20 text-${getMethodColor(payment.paymentMethod)}`}>

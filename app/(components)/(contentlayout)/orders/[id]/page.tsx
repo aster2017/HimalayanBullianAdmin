@@ -123,7 +123,7 @@ const OrderDetailPage = () => {
                 <div>
                   <span className="text-[#8c9097] text-[0.875rem]">Order Date</span>
                   <p className="font-semibold">
-                    {new Date(currentOrder.orderDate).toLocaleDateString('en-GB')}
+                    {new Date(currentOrder.orderDate).toLocaleDateString('en-NP')}
                   </p>
                 </div>
                 <div>

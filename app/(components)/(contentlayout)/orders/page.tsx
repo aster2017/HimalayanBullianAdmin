@@ -132,7 +132,7 @@ const OrdersPage = () => {
                       <span className="font-semibold">{order.orderNumber}</span>
                     </td>
                     <td className="text-[0.813rem]">{order.customerName || '-'}</td>
-                    <td>{new Date(order.orderDate).toLocaleDateString('en-GB')}</td>
+                    <td>{new Date(order.orderDate).toLocaleDateString('en-NP')}</td>
                     <td>
                       <span className="font-semibold">
                         Rs. {order.totalAmount?.toLocaleString()}

@@ -113,11 +113,11 @@ const ProductDetailPage = () => {
               <div className="flex items-center gap-4 mb-4">
                 <div>
                   <span className="text-[1.25rem] font-semibold text-primary">
-                    Rs. {currentProduct.price?.toLocaleString('en-PK')}
+                    Rs. {currentProduct.price?.toLocaleString('en-NP')}
                   </span>
                   {currentProduct.discountPrice && (
                     <span className="text-[0.875rem] text-[#8c9097] line-through ms-2">
-                      Rs. {currentProduct.discountPrice?.toLocaleString('en-PK')}
+                      Rs. {currentProduct.discountPrice?.toLocaleString('en-NP')}
                     </span>
                   )}
                 </div>

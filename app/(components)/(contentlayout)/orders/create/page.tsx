@@ -216,7 +216,7 @@ const CreateOrderPage = () => {
                             </td>
                             <td>
                               <span className="font-semibold">
-                                Rs. {(item.quantity * item.unitPrice).toLocaleString('en-PK')}
+                                Rs. {(item.quantity * item.unitPrice).toLocaleString('en-NP')}
                               </span>
                             </td>
                             <td>
@@ -241,7 +241,7 @@ const CreateOrderPage = () => {
                       <div className="flex justify-between mb-4">
                         <span className="font-semibold">Order Total:</span>
                         <span className="font-semibold text-primary text-[1.125rem]">
-                          Rs. {calculateTotal().toLocaleString('en-PK')}
+                          Rs. {calculateTotal().toLocaleString('en-NP')}
                         </span>
                       </div>
                     </div>

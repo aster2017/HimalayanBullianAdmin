@@ -93,11 +93,11 @@ const InvoiceDetailPage = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 pb-6 border-b">
                 <div>
                   <span className="text-[#8c9097] text-[0.813rem]">Invoice Date</span>
-                  <p className="font-semibold">{new Date(inv.invoiceDate).toLocaleDateString('en-GB')}</p>
+                  <p className="font-semibold">{new Date(inv.invoiceDate).toLocaleDateString('en-NP')}</p>
                 </div>
                 <div>
                   <span className="text-[#8c9097] text-[0.813rem]">Due Date</span>
-                  <p className="font-semibold">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('en-GB') : '-'}</p>
+                  <p className="font-semibold">{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('en-NP') : '-'}</p>
                 </div>
                 <div>
                   <span className="text-[#8c9097] text-[0.813rem]">Status</span>

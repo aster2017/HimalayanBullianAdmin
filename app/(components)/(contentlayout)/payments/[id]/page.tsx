@@ -82,7 +82,7 @@ const PaymentDetailPage = () => {
                 </div>
                 <div>
                   <span className="text-[#8c9097] text-[0.813rem]">Payment Date</span>
-                  <p className="font-semibold">{new Date(payment.paymentDate).toLocaleDateString('en-GB')}</p>
+                  <p className="font-semibold">{new Date(payment.paymentDate).toLocaleDateString('en-NP')}</p>
                 </div>
                 <div>
                   <span className="text-[#8c9097] text-[0.813rem]">Status</span>

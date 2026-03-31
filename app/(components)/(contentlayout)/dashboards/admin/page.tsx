@@ -67,7 +67,7 @@ export default function AdminDashboard() {
           customerName: o.customerName || 'Unknown',
           amount: o.totalAmount || 0,
           status: o.status || 'Draft',
-          date: new Date(o.orderDate || o.createdAt).toLocaleDateString('en-GB'),
+          date: new Date(o.orderDate || o.createdAt).toLocaleDateString('en-NP'),
         })));
 
         setRecentInvoices(invoiceItems.slice(0, 5).map((inv: any) => ({
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
           paid: inv.paidAmount || 0,
           balance: inv.balanceAmount || 0,
           status: inv.status || 'Draft',
-          date: new Date(inv.invoiceDate).toLocaleDateString('en-GB'),
+          date: new Date(inv.invoiceDate).toLocaleDateString('en-NP'),
         })));
 
         // Check Zoho status
