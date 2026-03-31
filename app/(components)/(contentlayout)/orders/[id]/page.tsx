@@ -171,33 +171,39 @@ const OrderDetailPage = () => {
                   </div>
                 ) : (
                   <div className="text-center py-6">
-                    <p className="text-[#8c9097] mb-3">Line items not synced yet.</p>
-                    <button
-                      onClick={async () => {
-                        if (!currentOrder.zohoSalesOrderId) {
-                          toast.error('No Zoho ID linked to this order');
-                          return;
-                        }
-                        setFetchingDetails(true);
-                        try {
-                          await apiClient.post(`/zoho/orders/${id}/fetch-details`);
-                          toast.success('Line items fetched from Zoho!');
-                          dispatch(fetchOrderById(id));
-                        } catch (err: any) {
-                          toast.error(err?.response?.data?.error || 'Failed to fetch details');
-                        } finally {
-                          setFetchingDetails(false);
-                        }
-                      }}
-                      disabled={fetchingDetails}
-                      className="ti-btn ti-btn-primary-full !text-white"
-                    >
-                      {fetchingDetails ? (
-                        <><i className="ri-loader-4-line animate-spin inline-block me-2"></i>Fetching...</>
-                      ) : (
-                        <><i className="ri-download-line me-2"></i>Fetch Items from Zoho</>
-                      )}
-                    </button>
+                    {currentOrder.zohoSalesOrderId ? (
+                      <>
+                        <p className="text-[#8c9097] mb-3">Line items not synced yet.</p>
+                        <button
+                          onClick={async () => {
+                            setFetchingDetails(true);
+                            try {
+                              await apiClient.post(`/zoho/orders/${id}/fetch-details`);
+                              toast.success('Line items fetched from Zoho!');
+                              dispatch(fetchOrderById(id));
+                            } catch (err: any) {
+                              toast.error(err?.response?.data?.error || 'Failed to fetch details');
+                            } finally {
+                              setFetchingDetails(false);
+                            }
+                          }}
+                          disabled={fetchingDetails}
+                          className="px-4 py-2 text-[0.813rem] rounded-sm bg-primary text-white hover:bg-primary/90 transition-colors inline-flex items-center"
+                        >
+                          {fetchingDetails ? (
+                            <><i className="ri-loader-4-line animate-spin me-2"></i>Fetching...</>
+                          ) : (
+                            <><i className="ri-download-line me-2"></i>Fetch Items from Zoho</>
+                          )}
+                        </button>
+                      </>
+                    ) : (
+                      <div className="text-[#8c9097]">
+                        <i className="ri-information-line text-[1.5rem] mb-2 block"></i>
+                        <p className="text-[0.813rem]">This is an auto-generated order from invoice sync.</p>
+                        <p className="text-[0.75rem]">Line items are available in the linked invoice.</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
