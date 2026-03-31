@@ -96,7 +96,7 @@ const SalesReportPage = () => {
         <div className="flex gap-2 mt-2 md:mt-0">
           {['week', 'month', 'quarter', 'year', 'all'].map((p) => (
             <button key={p} onClick={() => setPeriod(p)}
-              className={`ti-btn ti-btn-sm ${period === p ? 'ti-btn-primary !text-white' : 'ti-btn-light'}`}>
+              className={`ti-btn ti-btn-sm ${period === p ? 'ti-btn-primary-full !text-white' : 'ti-btn-light'}`}>
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </button>
           ))}

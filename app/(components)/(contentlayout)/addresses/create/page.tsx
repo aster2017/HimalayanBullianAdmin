@@ -203,7 +203,7 @@ const CreateAddressPage = () => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="ti-btn ti-btn-primary !text-white disabled:opacity-50"
+                    className="ti-btn ti-btn-primary-full !text-white disabled:opacity-50"
                   >
                     {isLoading ? 'Adding Address...' : 'Add Address'}
                   </button>

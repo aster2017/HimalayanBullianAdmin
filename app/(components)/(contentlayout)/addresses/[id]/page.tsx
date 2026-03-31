@@ -258,7 +258,7 @@ const EditAddressPage = () => {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="ti-btn ti-btn-primary !text-white disabled:opacity-50"
+                    className="ti-btn ti-btn-primary-full !text-white disabled:opacity-50"
                   >
                     {isLoading ? 'Updating Address...' : 'Update Address'}
                   </button>

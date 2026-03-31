@@ -151,7 +151,7 @@ export default function CreateCustomerPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100 disabled:opacity-50"
+                className="ti-btn ti-btn-primary-full !text-white disabled:opacity-50"
               >
                 {isLoading ? 'Creating...' : 'Create Customer'}
               </button>

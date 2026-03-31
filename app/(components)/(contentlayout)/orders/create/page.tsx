@@ -148,7 +148,7 @@ const CreateOrderPage = () => {
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100"
+                    className="ti-btn ti-btn-primary-full !text-white"
                   >
                     <i className="ri-add-line inline-block me-2"></i>Add Item
                   </button>
@@ -303,7 +303,7 @@ const CreateOrderPage = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100 disabled:opacity-50"
+                className="ti-btn ti-btn-primary-full !text-white disabled:opacity-50"
               >
                 {isLoading ? 'Creating Order...' : 'Create Order'}
               </button>

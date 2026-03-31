@@ -156,7 +156,7 @@ const ProductsPage = () => {
                     onClick={() => handlePageChange(index + 1)}
                     className={`ti-btn ${
                       currentPage === index + 1
-                        ? 'ti-btn-primary !text-white'
+                        ? 'ti-btn-primary-full !text-white'
                         : 'ti-btn-light'
                     }`}
                   >

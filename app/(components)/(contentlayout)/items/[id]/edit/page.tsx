@@ -138,7 +138,7 @@ export default function EditItemPage() {
             <div className="box-body p-6 text-center">
               <i className="ri-inbox-line text-4xl mb-2 block opacity-50"></i>
               <p className="font-semibold">Item not found</p>
-              <Link href="/items" className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100 mt-4 inline-block">
+              <Link href="/items" className="ti-btn ti-btn-primary-full !text-white mt-4 inline-block">
                 Back to Items
               </Link>
             </div>
@@ -483,7 +483,7 @@ export default function EditItemPage() {
               <button
                 type="submit"
                 disabled={formLoading}
-                className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100 disabled:opacity-50"
+                className="ti-btn ti-btn-primary-full !text-white disabled:opacity-50"
               >
                 {formLoading ? 'Saving...' : 'Save Changes'}
               </button>

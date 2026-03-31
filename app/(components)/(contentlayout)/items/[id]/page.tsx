@@ -357,7 +357,7 @@ export default function ItemDetailPage() {
               <div className="box-body p-6 space-y-3">
                 <button
                   onClick={() => setAdjustmentMode(true)}
-                  className="w-full ti-btn ti-btn-primary !text-white !bg-primary !opacity-100"
+                  className="w-full ti-btn ti-btn-primary-full !text-white"
                 >
                   <i className="ri-add-line me-2"></i>Adjust Stock
                 </button>

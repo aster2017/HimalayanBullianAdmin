@@ -374,7 +374,7 @@ const Crm = () => {
                     </div>
                     <div className="hs-dropdown ti-dropdown">
                       <Link href="#!"  scroll={false} 
-                        className="ti-btn ti-btn-primary !bg-primary !text-white !py-1 !px-2 !text-[0.75rem] !m-0 !gap-0 !font-medium"
+                        className="ti-btn ti-btn-primary-full !text-white !py-1 !px-2 !text-[0.75rem] !m-0 !gap-0 !font-medium"
                         aria-expanded="false">
                         Sort By<i className="ri-arrow-down-s-line align-middle ms-1 inline-block"></i>
                       </Link>

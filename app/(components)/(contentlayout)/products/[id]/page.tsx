@@ -179,7 +179,7 @@ const ProductDetailPage = () => {
                     </div>
                   </div>
 
-                  <button className="ti-btn ti-btn-primary !text-white flex-1">
+                  <button className="ti-btn ti-btn-primary-full !text-white flex-1">
                     Add to Cart
                   </button>
                 </div>

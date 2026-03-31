@@ -115,7 +115,7 @@ export default function CustomersPage() {
           <div className="flex gap-2 mt-2 md:mt-0">
             <button
               onClick={() => router.push('/customers')}
-              className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100"
+              className="ti-btn ti-btn-primary-full !text-white"
             >
               <i className="ri-refresh-line inline-block me-2"></i>Refresh
             </button>

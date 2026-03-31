@@ -37,7 +37,7 @@ const AddressesPage = () => {
           </p>
         </div>
         <Link href="/addresses/create">
-          <button className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100 mt-2 md:mt-0">
+          <button className="ti-btn ti-btn-primary-full !text-white mt-2 md:mt-0">
             <i className="ri-add-line inline-block me-2"></i>Add Address
           </button>
         </Link>
@@ -60,7 +60,7 @@ const AddressesPage = () => {
         <div className="text-center py-12">
           <p className="text-[#8c9097] mb-4">No addresses found</p>
           <Link href="/addresses/create">
-            <button className="ti-btn ti-btn-primary !text-white !bg-primary !opacity-100">Add Your First Address</button>
+            <button className="ti-btn ti-btn-primary-full !text-white">Add Your First Address</button>
           </Link>
         </div>
       ) : (
