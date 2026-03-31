@@ -13,11 +13,19 @@ const InvoicesPage = () => {
   const dispatch = useAppDispatch();
   const { items, loading, error, pagination } = useAppSelector((state) => state.invoices);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const pageSize = 20;
 
   useEffect(() => {
-    dispatch(fetchInvoices({ page: currentPage, pageSize }));
-  }, [dispatch, currentPage]);
+    dispatch(fetchInvoices({ page: currentPage, pageSize, search: searchTerm || undefined } as any));
+  }, [dispatch, currentPage, searchTerm]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchTerm(searchInput);
+    setCurrentPage(1);
+  };
 
   const handlePageChange = (page: number) => setCurrentPage(page);
 
@@ -64,6 +72,15 @@ const InvoicesPage = () => {
             View and manage all invoices
           </p>
         </div>
+        <form onSubmit={handleSearch} className="flex gap-2 mt-2 md:mt-0">
+          <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search invoices..." className="form-control form-control-sm w-[250px]" />
+          <button type="submit" className="ti-btn ti-btn-sm ti-btn-light"><i className="ri-search-line"></i></button>
+          {searchTerm && (
+            <button type="button" onClick={() => { setSearchTerm(''); setSearchInput(''); setCurrentPage(1); }}
+              className="ti-btn ti-btn-sm ti-btn-danger-full !text-white"><i className="ri-close-line"></i></button>
+          )}
+        </form>
       </div>
 
       {error && (

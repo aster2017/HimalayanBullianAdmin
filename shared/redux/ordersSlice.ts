@@ -16,9 +16,9 @@ const initialState: OrdersState = {
 
 export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
-  async ({ page = 1, pageSize = 20 }: { page?: number; pageSize?: number } = {}, { rejectWithValue }) => {
+  async ({ page = 1, pageSize = 20, search }: { page?: number; pageSize?: number; search?: string } = {}, { rejectWithValue }) => {
     try {
-      return await OrderService.getOrders(page, pageSize);
+      return await OrderService.getOrders(page, pageSize, undefined, search);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch orders');
     }

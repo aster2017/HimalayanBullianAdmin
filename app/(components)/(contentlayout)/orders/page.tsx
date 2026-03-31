@@ -13,6 +13,8 @@ const OrdersPage = () => {
   const dispatch = useAppDispatch();
   const { items, loading, error, pagination } = useAppSelector((state) => state.orders);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const pageSize = 20;
 
   useEffect(() => {
@@ -20,9 +22,16 @@ const OrdersPage = () => {
       fetchOrders({
         page: currentPage,
         pageSize,
-      })
+        search: searchTerm || undefined,
+      } as any)
     );
-  }, [dispatch, currentPage]);
+  }, [dispatch, currentPage, searchTerm]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchTerm(searchInput);
+    setCurrentPage(1);
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -58,11 +67,30 @@ const OrdersPage = () => {
             Manage and track all orders
           </p>
         </div>
-        <Link href="/orders/create">
-          <button className="ti-btn ti-btn-primary !text-white mt-2 md:mt-0">
-            <i className="ri-add-line inline-block me-2"></i>Create Order
-          </button>
-        </Link>
+        <div className="flex gap-2 mt-2 md:mt-0">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search orders, customers..."
+              className="form-control form-control-sm w-[250px]"
+            />
+            <button type="submit" className="ti-btn ti-btn-sm ti-btn-light">
+              <i className="ri-search-line"></i>
+            </button>
+            {searchTerm && (
+              <button type="button" onClick={() => { setSearchTerm(''); setSearchInput(''); setCurrentPage(1); }} className="ti-btn ti-btn-sm ti-btn-danger-full !text-white">
+                <i className="ri-close-line"></i>
+              </button>
+            )}
+          </form>
+          <Link href="/orders/create">
+            <button className="ti-btn ti-btn-primary !text-white">
+              <i className="ri-add-line inline-block me-2"></i>Create Order
+            </button>
+          </Link>
+        </div>
       </div>
 
       {error && (
