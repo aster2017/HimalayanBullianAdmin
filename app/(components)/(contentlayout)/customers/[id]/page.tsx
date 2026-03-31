@@ -135,7 +135,7 @@ export default function CustomerDetailPage() {
     return (
       <div className="page-content">
         <div className="container-fluid">
-          <div className="card shadow-sm p-6">
+          <div className="box p-6">
             <div className="text-center">
               <i className="bx bx-inbox text-4xl mb-2 block opacity-50"></i>
               <p className="font-semibold">Customer not found</p>
@@ -209,20 +209,20 @@ export default function CustomerDetailPage() {
         </div>
 
         {/* Orders Section */}
-        <div className="card shadow-sm mb-6">
-          <div className="card-header border-b p-4 flex justify-between items-center">
-            <h5 className="card-title mb-0">Orders ({orders.length})</h5>
+        <div className="box mb-6">
+          <div className="box-header flex justify-between items-center">
+            <h5 className="box-title">Orders ({orders.length})</h5>
             <Link href={`/orders?customerId=${customer.id}`} className="text-primary hover:underline text-sm">
               View All
             </Link>
           </div>
-          <div className="table-responsive">
+          <div className="overflow-x-auto">
             {ordersLoading ? (
               <div className="p-6 text-center text-gray-500">
                 <i className="bx bx-loader-alt animate-spin text-2xl"></i>
               </div>
             ) : orders.length > 0 ? (
-              <table className="table table-vcenter mb-0">
+              <table className="ti-custom-table ti-striped-table ti-custom-table-hover">
                 <thead>
                   <tr className="bg-gray-50">
                     <th className="text-sm font-semibold">Order Number</th>
@@ -252,7 +252,7 @@ export default function CustomerDetailPage() {
                           {order.status}
                         </span>
                       </td>
-                      <td className="text-sm font-semibold">${order.totalAmount.toFixed(2)}</td>
+                      <td className="text-sm font-semibold">Rs. {order.totalAmount?.toLocaleString()}</td>
                       <td className="text-sm">
                         <Link href={`/orders/${order.id}`} className="text-primary hover:underline text-sm font-semibold">
                           View
@@ -272,20 +272,20 @@ export default function CustomerDetailPage() {
         </div>
 
         {/* Invoices Section */}
-        <div className="card shadow-sm">
-          <div className="card-header border-b p-4 flex justify-between items-center">
-            <h5 className="card-title mb-0">Invoices ({invoices.length})</h5>
+        <div className="box">
+          <div className="box-header flex justify-between items-center">
+            <h5 className="box-title">Invoices ({invoices.length})</h5>
             <Link href={`/invoices?customerId=${customer.id}`} className="text-primary hover:underline text-sm">
               View All
             </Link>
           </div>
-          <div className="table-responsive">
+          <div className="overflow-x-auto">
             {invoicesLoading ? (
               <div className="p-6 text-center text-gray-500">
                 <i className="bx bx-loader-alt animate-spin text-2xl"></i>
               </div>
             ) : invoices.length > 0 ? (
-              <table className="table table-vcenter mb-0">
+              <table className="ti-custom-table ti-striped-table ti-custom-table-hover">
                 <thead>
                   <tr className="bg-gray-50">
                     <th className="text-sm font-semibold">Invoice Number</th>
@@ -316,8 +316,8 @@ export default function CustomerDetailPage() {
                           {invoice.status}
                         </span>
                       </td>
-                      <td className="text-sm font-semibold">${invoice.totalAmount.toFixed(2)}</td>
-                      <td className="text-sm">${invoice.balanceAmount.toFixed(2)}</td>
+                      <td className="text-sm font-semibold">Rs. {invoice.totalAmount?.toLocaleString()}</td>
+                      <td className="text-sm">Rs. {(invoice.balanceAmount || 0)?.toLocaleString()}</td>
                       <td className="text-sm">
                         <Link href={`/invoices/${invoice.id}`} className="text-primary hover:underline text-sm font-semibold">
                           View

@@ -218,19 +218,19 @@ const OrderDetailPage = () => {
                   Rs. {(currentOrder.subTotal || currentOrder.totalAmount || 0).toLocaleString()}
                 </span>
               </div>
-              {currentOrder.taxAmount && (
+              {(currentOrder.taxAmount || 0) > 0 && (
                 <div className="flex justify-between">
                   <span className="text-[#8c9097]">Tax</span>
                   <span className="font-semibold">
-                    Rs. {currentOrder.taxAmount.toLocaleString('en-PK')}
+                    Rs. {currentOrder.taxAmount.toLocaleString()}
                   </span>
                 </div>
               )}
-              {currentOrder.discountAmount && (
+              {(currentOrder.discountAmount || 0) > 0 && (
                 <div className="flex justify-between text-success">
                   <span>Discount</span>
                   <span className="font-semibold">
-                    -Rs. {currentOrder.discountAmount.toLocaleString('en-PK')}
+                    -Rs. {currentOrder.discountAmount.toLocaleString()}
                   </span>
                 </div>
               )}
@@ -238,7 +238,7 @@ const OrderDetailPage = () => {
                 <div className="flex justify-between">
                   <span className="font-semibold">Total</span>
                   <span className="font-semibold text-primary text-[1.125rem]">
-                    Rs. {currentOrder.totalAmount?.toLocaleString('en-PK')}
+                    Rs. {currentOrder.totalAmount?.toLocaleString()}
                   </span>
                 </div>
               </div>
