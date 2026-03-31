@@ -180,45 +180,35 @@ const OrdersPage = () => {
         };
 
         return (
-          <div className="flex items-center justify-between mt-4 px-4 pb-4">
-            <p className="text-[0.813rem] text-[#8c9097]">
-              Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, pagination.totalCount)} of {pagination.totalCount} orders
-            </p>
-            <nav>
-              <ul className="flex gap-1">
-                <li>
-                  <button
-                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="ti-btn ti-btn-sm ti-btn-light disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                </li>
-                {getPageNumbers().map((pg, idx) => (
-                  <li key={idx}>
-                    {pg === '...' ? (
-                      <span className="ti-btn ti-btn-sm ti-btn-light pointer-events-none">...</span>
-                    ) : (
-                      <button
-                        onClick={() => handlePageChange(pg as number)}
-                        className={`ti-btn ti-btn-sm ${currentPage === pg ? 'ti-btn-primary !text-white' : 'ti-btn-light'}`}
-                      >
-                        {pg}
-                      </button>
-                    )}
+          <div className="box mt-4">
+            <div className="box-body flex items-center justify-between">
+              <p className="text-[0.813rem] text-[#8c9097] mb-0">
+                Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, pagination.totalCount)} of {pagination.totalCount.toLocaleString()} orders
+              </p>
+              <nav>
+                <ul className="ti-pagination mb-0">
+                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => handlePageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
+                      Previous
+                    </button>
                   </li>
-                ))}
-                <li>
-                  <button
-                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="ti-btn ti-btn-sm ti-btn-light disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </li>
-              </ul>
+                  {getPageNumbers().map((pg, idx) => (
+                    <li key={idx} className={`page-item ${pg === currentPage ? 'active' : ''} ${pg === '...' ? 'disabled' : ''}`}>
+                      {pg === '...' ? (
+                        <span className="page-link">...</span>
+                      ) : (
+                        <button className="page-link" onClick={() => handlePageChange(pg as number)}>
+                          {pg}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                  <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>
+                      Next
+                    </button>
+                  </li>
+                </ul>
             </nav>
           </div>
         );
