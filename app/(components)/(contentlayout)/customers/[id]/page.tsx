@@ -204,7 +204,7 @@ export default function CustomerDetailPage() {
 
           <div className="card bg-orange-500/10 border-l-4 border-orange-500 p-6 rounded-lg shadow-sm">
             <p className="text-gray-600 text-sm font-medium mb-1">Lifetime Value</p>
-            <p className="text-sm font-semibold text-gray-900">${customer.lifetimeValue.toFixed(2)}</p>
+            <p className="text-sm font-semibold text-gray-900">Rs. {(customer.lifetimeValue || 0).toLocaleString()}</p>
           </div>
         </div>
 

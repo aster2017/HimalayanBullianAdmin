@@ -157,7 +157,7 @@ export default function CustomersPage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Avg Lifetime Value</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">${(stats.avgLifetimeValue || 0).toFixed(2)}</h3>
+                <h3 className="text-3xl font-bold text-gray-900 mt-2">Rs. {Math.round(stats.avgLifetimeValue || 0).toLocaleString()}</h3>
               </div>
               <div className="text-3xl opacity-50">
                 <i className="ri-bar-chart-line"></i>
@@ -232,7 +232,7 @@ export default function CustomersPage() {
                           {customer.totalOrders || 0}
                         </span>
                       </td>
-                      <td className="text-sm font-semibold">${(customer.lifetimeValue || 0).toFixed(2)}</td>
+                      <td className="text-sm font-semibold">Rs. {(customer.lifetimeValue || 0).toLocaleString()}</td>
                       <td className="text-sm text-gray-600">{new Date(customer.createdAt).toLocaleDateString()}</td>
                       <td className="text-sm">
                         <div className="flex items-center gap-2">
