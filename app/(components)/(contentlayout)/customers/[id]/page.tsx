@@ -139,7 +139,7 @@ export default function CustomerDetailPage() {
             <div className="text-center">
               <i className="bx bx-inbox text-4xl mb-2 block opacity-50"></i>
               <p className="font-semibold">Customer not found</p>
-              <Link href="/customers" className="btn btn-primary mt-4">
+              <Link href="/customers" className="px-4 py-2 text-[0.813rem] rounded-sm bg-primary text-white hover:bg-primary/90 mt-4 inline-block">
                 Back to Customers
               </Link>
             </div>
@@ -166,10 +166,10 @@ export default function CustomerDetailPage() {
             </div>
             <div className="col-auto">
               <div className="btn-list">
-                <button onClick={() => setEditMode(true)} className="btn btn-primary">
+                <button onClick={() => setEditMode(true)} className="px-3 py-1.5 text-[0.813rem] rounded-sm bg-primary text-white hover:bg-primary/90 transition-colors inline-flex items-center gap-1">
                   <i className="bx bx-edit me-1"></i> Edit
                 </button>
-                <button onClick={() => setDeleteConfirm(true)} className="btn btn-danger">
+                <button onClick={() => setDeleteConfirm(true)} className="px-3 py-1.5 text-[0.813rem] rounded-sm bg-danger text-white hover:bg-danger/90 transition-colors inline-flex items-center gap-1">
                   <i className="bx bx-trash me-1"></i> Delete
                 </button>
               </div>
@@ -376,11 +376,11 @@ export default function CustomerDetailPage() {
                 <button
                   type="button"
                   onClick={() => setEditMode(false)}
-                  className="btn btn-outline-secondary"
+                  className="px-4 py-2 text-[0.813rem] border border-defaultborder rounded-sm text-defaulttextcolor hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="px-4 py-2 text-[0.813rem] rounded-sm bg-primary text-white hover:bg-primary/90 transition-colors">
                   Save Changes
                 </button>
               </div>
@@ -400,11 +400,11 @@ export default function CustomerDetailPage() {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteConfirm(false)}
-                className="btn btn-outline-secondary"
+                className="px-4 py-2 text-[0.813rem] border border-defaultborder rounded-sm text-defaulttextcolor hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
-              <button onClick={handleDelete} className="btn btn-danger">
+              <button onClick={handleDelete} className="px-3 py-1.5 text-[0.813rem] rounded-sm bg-danger text-white hover:bg-danger/90 transition-colors inline-flex items-center gap-1">
                 Delete
               </button>
             </div>
