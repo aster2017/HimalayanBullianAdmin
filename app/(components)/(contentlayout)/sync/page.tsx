@@ -167,15 +167,15 @@ export default function SyncDashboardPage() {
           </div>
           <div className="flex items-center gap-2 mt-2 md:mt-0">
             <button onClick={handleItemPull} disabled={isSyncing}
-              className="ti-btn ti-btn-sm ti-btn-light !opacity-100 disabled:!opacity-50">
+              className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm bg-white text-defaulttextcolor hover:bg-gray-50 disabled:opacity-50 transition-colors inline-flex items-center">
               <i className="ri-download-2-line me-1"></i> Pull Items
             </button>
             <button onClick={handleRetryFailed} disabled={isSyncing || ((errors || []).length === 0)}
-              className="ti-btn ti-btn-sm ti-btn-warning-full !text-white disabled:!opacity-50">
+              className="px-3 py-1.5 text-[0.813rem] rounded-sm bg-warning text-white hover:bg-warning/90 disabled:opacity-50 transition-colors inline-flex items-center">
               <i className="ri-restart-line me-1"></i> Retry Failed
             </button>
             <button onClick={handleFullSync} disabled={isSyncing}
-              className="ti-btn ti-btn-sm ti-btn-primary-full !text-white disabled:!opacity-50">
+              className="px-3 py-1.5 text-[0.813rem] rounded-sm bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors inline-flex items-center">
               {isSyncing ? (
                 <><i className="ri-loader-4-line animate-spin me-1"></i> Syncing...</>
               ) : (
@@ -431,7 +431,7 @@ export default function SyncDashboardPage() {
                 <h5 className="box-title mb-2 md:mb-0">Sync Logs</h5>
                 <div className="flex items-center gap-2">
                   <select
-                    className="form-control form-control-sm !w-[140px] !py-1"
+                    className="px-2 py-1 text-[0.813rem] border border-defaultborder rounded-sm bg-white text-defaulttextcolor w-[140px]"
                     value={logFilter.entityType || ''}
                     onChange={(e) => setLogFilter({ ...logFilter, entityType: e.target.value || undefined, pageNumber: 1 })}
                   >
@@ -443,7 +443,7 @@ export default function SyncDashboardPage() {
                     <option value="Payment">Payments</option>
                   </select>
                   <select
-                    className="form-control form-control-sm !w-[130px] !py-1"
+                    className="px-2 py-1 text-[0.813rem] border border-defaultborder rounded-sm bg-white text-defaulttextcolor w-[130px]"
                     value={logFilter.status || ''}
                     onChange={(e) => setLogFilter({ ...logFilter, status: e.target.value || undefined, pageNumber: 1 })}
                   >
@@ -454,7 +454,7 @@ export default function SyncDashboardPage() {
                     <option value="InProgress">In Progress</option>
                   </select>
                   <select
-                    className="form-control form-control-sm !w-[140px] !py-1"
+                    className="px-2 py-1 text-[0.813rem] border border-defaultborder rounded-sm bg-white text-defaulttextcolor w-[120px]"
                     value={logFilter.direction || ''}
                     onChange={(e) => setLogFilter({ ...logFilter, direction: e.target.value || undefined, pageNumber: 1 })}
                   >
@@ -465,8 +465,8 @@ export default function SyncDashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="table-responsive">
-              <table className="table table-vcenter mb-0">
+            <div className="box-body p-0 overflow-x-auto">
+              <table className="ti-custom-table ti-striped-table ti-custom-table-hover">
                 <thead>
                   <tr>
                     <th>Entity</th>
@@ -475,7 +475,7 @@ export default function SyncDashboardPage() {
                     <th>Direction</th>
                     <th>Status</th>
                     <th>Zoho ID</th>
-                    <th>Attempts</th>
+                    <th className="text-center">Attempts</th>
                     <th>Duration</th>
                     <th>Time</th>
                     <th>Error</th>
@@ -484,30 +484,27 @@ export default function SyncDashboardPage() {
                 <tbody>
                   {(logs || []).length > 0 ? (
                     (logs || []).map((log) => (
-                      <tr key={log.id} className="hover:bg-gray-50">
+                      <tr key={log.id}>
                         <td>
-                          <div className="flex items-center gap-2">
-                            <i className={`bx ${getEntityIcon(log.entityType)} text-primary`}></i>
-                            <span className="font-medium text-sm">{log.entityType}</span>
-                          </div>
+                          <span className="font-semibold text-[0.813rem]">{log.entityType}</span>
                         </td>
-                        <td className="text-xs font-mono text-gray-500">{log.entityId?.substring(0, 8)}...</td>
-                        <td className="text-sm">{log.operation}</td>
+                        <td className="text-[0.7rem] font-mono text-[#8c9097]">{log.entityId?.substring(0, 8)}...</td>
+                        <td className="text-[0.813rem]">{log.operation}</td>
                         <td>
-                          <span className={`badge px-2 py-1 text-xs rounded-full ${getDirectionBadge(log.direction)}`}>
+                          <span className={`badge ${log.direction === 'FromZoho' ? 'bg-indigo-500/20 text-indigo-500' : 'bg-purple-500/20 text-purple-500'}`}>
                             {log.direction === 'FromZoho' ? 'Pull' : 'Push'}
                           </span>
                         </td>
                         <td>
-                          <span className={`badge px-2 py-1 text-xs rounded-full ${getStatusBadge(log.status)}`}>
+                          <span className={`badge ${getStatusBadge(log.status)}`}>
                             {log.status}
                           </span>
                         </td>
-                        <td className="text-xs font-mono text-gray-500">{log.zohoEntityId || '-'}</td>
-                        <td className="text-sm text-center">{log.attemptCount}</td>
-                        <td className="text-sm text-gray-500">{log.durationMs ? `${log.durationMs}ms` : '-'}</td>
-                        <td className="text-sm text-gray-500">{timeAgo(log.createdAt)}</td>
-                        <td className="text-xs text-red-600 max-w-[200px] truncate" title={log.errorMessage || ''}>
+                        <td className="text-[0.7rem] font-mono text-[#8c9097]">{log.zohoEntityId || '-'}</td>
+                        <td className="text-[0.813rem] text-center">{log.attemptCount}</td>
+                        <td className="text-[0.813rem] text-[#8c9097]">{log.durationMs ? `${log.durationMs}ms` : '-'}</td>
+                        <td className="text-[0.813rem] text-[#8c9097]">{timeAgo(log.createdAt)}</td>
+                        <td className="text-[0.7rem] text-danger max-w-[200px] truncate" title={log.errorMessage || ''}>
                           {log.errorMessage || '-'}
                         </td>
                       </tr>
@@ -525,21 +522,21 @@ export default function SyncDashboardPage() {
             {/* Pagination */}
             {totalLogPages > 1 && (
               <div className="box-footer p-4 flex items-center justify-between">
-                <p className="text-sm text-gray-500">Page {logFilter.pageNumber} of {totalLogPages}</p>
-                <div className="flex gap-2">
+                <p className="text-[0.813rem] text-[#8c9097] mb-0">Page {logFilter.pageNumber} of {totalLogPages}</p>
+                <div className="flex gap-1">
                   <button
-                    className="ti-btn ti-btn-sm ti-btn-light !opacity-100"
+                    className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm text-defaulttextcolor hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50 disabled:pointer-events-none transition-colors"
                     disabled={(logFilter.pageNumber || 1) <= 1}
                     onClick={() => setLogFilter({ ...logFilter, pageNumber: (logFilter.pageNumber || 1) - 1 })}
                   >
-                    Previous
+                    &laquo; Previous
                   </button>
                   <button
-                    className="ti-btn ti-btn-sm ti-btn-light !opacity-100"
+                    className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm text-defaulttextcolor hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50 disabled:pointer-events-none transition-colors"
                     disabled={(logFilter.pageNumber || 1) >= totalLogPages}
                     onClick={() => setLogFilter({ ...logFilter, pageNumber: (logFilter.pageNumber || 1) + 1 })}
                   >
-                    Next
+                    Next &raquo;
                   </button>
                 </div>
               </div>
