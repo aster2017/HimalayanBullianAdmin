@@ -114,7 +114,7 @@ const EditAddressPage = () => {
           <div className="text-center">
             <p className="text-danger mb-4">Address not found</p>
             <Link href="/addresses">
-              <button className="ti-btn ti-btn-primary !text-white">Back to Addresses</button>
+              <button className="ti-btn ti-btn-primary-full !text-white">Back to Addresses</button>
             </Link>
           </div>
         </div>
@@ -263,7 +263,7 @@ const EditAddressPage = () => {
                     {isLoading ? 'Updating Address...' : 'Update Address'}
                   </button>
                   <Link href="/addresses">
-                    <button type="button" className="ti-btn ti-btn-light">
+                    <button type="button" className="ti-btn ti-btn-light !opacity-100">
                       Cancel
                     </button>
                   </Link>

@@ -208,7 +208,7 @@ const CreateAddressPage = () => {
                     {isLoading ? 'Adding Address...' : 'Add Address'}
                   </button>
                   <Link href="/addresses">
-                    <button type="button" className="ti-btn ti-btn-light">
+                    <button type="button" className="ti-btn ti-btn-light !opacity-100">
                       Cancel
                     </button>
                   </Link>

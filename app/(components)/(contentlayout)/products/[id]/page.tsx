@@ -48,7 +48,7 @@ const ProductDetailPage = () => {
           <div className="text-center">
             <p className="text-danger mb-4">{error || 'Product not found'}</p>
             <Link href="/products">
-              <button className="ti-btn ti-btn-primary !text-white">Back to Products</button>
+              <button className="ti-btn ti-btn-primary-full !text-white">Back to Products</button>
             </Link>
           </div>
         </div>

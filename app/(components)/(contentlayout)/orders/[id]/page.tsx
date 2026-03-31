@@ -59,7 +59,7 @@ const OrderDetailPage = () => {
           <div className="text-center">
             <p className="text-danger mb-4">{error || 'Order not found'}</p>
             <Link href="/orders">
-              <button className="ti-btn ti-btn-primary !text-white">Back to Orders</button>
+              <button className="ti-btn ti-btn-primary-full !text-white">Back to Orders</button>
             </Link>
           </div>
         </div>
@@ -96,11 +96,11 @@ const OrderDetailPage = () => {
         </div>
         <div className="flex gap-2 mt-2 md:mt-0">
           <Link href="/orders">
-            <button className="ti-btn ti-btn-light">Back</button>
+            <button className="ti-btn ti-btn-light !opacity-100">Back</button>
           </Link>
           <button
             onClick={handleDelete}
-            className="ti-btn ti-btn-danger !text-white"
+            className="ti-btn ti-btn-danger-full !text-white"
           >
             Delete
           </button>
@@ -190,7 +190,7 @@ const OrderDetailPage = () => {
                         }
                       }}
                       disabled={fetchingDetails}
-                      className="ti-btn ti-btn-primary !text-white"
+                      className="ti-btn ti-btn-primary-full !text-white"
                     >
                       {fetchingDetails ? (
                         <><i className="ri-loader-4-line animate-spin inline-block me-2"></i>Fetching...</>

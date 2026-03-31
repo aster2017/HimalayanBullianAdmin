@@ -48,7 +48,7 @@ const PaymentDetailPage = () => {
         <div className="flex justify-center items-center h-96">
           <div className="text-center">
             <p className="text-danger mb-4">{error || 'Payment not found'}</p>
-            <Link href="/payments"><button className="ti-btn ti-btn-primary !text-white">Back to Payments</button></Link>
+            <Link href="/payments"><button className="ti-btn ti-btn-primary-full !text-white">Back to Payments</button></Link>
           </div>
         </div>
       </Fragment>

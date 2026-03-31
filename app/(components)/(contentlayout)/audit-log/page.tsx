@@ -19,20 +19,23 @@ const AuditLogPage = () => {
     const fetch = async () => {
       setLoading(true);
       try {
-        const params: any = { pageNumber: currentPage, pageSize };
+        const params: any = { page: currentPage, pageSize };
         if (entityFilter) params.entityType = entityFilter;
-        const res = await apiClient.get('/sync/logs', { params });
-        const data = res.data?.data;
-        setLogs(data?.items || []);
+
+        // Try multiple endpoints
+        let data: any = null;
+        for (const endpoint of ['/sync/logs', '/zoho/sync/logs']) {
+          try {
+            const res = await apiClient.get(endpoint, { params });
+            data = res.data?.data || res.data;
+            break;
+          } catch { continue; }
+        }
+
+        setLogs(data?.items || data || []);
         setTotalCount(data?.totalCount || 0);
       } catch {
-        // Fallback: try the zoho sync logs endpoint
-        try {
-          const res = await apiClient.get('/zoho/sync/logs', { params: { page: currentPage, pageSize } });
-          const data = res.data?.data;
-          setLogs(data?.items || []);
-          setTotalCount(data?.totalCount || 0);
-        } catch {}
+        setLogs([]);
       }
       setLoading(false);
     };
@@ -78,7 +81,7 @@ const AuditLogPage = () => {
           <div className="box-body text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary inline-block"></div>
           </div>
-        ) : logs.length === 0 ? (
+        ) : !logs || logs.length === 0 ? (
           <div className="box-body text-center py-12">
             <p className="text-[#8c9097]">No audit logs found</p>
           </div>
@@ -97,7 +100,7 @@ const AuditLogPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log: any) => (
+                {(logs || []).map((log: any) => (
                   <tr key={log.id}>
                     <td className="text-[0.75rem] text-[#8c9097]">{new Date(log.createdAt).toLocaleString()}</td>
                     <td><span className="font-semibold">{log.entityType}</span></td>

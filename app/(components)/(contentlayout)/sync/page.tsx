@@ -157,35 +157,33 @@ export default function SyncDashboardPage() {
   }
 
   return (
-    <div className="page-content">
-      <div className="container-fluid">
+    <div className="my-[1.5rem]">
+      <div>
         {/* Page Header */}
-        <div className="page-header d-print-none">
-          <div className="row align-items-center">
-            <div className="col">
-              <h2 className="page-title">Sync Dashboard</h2>
-              <p className="text-muted mt-2">Monitor Zoho Inventory synchronization status and activity.</p>
-            </div>
-            <div className="col-auto">
-              <div className="btn-list flex gap-2">
+        <div className="md:flex block items-center justify-between mb-6">
+          <div>
+            <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">Sync Dashboard</p>
+            <p className="font-normal text-[#8c9097] text-[0.813rem]">Monitor Zoho Inventory synchronization status and activity.</p>
+          </div>
+          <div className="flex gap-2 mt-2 md:mt-0">
                 <button
                   onClick={handleItemPull}
                   disabled={isSyncing}
-                  className="btn btn-outline-primary"
+                  className="ti-btn ti-btn-sm ti-btn-light !opacity-100"
                 >
-                  <i className="bx bx-download me-1"></i> Pull Items
+                  <i className="ri-download-line me-1"></i> Pull Items
                 </button>
                 <button
                   onClick={handleRetryFailed}
-                  disabled={isSyncing || (errors.length === 0)}
-                  className="btn btn-outline-warning"
+                  disabled={isSyncing || ((errors || []).length === 0)}
+                  className="ti-btn ti-btn-sm ti-btn-warning-full !text-white"
                 >
-                  <i className="bx bx-refresh me-1"></i> Retry Failed
+                  <i className="ri-refresh-line me-1"></i> Retry Failed
                 </button>
                 <button
                   onClick={handleFullSync}
                   disabled={isSyncing}
-                  className="btn btn-primary"
+                  className="ti-btn ti-btn-sm ti-btn-primary-full !text-white"
                 >
                   {isSyncing ? (
                     <><i className="bx bx-loader-alt bx-spin me-1"></i> Syncing...</>
@@ -193,15 +191,13 @@ export default function SyncDashboardPage() {
                     <><i className="bx bx-sync me-1"></i> Full Sync</>
                   )}
                 </button>
-              </div>
-            </div>
           </div>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="alert alert-danger mb-4" role="alert">
-            <i className="bx bx-error-circle me-2"></i>
+          <div className="p-4 mb-4 bg-danger/40 text-sm border-t-4 border-danger text-danger/60 rounded-lg">
+            <i className="ri-error-warning-line me-2"></i>
             {error}
           </div>
         )}
@@ -302,11 +298,11 @@ export default function SyncDashboardPage() {
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sync Checkpoints */}
-            <div className="card shadow-sm">
-              <div className="card-header border-b p-4">
-                <h5 className="card-title mb-0">Last Sync Per Entity</h5>
+            <div className="box">
+              <div className="box-header">
+                <h5 className="box-title">Last Sync Per Entity</h5>
               </div>
-              <div className="card-body p-0">
+              <div className="box-body p-0">
                 <div className="divide-y">
                   {health?.checkpoints && health.checkpoints.length > 0 ? (
                     health.checkpoints.map((cp, idx) => (
@@ -337,11 +333,11 @@ export default function SyncDashboardPage() {
             </div>
 
             {/* Entity Mapping Stats */}
-            <div className="card shadow-sm">
-              <div className="card-header border-b p-4">
-                <h5 className="card-title mb-0">Entity Mapping Stats</h5>
+            <div className="box">
+              <div className="box-header">
+                <h5 className="box-title">Entity Mapping Stats</h5>
               </div>
-              <div className="card-body p-0">
+              <div className="box-body p-0">
                 <div className="divide-y">
                   {entityMaps.length > 0 ? (
                     entityMaps.map((map, idx) => (
@@ -373,17 +369,17 @@ export default function SyncDashboardPage() {
 
             {/* Recent Activity */}
             <div className="lg:col-span-2">
-              <div className="card shadow-sm">
-                <div className="card-header border-b p-4">
+              <div className="box">
+                <div className="box-header">
                   <div className="flex items-center justify-between">
-                    <h5 className="card-title mb-0">Recent Sync Activity</h5>
+                    <h5 className="box-title">Recent Sync Activity</h5>
                     <button onClick={() => setActiveTab('logs')} className="text-primary text-sm font-semibold hover:underline">
                       View All Logs
                     </button>
                   </div>
                 </div>
-                <div className="table-responsive">
-                  <table className="table table-vcenter mb-0">
+                <div className="overflow-x-auto">
+                  <table className="ti-custom-table ti-striped-table ti-custom-table-hover">
                     <thead>
                       <tr>
                         <th>Entity</th>
@@ -395,8 +391,8 @@ export default function SyncDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {logs.length > 0 ? (
-                        logs.slice(0, 10).map((log) => (
+                      {(logs || []).length > 0 ? (
+                        (logs || []).slice(0, 10).map((log) => (
                           <tr key={log.id} className="hover:bg-gray-50">
                             <td>
                               <div className="flex items-center gap-2">
@@ -438,10 +434,10 @@ export default function SyncDashboardPage() {
 
         {/* Logs Tab */}
         {activeTab === 'logs' && (
-          <div className="card shadow-sm">
-            <div className="card-header border-b p-4">
+          <div className="box">
+            <div className="box-header">
               <div className="flex items-center justify-between flex-wrap gap-3">
-                <h5 className="card-title mb-0">Sync Logs</h5>
+                <h5 className="box-title">Sync Logs</h5>
                 <div className="flex gap-2 flex-wrap">
                   <select
                     className="form-select form-select-sm w-auto"
@@ -495,8 +491,8 @@ export default function SyncDashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.length > 0 ? (
-                    logs.map((log) => (
+                  {(logs || []).length > 0 ? (
+                    (logs || []).map((log) => (
                       <tr key={log.id} className="hover:bg-gray-50">
                         <td>
                           <div className="flex items-center gap-2">
@@ -537,18 +533,18 @@ export default function SyncDashboardPage() {
             </div>
             {/* Pagination */}
             {totalLogPages > 1 && (
-              <div className="card-footer border-t p-4 flex items-center justify-between">
+              <div className="box-footer p-4 flex items-center justify-between">
                 <p className="text-sm text-gray-500">Page {logFilter.pageNumber} of {totalLogPages}</p>
                 <div className="flex gap-2">
                   <button
-                    className="btn btn-sm btn-outline-secondary"
+                    className="ti-btn ti-btn-sm ti-btn-light !opacity-100"
                     disabled={(logFilter.pageNumber || 1) <= 1}
                     onClick={() => setLogFilter({ ...logFilter, pageNumber: (logFilter.pageNumber || 1) - 1 })}
                   >
                     Previous
                   </button>
                   <button
-                    className="btn btn-sm btn-outline-secondary"
+                    className="ti-btn ti-btn-sm ti-btn-light !opacity-100"
                     disabled={(logFilter.pageNumber || 1) >= totalLogPages}
                     onClick={() => setLogFilter({ ...logFilter, pageNumber: (logFilter.pageNumber || 1) + 1 })}
                   >
@@ -562,20 +558,20 @@ export default function SyncDashboardPage() {
 
         {/* Errors Tab */}
         {activeTab === 'errors' && (
-          <div className="card shadow-sm">
-            <div className="card-header border-b p-4">
+          <div className="box">
+            <div className="box-header">
               <div className="flex items-center justify-between">
-                <h5 className="card-title mb-0">Sync Errors</h5>
-                {errors.length > 0 && (
-                  <button onClick={handleRetryFailed} disabled={isSyncing} className="btn btn-sm btn-warning">
+                <h5 className="box-title">Sync Errors</h5>
+                {(errors || []).length > 0 && (
+                  <button onClick={handleRetryFailed} disabled={isSyncing} className="ti-btn ti-btn-sm ti-btn-warning-full !text-white">
                     <i className="bx bx-refresh me-1"></i> Retry All Failed
                   </button>
                 )}
               </div>
             </div>
-            {errors.length > 0 ? (
+            {(errors || []).length > 0 ? (
               <div className="divide-y">
-                {errors.map((err) => (
+                {(errors || []).map((err) => (
                   <div key={err.id} className="p-4 hover:bg-gray-50">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">

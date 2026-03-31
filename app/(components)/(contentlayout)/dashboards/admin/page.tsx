@@ -137,7 +137,7 @@ export default function AdminDashboard() {
         </div>
         <div className="flex gap-2 mt-2 md:mt-0">
           <Link href="/sync">
-            <button className="ti-btn ti-btn-light">
+            <button className="ti-btn ti-btn-light !opacity-100">
               <i className="ri-refresh-line me-1"></i> Sync Dashboard
             </button>
           </Link>

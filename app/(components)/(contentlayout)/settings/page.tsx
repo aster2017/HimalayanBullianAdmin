@@ -86,7 +86,7 @@ const SettingsPage = () => {
                 <label className="form-label">Phone</label>
                 <input type="tel" value={profile.phoneNumber} onChange={e => setProfile({...profile, phoneNumber: e.target.value})} className="form-control" />
               </div>
-              <button type="submit" disabled={loading} className="ti-btn ti-btn-primary !text-white">Save Profile</button>
+              <button type="submit" disabled={loading} className="ti-btn ti-btn-primary-full !text-white">Save Profile</button>
             </form>
           </div>
         </div>
@@ -108,7 +108,7 @@ const SettingsPage = () => {
                 <label className="form-label">Confirm New Password</label>
                 <input type="password" value={passwords.confirmPassword} onChange={e => setPasswords({...passwords, confirmPassword: e.target.value})} className="form-control" required />
               </div>
-              <button type="submit" disabled={loading} className="ti-btn ti-btn-primary !text-white">Change Password</button>
+              <button type="submit" disabled={loading} className="ti-btn ti-btn-primary-full !text-white">Change Password</button>
             </form>
           </div>
         </div>
@@ -127,7 +127,7 @@ const SettingsPage = () => {
                 </div>
                 <div>
                   <p className="text-[#8c9097] text-[0.813rem] mb-1">Manage Sync</p>
-                  <Link href="/sync" className="ti-btn ti-btn-sm ti-btn-light">Open Sync Dashboard</Link>
+                  <Link href="/sync" className="ti-btn ti-btn-sm ti-btn-light !opacity-100">Open Sync Dashboard</Link>
                 </div>
                 <div>
                   <p className="text-[#8c9097] text-[0.813rem] mb-1">Account Info</p>

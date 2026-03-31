@@ -75,7 +75,7 @@ const InvoicesPage = () => {
         <form onSubmit={handleSearch} className="flex gap-2 mt-2 md:mt-0">
           <input type="text" value={searchInput} onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search invoices..." className="form-control form-control-sm w-[250px]" />
-          <button type="submit" className="ti-btn ti-btn-sm ti-btn-light"><i className="ri-search-line"></i></button>
+          <button type="submit" className="ti-btn ti-btn-sm ti-btn-light !opacity-100"><i className="ri-search-line"></i></button>
           {searchTerm && (
             <button type="button" onClick={() => { setSearchTerm(''); setSearchInput(''); setCurrentPage(1); }}
               className="ti-btn ti-btn-sm ti-btn-danger-full !text-white"><i className="ri-close-line"></i></button>
@@ -138,7 +138,7 @@ const InvoicesPage = () => {
                     </td>
                     <td>
                       <Link href={`/invoices/${invoice.id}`}>
-                        <button className="ti-btn ti-btn-sm ti-btn-light">View</button>
+                        <button className="ti-btn ti-btn-sm ti-btn-light !opacity-100">View</button>
                       </Link>
                     </td>
                   </tr>

@@ -43,7 +43,7 @@ const InvoiceDetailPage = () => {
           <div className="text-center">
             <p className="text-danger mb-4">{error || 'Invoice not found'}</p>
             <Link href="/invoices">
-              <button className="ti-btn ti-btn-primary !text-white">Back to Invoices</button>
+              <button className="ti-btn ti-btn-primary-full !text-white">Back to Invoices</button>
             </Link>
           </div>
         </div>
@@ -77,7 +77,7 @@ const InvoiceDetailPage = () => {
         </div>
         <div className="flex gap-2 mt-2 md:mt-0">
           <Link href="/invoices">
-            <button className="ti-btn ti-btn-light">Back</button>
+            <button className="ti-btn ti-btn-light !opacity-100">Back</button>
           </Link>
         </div>
       </div>

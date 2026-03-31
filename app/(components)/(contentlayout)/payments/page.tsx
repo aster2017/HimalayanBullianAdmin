@@ -123,7 +123,7 @@ const PaymentsPage = () => {
                     </td>
                     <td>
                       <Link href={`/payments/${payment.id}`}>
-                        <button className="ti-btn ti-btn-sm ti-btn-light">View</button>
+                        <button className="ti-btn ti-btn-sm ti-btn-light !opacity-100">View</button>
                       </Link>
                     </td>
                   </tr>

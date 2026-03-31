@@ -76,7 +76,7 @@ const OrdersPage = () => {
               placeholder="Search orders, customers..."
               className="form-control form-control-sm w-[250px]"
             />
-            <button type="submit" className="ti-btn ti-btn-sm ti-btn-light">
+            <button type="submit" className="ti-btn ti-btn-sm ti-btn-light !opacity-100">
               <i className="ri-search-line"></i>
             </button>
             {searchTerm && (
@@ -86,7 +86,7 @@ const OrdersPage = () => {
             )}
           </form>
           <Link href="/orders/create">
-            <button className="ti-btn ti-btn-primary !text-white">
+            <button className="ti-btn ti-btn-primary-full !text-white">
               <i className="ri-add-line inline-block me-2"></i>Create Order
             </button>
           </Link>
@@ -146,7 +146,7 @@ const OrdersPage = () => {
                     <td>{order.lineItems?.length || '-'}</td>
                     <td>
                       <Link href={`/orders/${order.id}`}>
-                        <button className="ti-btn ti-btn-sm ti-btn-light">View</button>
+                        <button className="ti-btn ti-btn-sm ti-btn-light !opacity-100">View</button>
                       </Link>
                     </td>
                   </tr>
