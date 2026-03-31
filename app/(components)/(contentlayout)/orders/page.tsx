@@ -181,35 +181,43 @@ const OrdersPage = () => {
 
         return (
           <div className="box mt-4">
-            <div className="box-body flex items-center justify-between">
+            <div className="box-body flex items-center justify-between flex-wrap gap-4">
               <p className="text-[0.813rem] text-[#8c9097] mb-0">
                 Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, pagination.totalCount)} of {pagination.totalCount.toLocaleString()} orders
               </p>
-              <nav>
-                <ul className="ti-pagination mb-0">
-                  <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                    <button className="page-link" onClick={() => handlePageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
-                      Previous
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm text-defaulttextcolor hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                >
+                  &laquo; Previous
+                </button>
+                {getPageNumbers().map((pg, idx) => (
+                  pg === '...' ? (
+                    <span key={idx} className="px-3 py-1.5 text-[0.813rem] text-[#8c9097]">...</span>
+                  ) : (
+                    <button
+                      key={idx}
+                      onClick={() => handlePageChange(pg as number)}
+                      className={`px-3 py-1.5 text-[0.813rem] border rounded-sm transition-colors ${
+                        currentPage === pg
+                          ? 'bg-primary text-white border-primary'
+                          : 'border-defaultborder text-defaulttextcolor hover:bg-primary hover:text-white hover:border-primary'
+                      }`}
+                    >
+                      {pg}
                     </button>
-                  </li>
-                  {getPageNumbers().map((pg, idx) => (
-                    <li key={idx} className={`page-item ${pg === currentPage ? 'active' : ''} ${pg === '...' ? 'disabled' : ''}`}>
-                      {pg === '...' ? (
-                        <span className="page-link">...</span>
-                      ) : (
-                        <button className="page-link" onClick={() => handlePageChange(pg as number)}>
-                          {pg}
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                  <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                    <button className="page-link" onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}>
-                      Next
-                    </button>
-                  </li>
-                </ul>
-              </nav>
+                  )
+                ))}
+                <button
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm text-defaulttextcolor hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                >
+                  Next &raquo;
+                </button>
+              </div>
             </div>
           </div>
         );
