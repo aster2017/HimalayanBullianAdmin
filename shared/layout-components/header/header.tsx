@@ -4,10 +4,12 @@ import React, { Fragment, useEffect, useState } from 'react';
 import { ThemeChanger } from "../../redux/action";
 import { connect } from 'react-redux';
 import store from '@/shared/redux/store';
+import { useAppSelector } from '@/shared/redux/hooks';
 import Modalsearch from '../modal-search/modalsearch';
 import { basePath } from '@/next.config';
 
 const Header = ({ local_varaiable, ThemeChanger }:any) => {
+  const authUser = useAppSelector((state) => state.auth.user);
 
 
   const data=  <span className="font-[600] py-[0.25rem] px-[0.45rem] rounded-[0.25rem] bg-pinkmain/10 text-pinkmain text-[0.625rem]">Free shipping</span>
@@ -739,8 +741,8 @@ const Header = ({ local_varaiable, ThemeChanger }:any) => {
                   <img className="inline-block rounded-full " src={`${process.env.NODE_ENV === "production" ? basePath : ""}/assets/images/faces/9.jpg`} width="32" height="32" alt="Image Description" />
                 </button>
                 <div className="md:block hidden dropdown-profile">
-                  <p className="font-semibold mb-0 leading-none text-[#536485] text-[0.813rem] ">Json Taylor</p>
-                  <span className="opacity-[0.7] font-normal text-[#536485] block text-[0.6875rem] ">Web Designer</span>
+                  <p className="font-semibold mb-0 leading-none text-[#536485] text-[0.813rem] ">{authUser?.firstName ? `${authUser.firstName} ${authUser.lastName || ''}`.trim() : 'User'}</p>
+                  <span className="opacity-[0.7] font-normal text-[#536485] block text-[0.6875rem] ">{authUser?.roles?.[0] || 'User'}</span>
                 </div>
                 <div
                   className="hs-dropdown-menu ti-dropdown-menu !-mt-3 border-0 w-[11rem] !p-0 border-defaultborder hidden main-header-dropdown  pt-0 overflow-hidden header-profile-dropdown dropdown-menu-end"

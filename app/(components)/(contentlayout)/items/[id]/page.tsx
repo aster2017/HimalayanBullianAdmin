@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/shared/redux/hooks';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { useRouter, useParams } from 'next/navigation';
-import { fetchItemById, updateItem, deleteItem, fetchStockHistory, adjustStock, clearError, clearItemDetail } from '@/shared/redux/itemsSlice';
+import { fetchItemById, deleteItem, fetchStockHistory, adjustStock, clearError, clearItemDetail } from '@/shared/redux/itemsSlice';
 import { ItemService } from '@/shared/services/itemService';
 import toast from 'react-hot-toast';
 import { StockTransaction, StockStatus } from '@/shared/types';
@@ -23,16 +23,7 @@ export default function ItemDetailPage() {
 
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // Edit form state
-  const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState({
-    name: '',
-    description: '',
-    category: '',
-    unitPrice: 0,
-    reorderLevel: 0,
-    supplier: '',
-  });
+  // Stock adjustment state only - edit moved to separate page
 
   // Stock adjustment state
   const [adjustmentMode, setAdjustmentMode] = useState(false);
@@ -57,19 +48,6 @@ export default function ItemDetailPage() {
     };
   }, [itemId, dispatch]);
 
-  // Initialize edit form when item data loads
-  useEffect(() => {
-    if (item) {
-      setEditData({
-        name: item.name || '',
-        description: item.description || '',
-        category: item.category || '',
-        unitPrice: item.unitPrice || 0,
-        reorderLevel: item.reorderLevel || 0,
-        supplier: item.supplier || '',
-      });
-    }
-  }, [item]);
 
   // Fetch stock history
   const fetchStockHistoryData = async () => {
@@ -80,20 +58,6 @@ export default function ItemDetailPage() {
       console.error('Failed to fetch stock history:', err);
     } finally {
       setHistoryLoading(false);
-    }
-  };
-
-  // Handle edit form submission
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!item) return;
-
-    try {
-      await dispatch(updateItem({ id: item.id, data: editData })).unwrap();
-      toast.success('Item updated successfully');
-      setEditMode(false);
-    } catch (err) {
-      toast.error('Failed to update item');
     }
   };
 
@@ -144,9 +108,9 @@ export default function ItemDetailPage() {
   const getStockStatus = () => {
     if (!item) return { status: StockStatus.OutOfStock, label: 'Out of Stock', color: 'bg-red-500/10 text-red-800' };
 
-    if (item.currentStock === 0) {
+    if (item.stockOnHand === 0) {
       return { status: StockStatus.OutOfStock, label: 'Out of Stock', color: 'bg-red-500/10 text-red-800' };
-    } else if (item.currentStock <= item.reorderLevel) {
+    } else if (item.stockOnHand <= item.reorderLevel) {
       return { status: StockStatus.LowStock, label: 'Low Stock', color: 'bg-yellow-500/10 text-yellow-800' };
     } else {
       return { status: StockStatus.InStock, label: 'In Stock', color: 'bg-green-500/10 text-green-800' };
@@ -200,9 +164,9 @@ export default function ItemDetailPage() {
             </div>
             <div className="col-auto">
               <div className="btn-list">
-                <button onClick={() => setEditMode(true)} className="btn btn-primary">
+                <Link href={`/items/${itemId}/edit`} className="btn btn-primary">
                   <i className="bx bx-edit me-1"></i> Edit
-                </button>
+                </Link>
                 <button onClick={() => setDeleteConfirm(true)} className="btn btn-danger">
                   <i className="bx bx-trash me-1"></i> Delete
                 </button>
@@ -228,12 +192,12 @@ export default function ItemDetailPage() {
 
           <div className="card bg-green-500/10 border-l-4 border-green-500 p-6 rounded-lg shadow-sm">
             <p className="text-gray-600 text-sm font-medium mb-1">Current Stock</p>
-            <p className="text-sm font-semibold text-gray-900">{item.currentStock} units</p>
+            <p className="text-sm font-semibold text-gray-900">{item.stockOnHand} units</p>
           </div>
 
           <div className="card bg-purple-500/10 border-l-4 border-purple-500 p-6 rounded-lg shadow-sm">
             <p className="text-gray-600 text-sm font-medium mb-1">Unit Price</p>
-            <p className="text-sm font-semibold text-gray-900">${item.unitPrice.toFixed(2)}</p>
+            <p className="text-sm font-semibold text-gray-900">${item.rate.toFixed(2)}</p>
           </div>
 
           <div className={`card border-l-4 p-6 rounded-lg shadow-sm ${stockStatus.color.replace('text-', 'border-')}`}>
@@ -244,13 +208,16 @@ export default function ItemDetailPage() {
           </div>
         </div>
 
-        {/* Item Details */}
+        {/* Item Details Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Main Info */}
-          <div className="lg:col-span-2">
-            <div className="card shadow-sm p-6">
-              <h5 className="card-title mb-4">Item Details</h5>
-              <div className="space-y-4">
+          {/* Main Details - left 2/3 */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Information */}
+            <div className="box">
+              <div className="box-header border-b p-4">
+                <h5 className="box-title mb-0">Basic Information</h5>
+              </div>
+              <div className="box-body p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-gray-600 text-sm font-medium mb-1">Name</p>
@@ -261,54 +228,152 @@ export default function ItemDetailPage() {
                     <p className="text-sm font-semibold text-gray-900">{item.category || '-'}</p>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Sub Category</p>
+                    <p className="text-sm font-semibold text-gray-900">{item.subCategory || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Unit</p>
+                    <p className="text-sm font-semibold text-gray-900">{item.unit || '-'}</p>
+                  </div>
+                </div>
                 <div>
                   <p className="text-gray-600 text-sm font-medium mb-1">Description</p>
                   <p className="text-sm text-gray-900">{item.description || '-'}</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Pricing Information */}
+            <div className="box">
+              <div className="box-header border-b p-4">
+                <h5 className="box-title mb-0">Pricing & Tax</h5>
+              </div>
+              <div className="box-body p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Rate (Unit Price)</p>
+                    <p className="text-sm font-semibold text-gray-900">${item.rate.toFixed(2)}</p>
+                  </div>
                   <div>
                     <p className="text-gray-600 text-sm font-medium mb-1">Cost Price</p>
                     <p className="text-sm font-semibold text-gray-900">${item.costPrice?.toFixed(2) || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Tax Name</p>
+                    <p className="text-sm font-semibold text-gray-900">{item.taxName || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Tax %</p>
+                    <p className="text-sm font-semibold text-gray-900">{item.taxPercentage?.toFixed(2) || '0'}%</p>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-gray-600 text-sm font-medium mb-1">Discount %</p>
+                  <p className="text-sm font-semibold text-gray-900">{item.discountPercentage?.toFixed(2) || '0'}%</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Jewelry Details */}
+            {(item.weight || item.purity || item.material || item.design) && (
+              <div className="box">
+                <div className="box-header border-b p-4">
+                  <h5 className="box-title mb-0">Jewelry Details (HBC)</h5>
+                </div>
+                <div className="box-body p-6 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-600 text-sm font-medium mb-1">Weight (grams)</p>
+                      <p className="text-sm font-semibold text-gray-900">{item.weight?.toFixed(2) || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 text-sm font-medium mb-1">Purity</p>
+                      <p className="text-sm font-semibold text-gray-900">{item.purity || '-'}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-600 text-sm font-medium mb-1">Material</p>
+                      <p className="text-sm font-semibold text-gray-900">{item.material || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600 text-sm font-medium mb-1">Design</p>
+                      <p className="text-sm font-semibold text-gray-900">{item.design || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Stock Information */}
+            <div className="box">
+              <div className="box-header border-b p-4">
+                <h5 className="box-title mb-0">Stock Information</h5>
+              </div>
+              <div className="box-body p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-gray-600 text-sm font-medium mb-1">Stock On Hand</p>
+                    <p className="text-sm font-semibold text-gray-900">{item.stockOnHand} units</p>
                   </div>
                   <div>
                     <p className="text-gray-600 text-sm font-medium mb-1">Reorder Level</p>
                     <p className="text-sm font-semibold text-gray-900">{item.reorderLevel} units</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Lead Time</p>
-                    <p className="text-sm font-semibold text-gray-900">{item.leadTimeDays ? `${item.leadTimeDays} days` : 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600 text-sm font-medium mb-1">Supplier</p>
-                    <p className="text-sm font-semibold text-gray-900">{item.supplier || '-'}</p>
-                  </div>
+              </div>
+            </div>
+
+            {/* Settings & Status */}
+            <div className="box">
+              <div className="box-header border-b p-4">
+                <h5 className="box-title mb-0">Settings</h5>
+              </div>
+              <div className="box-body p-6 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${item.isActive ? 'bg-green-500/10 text-green-800' : 'bg-red-500/10 text-red-800'}`}>
+                    {item.isActive ? '✓ Active' : '✗ Inactive'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-semibold ${item.isFeatured ? 'bg-blue-500/10 text-blue-800' : 'bg-gray-500/10 text-gray-800'}`}>
+                    {item.isFeatured ? '★ Featured' : '○ Not Featured'}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="card shadow-sm p-6">
-            <h5 className="card-title mb-4">Quick Actions</h5>
-            <div className="space-y-2">
-              <button
-                onClick={() => setAdjustmentMode(true)}
-                className="w-full btn btn-primary"
-              >
-                <i className="bx bx-plus me-1"></i> Adjust Stock
-              </button>
-              <Link href="/items" className="w-full btn btn-outline-secondary text-center">
-                <i className="bx bx-chevron-left me-1"></i> Back to Items
-              </Link>
+          {/* Quick Actions - right 1/3 */}
+          <div className="space-y-6">
+            <div className="box">
+              <div className="box-header border-b p-4">
+                <h5 className="box-title mb-0">Quick Actions</h5>
+              </div>
+              <div className="box-body p-6 space-y-3">
+                <button
+                  onClick={() => setAdjustmentMode(true)}
+                  className="w-full ti-btn ti-btn-primary !text-white !bg-primary !opacity-100"
+                >
+                  <i className="ri-add-line me-2"></i>Adjust Stock
+                </button>
+                <Link href="/items" className="w-full block ti-btn ti-btn-light !opacity-100 text-center">
+                  <i className="ri-arrow-left-s-line me-2"></i>Back to Items
+                </Link>
+              </div>
             </div>
 
-            {/* Stock Info Card */}
-            <div className="mt-6 pt-6 border-t">
-              <p className="text-gray-600 text-sm font-medium mb-3">Stock Value</p>
-              <p className="text-2xl font-bold text-gray-900">${(item.currentStock * item.unitPrice).toFixed(2)}</p>
-              <p className="text-xs text-gray-500 mt-1">{item.currentStock} units × ${item.unitPrice.toFixed(2)}</p>
+            {/* Stock Value Card */}
+            <div className="box bg-purple-500/10 border-l-4 border-purple-500">
+              <div className="box-body p-6">
+                <p className="text-gray-600 text-sm font-medium mb-2">Stock Value</p>
+                <p className="text-3xl font-bold text-gray-900">${(item.stockOnHand * item.rate).toFixed(2)}</p>
+                <p className="text-xs text-gray-500 mt-2">{item.stockOnHand} units × ${item.rate.toFixed(2)}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -367,69 +432,6 @@ export default function ItemDetailPage() {
           </div>
         </div>
       </div>
-
-      {/* Edit Modal */}
-      {editMode && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg max-h-96 overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Item</h3>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
-                <input
-                  type="text"
-                  value={editData.name}
-                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <input
-                  type="text"
-                  value={editData.category}
-                  onChange={(e) => setEditData({ ...editData, category: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={editData.unitPrice}
-                  onChange={(e) => setEditData({ ...editData, unitPrice: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reorder Level</label>
-                <input
-                  type="number"
-                  value={editData.reorderLevel}
-                  onChange={(e) => setEditData({ ...editData, reorderLevel: parseInt(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                  required
-                />
-              </div>
-              <div className="flex gap-3 justify-end pt-4">
-                <button
-                  type="button"
-                  onClick={() => setEditMode(false)}
-                  className="btn btn-outline-secondary"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* Stock Adjustment Modal */}
       {adjustmentMode && (

@@ -47,29 +47,12 @@ apiClient.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 
-    // Handle connection errors - fallback to mock auth for /auth/login
-    if (error.message === 'Network Error' && originalRequest.url?.includes('/auth/login')) {
-      try {
-        const { MockAuthService } = await import('./mockAuthService');
-        const loginData = JSON.parse(originalRequest.data);
-        const response = await MockAuthService.login(loginData);
-
-        return apiClient.request({
-          ...originalRequest,
-          data: JSON.stringify({ data: response }),
-          headers: { ...originalRequest.headers, 'X-Mock-Response': 'true' },
-        });
-      } catch (mockError) {
-        return Promise.reject(error);
-      }
-    }
-
     // Handle 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        const token = getStoredToken();
+        const token = storedToken;
 
         // If no refresh token, clear auth and let login handle it
         if (!token?.refreshToken) {

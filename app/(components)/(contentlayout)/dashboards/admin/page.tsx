@@ -2,88 +2,92 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useAppDispatch, useAppSelector } from '@/shared/redux/hooks';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
-import { OrderService } from '@/shared/services/orderService';
-import { InvoiceService } from '@/shared/services/invoiceService';
+import apiClient from '@/shared/services/apiClient';
 import toast from 'react-hot-toast';
-
-interface MetricCard {
-  title: string;
-  value: string | number;
-  icon: string;
-  bgColor: string;
-  link: string;
-  subtext?: string;
-}
-
-interface RecentOrder {
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  amount: number;
-  status: string;
-  date: string;
-}
 
 export default function AdminDashboard() {
   useProtectedRoute();
 
-  const dispatch = useAppDispatch();
-  const [metrics, setMetrics] = useState<MetricCard[]>([
-    { title: 'Total Orders', value: '0', icon: 'bx-cart', bgColor: 'bg-blue-500/10 border-l-4 border-blue-500', link: '/orders', subtext: 'This month' },
-    { title: 'Revenue', value: '$0', icon: 'bx-money', bgColor: 'bg-green-500/10 border-l-4 border-green-500', link: '/reports/sales', subtext: 'This month' },
-    { title: 'Customers', value: '0', icon: 'bx-user-circle', bgColor: 'bg-purple-500/10 border-l-4 border-purple-500', link: '/customers', subtext: 'Total' },
-    { title: 'Pending Invoices', value: '0', icon: 'bx-receipt', bgColor: 'bg-orange-500/10 border-l-4 border-orange-500', link: '/invoices', subtext: 'Unpaid' },
-  ]);
-
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    totalCustomers: 0,
+    totalInvoices: 0,
+    totalPayments: 0,
+    totalItems: 0,
+    unpaidInvoices: 0,
+    paidAmount: 0,
+  });
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [recentInvoices, setRecentInvoices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [zohoStatus, setZohoStatus] = useState<boolean | null>(null);
 
-  // Fetch dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        // Fetch orders
-        const orders = await OrderService.getOrders() || [];
-
-        // Fetch invoices
-        const invoices = await InvoiceService.getInvoices() || [];
-
-        // Calculate metrics
-        const totalOrders = orders.length;
-        const totalRevenue = orders.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
-        const uniqueCustomers = new Set(orders.map((order: any) => order.customerId)).size;
-        const pendingInvoices = invoices.filter((inv: any) => inv.status !== 'paid' && inv.status !== 'cancelled').length;
-
-        // Update metrics
-        setMetrics([
-          { ...metrics[0], value: totalOrders },
-          { ...metrics[1], value: `$${totalRevenue.toFixed(2)}` },
-          { ...metrics[2], value: uniqueCustomers },
-          { ...metrics[3], value: pendingInvoices },
+        const [ordersRes, invoicesRes, customersRes, itemsRes, paymentsRes] = await Promise.allSettled([
+          apiClient.get('/orders', { params: { page: 1, pageSize: 10 } }),
+          apiClient.get('/invoices', { params: { page: 1, pageSize: 10 } }),
+          apiClient.get('/customers', { params: { page: 1, pageSize: 1 } }),
+          apiClient.get('/items', { params: { page: 1, pageSize: 1 } }),
+          apiClient.get('/payments', { params: { page: 1, pageSize: 1 } }),
         ]);
 
-        // Prepare recent orders
-        const recent = orders.slice(0, 5).map((order: any) => ({
-          id: order.id,
-          orderNumber: order.orderNumber || `#${order.id}`,
-          customerName: order.customerName || 'Unknown',
-          amount: order.totalAmount || 0,
-          status: order.status || 'pending',
-          date: new Date(order.createdAt || Date.now()).toLocaleDateString(),
-        }));
+        const orders = ordersRes.status === 'fulfilled' ? ordersRes.value.data?.data : null;
+        const invoices = invoicesRes.status === 'fulfilled' ? invoicesRes.value.data?.data : null;
+        const customers = customersRes.status === 'fulfilled' ? customersRes.value.data?.data : null;
+        const items = itemsRes.status === 'fulfilled' ? itemsRes.value.data?.data : null;
+        const payments = paymentsRes.status === 'fulfilled' ? paymentsRes.value.data?.data : null;
 
-        setRecentOrders(recent);
+        const orderItems = orders?.items || [];
+        const invoiceItems = invoices?.items || [];
+        const revenue = orderItems.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0);
+        const unpaid = invoiceItems.filter((inv: any) => inv.status !== 'Paid' && inv.status !== 'paid').length;
+
+        setStats({
+          totalOrders: orders?.totalCount || 0,
+          totalRevenue: revenue,
+          totalCustomers: customers?.totalCount || 0,
+          totalInvoices: invoices?.totalCount || 0,
+          totalPayments: payments?.totalCount || 0,
+          totalItems: items?.totalCount || 0,
+          unpaidInvoices: unpaid,
+          paidAmount: invoiceItems.reduce((sum: number, i: any) => sum + (i.paidAmount || 0), 0),
+        });
+
+        setRecentOrders(orderItems.slice(0, 8).map((o: any) => ({
+          id: o.id,
+          orderNumber: o.orderNumber,
+          customerName: o.customerName || 'Unknown',
+          amount: o.totalAmount || 0,
+          status: o.status || 'Draft',
+          date: new Date(o.orderDate || o.createdAt).toLocaleDateString('en-GB'),
+        })));
+
+        setRecentInvoices(invoiceItems.slice(0, 5).map((inv: any) => ({
+          id: inv.id,
+          invoiceNumber: inv.invoiceNumber,
+          amount: inv.totalAmount || 0,
+          paid: inv.paidAmount || 0,
+          balance: inv.balanceAmount || 0,
+          status: inv.status || 'Draft',
+          date: new Date(inv.invoiceDate).toLocaleDateString('en-GB'),
+        })));
+
+        // Check Zoho status
+        try {
+          const zohoRes = await apiClient.get('/sync/zoho');
+          setZohoStatus(zohoRes.data?.zoho ?? false);
+        } catch { setZohoStatus(false); }
+
       } catch (err: any) {
-        const errorMessage = err?.response?.data?.message || 'Failed to load dashboard data';
-        setError(errorMessage);
-        toast.error(errorMessage);
-        console.error('Dashboard error:', err);
+        setError(err?.response?.data?.message || 'Failed to load dashboard data');
       } finally {
         setIsLoading(false);
       }
@@ -92,102 +96,161 @@ export default function AdminDashboard() {
     fetchDashboardData();
   }, []);
 
-  const getStatusBadgeColor = (status: string) => {
-    const statusLower = status.toLowerCase();
-    switch (statusLower) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed':
-        return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-purple-100 text-purple-800';
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'confirmed': return 'bg-success/20 text-success';
+      case 'draft': return 'bg-secondary/20 text-secondary';
+      case 'converted': return 'bg-info/20 text-info';
+      case 'cancelled': return 'bg-danger/20 text-danger';
+      case 'paid': return 'bg-success/20 text-success';
+      case 'partial': return 'bg-warning/20 text-warning';
+      case 'overdue': return 'bg-danger/20 text-danger';
+      case 'sent': return 'bg-info/20 text-info';
+      default: return 'bg-secondary/20 text-secondary';
     }
   };
 
   if (isLoading) {
     return (
-      <div className="page-content">
-        <div className="container-fluid">
-          <div className="grid grid-cols-1 gap-6 py-6">
-            {/* Skeleton Loaders for Metrics */}
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-32 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse"></div>
-            ))}
-          </div>
+      <div className="my-[1.5rem]">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-28 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse"></div>
+          ))}
         </div>
+        <div className="h-96 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse"></div>
       </div>
     );
   }
 
   return (
-    <div className="page-content">
-      <div className="container-fluid">
-        {/* Page Header */}
-        <div className="page-header d-print-none">
-          <div className="row align-items-center">
-            <div className="col">
-              <h2 className="page-title">Admin Dashboard</h2>
-              <p className="text-muted mt-2">Welcome back! Here's what's happening with your business today.</p>
-            </div>
-            <div className="col-auto">
-              <div className="btn-list">
-                <a href="/reports/sales" className="btn btn-primary">
-                  <i className="bx bx-line-chart me-1"></i> View Reports
-                </a>
+    <div className="my-[1.5rem]">
+      {/* Page Header */}
+      <div className="md:flex block items-center justify-between mb-6">
+        <div>
+          <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">
+            Dashboard
+          </p>
+          <p className="font-normal text-[#8c9097] dark:text-white/50 text-[0.813rem]">
+            Business overview - HBC Himalayan Bullion
+          </p>
+        </div>
+        <div className="flex gap-2 mt-2 md:mt-0">
+          <Link href="/sync">
+            <button className="ti-btn ti-btn-light">
+              <i className="ri-refresh-line me-1"></i> Sync Dashboard
+            </button>
+          </Link>
+        </div>
+      </div>
+
+      {error && (
+        <div className="p-4 mb-4 bg-danger/40 text-sm border-t-4 border-danger text-danger/60 rounded-lg">{error}</div>
+      )}
+
+      {/* Metric Cards Row 1 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <Link href="/orders">
+          <div className="box p-5 border-l-4 border-primary hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[#8c9097] text-[0.813rem] mb-1">Total Orders</p>
+                <h3 className="text-[1.5rem] font-bold text-defaulttextcolor">{stats.totalOrders.toLocaleString()}</h3>
               </div>
+              <div className="text-[1.5rem] text-primary/50"><i className="ri-shopping-cart-line"></i></div>
             </div>
+          </div>
+        </Link>
+
+        <div className="box p-5 border-l-4 border-success">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[#8c9097] text-[0.813rem] mb-1">Page Revenue</p>
+              <h3 className="text-[1.5rem] font-bold text-defaulttextcolor">Rs. {stats.totalRevenue.toLocaleString()}</h3>
+              <p className="text-[0.7rem] text-[#8c9097]">From latest 10 orders</p>
+            </div>
+            <div className="text-[1.5rem] text-success/50"><i className="ri-money-rupee-circle-line"></i></div>
           </div>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="alert alert-danger mb-4" role="alert">
-            <i className="bx bx-error-circle me-2"></i>
-            {error}
+        <Link href="/customers">
+          <div className="box p-5 border-l-4 border-purple-500 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[#8c9097] text-[0.813rem] mb-1">Total Customers</p>
+                <h3 className="text-[1.5rem] font-bold text-defaulttextcolor">{stats.totalCustomers.toLocaleString()}</h3>
+              </div>
+              <div className="text-[1.5rem] text-purple-500/50"><i className="ri-group-line"></i></div>
+            </div>
           </div>
-        )}
+        </Link>
 
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6 py-4">
-          {metrics.map((metric, index) => (
-            <Link href={metric.link} key={index}>
-              <div className={`card ${metric.bgColor} p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer`}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-gray-600 text-sm font-medium">{metric.title}</p>
-                    <h3 className="text-3xl font-bold text-gray-900 mt-2">{metric.value}</h3>
-                    {metric.subtext && <p className="text-xs text-gray-500 mt-1">{metric.subtext}</p>}
-                  </div>
-                  <div className="text-3xl opacity-50">
-                    <i className={`bx ${metric.icon}`}></i>
-                  </div>
-                </div>
+        <Link href="/invoices">
+          <div className="box p-5 border-l-4 border-warning hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[#8c9097] text-[0.813rem] mb-1">Total Invoices</p>
+                <h3 className="text-[1.5rem] font-bold text-defaulttextcolor">{stats.totalInvoices.toLocaleString()}</h3>
               </div>
-            </Link>
-          ))}
+              <div className="text-[1.5rem] text-warning/50"><i className="ri-file-list-3-line"></i></div>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      {/* Metric Cards Row 2 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <Link href="/items">
+          <div className="box p-5 border-l-4 border-info hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[#8c9097] text-[0.813rem] mb-1">Inventory Items</p>
+                <h3 className="text-[1.5rem] font-bold text-defaulttextcolor">{stats.totalItems}</h3>
+              </div>
+              <div className="text-[1.5rem] text-info/50"><i className="ri-archive-line"></i></div>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/payments">
+          <div className="box p-5 border-l-4 border-success hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[#8c9097] text-[0.813rem] mb-1">Total Payments</p>
+                <h3 className="text-[1.5rem] font-bold text-defaulttextcolor">{stats.totalPayments}</h3>
+              </div>
+              <div className="text-[1.5rem] text-success/50"><i className="ri-bank-card-line"></i></div>
+            </div>
+          </div>
+        </Link>
+
+        <div className="box p-5 border-l-4 border-secondary">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[#8c9097] text-[0.813rem] mb-1">Zoho Connection</p>
+              <h3 className="text-[1rem] font-bold text-defaulttextcolor">
+                {zohoStatus === null ? 'Checking...' : zohoStatus ? 'Connected' : 'Disconnected'}
+              </h3>
+            </div>
+            <div className={`text-[1.5rem] ${zohoStatus ? 'text-success/50' : 'text-danger/50'}`}>
+              <i className={`ri-${zohoStatus ? 'check-double' : 'close-circle'}-line`}></i>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Orders Table */}
-          <div className="lg:col-span-2">
-            <div className="card shadow-sm">
-              <div className="card-header border-b p-4">
-                <div className="flex items-center justify-between">
-                  <h5 className="card-title mb-0">Recent Orders</h5>
-                  <a href="/orders" className="text-primary text-sm font-semibold hover:underline">
-                    View All →
-                  </a>
-                </div>
-              </div>
-              <div className="table-responsive">
-                <table className="table table-vcenter mb-0">
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Orders */}
+        <div className="lg:col-span-2">
+          <div className="box">
+            <div className="box-header flex items-center justify-between">
+              <h4 className="box-title">Recent Orders</h4>
+              <Link href="/orders" className="text-primary text-[0.813rem] font-semibold hover:underline">View All →</Link>
+            </div>
+            <div className="box-body p-0">
+              <div className="overflow-x-auto">
+                <table className="ti-custom-table ti-custom-table-hover">
                   <thead>
                     <tr>
                       <th>Order</th>
@@ -195,119 +258,80 @@ export default function AdminDashboard() {
                       <th>Amount</th>
                       <th>Status</th>
                       <th>Date</th>
-                      <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {recentOrders.length > 0 ? (
-                      recentOrders.map((order) => (
-                        <tr key={order.id} className="hover:bg-gray-50">
-                          <td className="font-semibold">{order.orderNumber}</td>
-                          <td>{order.customerName}</td>
-                          <td>${order.amount.toFixed(2)}</td>
-                          <td>
-                            <span className={`badge px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(order.status)}`}>
-                              {order.status}
-                            </span>
-                          </td>
-                          <td className="text-muted text-sm">{order.date}</td>
-                          <td>
-                            <a href={`/orders/${order.id}`} className="text-primary hover:underline text-sm">
-                              View
-                            </a>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="text-center py-8 text-muted">
-                          No recent orders
+                    {recentOrders.length > 0 ? recentOrders.map((order) => (
+                      <tr key={order.id}>
+                        <td>
+                          <Link href={`/orders/${order.id}`} className="font-semibold text-primary hover:underline">
+                            {order.orderNumber}
+                          </Link>
                         </td>
+                        <td className="text-[0.813rem]">{order.customerName}</td>
+                        <td className="font-semibold">Rs. {order.amount.toLocaleString()}</td>
+                        <td><span className={`badge ${getStatusColor(order.status)}`}>{order.status}</span></td>
+                        <td className="text-[0.813rem] text-[#8c9097]">{order.date}</td>
                       </tr>
+                    )) : (
+                      <tr><td colSpan={5} className="text-center py-8 text-[#8c9097]">No orders yet</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Quick Actions Sidebar */}
-          <div className="space-y-4">
-            {/* Quick Actions Card */}
-            <div className="card shadow-sm">
-              <div className="card-header border-b p-4">
-                <h5 className="card-title mb-0">Quick Actions</h5>
-              </div>
-              <div className="card-body p-4 space-y-3">
-                <a
-                  href="/orders/create"
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-50 transition-colors"
-                >
-                  <div className="text-lg text-blue-500">
-                    <i className="bx bx-plus-circle"></i>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Create Order</p>
-                    <p className="text-xs text-gray-500">New order</p>
-                  </div>
-                </a>
-
-                <a
-                  href="/customers"
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-50 transition-colors"
-                >
-                  <div className="text-lg text-purple-500">
-                    <i className="bx bx-user-plus"></i>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Add Customer</p>
-                    <p className="text-xs text-gray-500">New customer</p>
-                  </div>
-                </a>
-
-                <a
-                  href="/invoices"
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-green-50 transition-colors"
-                >
-                  <div className="text-lg text-green-500">
-                    <i className="bx bx-receipt"></i>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">View Invoices</p>
-                    <p className="text-xs text-gray-500">All invoices</p>
-                  </div>
-                </a>
-
-                <a
-                  href="/reports/sales"
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-orange-50 transition-colors"
-                >
-                  <div className="text-lg text-orange-500">
-                    <i className="bx bx-bar-chart-alt-2"></i>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">View Reports</p>
-                    <p className="text-xs text-gray-500">Analytics</p>
-                  </div>
-                </a>
-              </div>
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Recent Invoices */}
+          <div className="box">
+            <div className="box-header flex items-center justify-between">
+              <h4 className="box-title">Recent Invoices</h4>
+              <Link href="/invoices" className="text-primary text-[0.813rem] font-semibold hover:underline">View All →</Link>
             </div>
+            <div className="box-body p-0">
+              {recentInvoices.length > 0 ? recentInvoices.map((inv) => (
+                <Link href={`/invoices/${inv.id}`} key={inv.id}
+                  className="flex items-center justify-between p-3 border-b hover:bg-gray-50 transition-colors">
+                  <div>
+                    <p className="font-semibold text-[0.813rem]">{inv.invoiceNumber}</p>
+                    <p className="text-[0.7rem] text-[#8c9097]">{inv.date}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-[0.813rem]">Rs. {inv.amount.toLocaleString()}</p>
+                    <span className={`badge text-[0.65rem] ${getStatusColor(inv.status)}`}>{inv.status}</span>
+                  </div>
+                </Link>
+              )) : (
+                <div className="p-4 text-center text-[#8c9097]">No invoices yet</div>
+              )}
+            </div>
+          </div>
 
-            {/* System Status Card */}
-            <div className="card shadow-sm">
-              <div className="card-header border-b p-4">
-                <h5 className="card-title mb-0">System Status</h5>
-              </div>
-              <div className="card-body p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">API Connection</span>
-                  <span className="badge badge-success bg-green-500 text-white">Connected</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Database</span>
-                  <span className="badge badge-success bg-green-500 text-white">Online</span>
-                </div>
-              </div>
+          {/* Quick Actions */}
+          <div className="box">
+            <div className="box-header">
+              <h4 className="box-title">Quick Actions</h4>
+            </div>
+            <div className="box-body space-y-2">
+              <Link href="/orders/create" className="flex items-center gap-3 p-3 rounded-lg hover:bg-primary/5 transition-colors">
+                <i className="ri-add-circle-line text-primary text-[1.2rem]"></i>
+                <span className="font-semibold text-[0.813rem]">Create Order</span>
+              </Link>
+              <Link href="/customers" className="flex items-center gap-3 p-3 rounded-lg hover:bg-purple-500/5 transition-colors">
+                <i className="ri-user-add-line text-purple-500 text-[1.2rem]"></i>
+                <span className="font-semibold text-[0.813rem]">View Customers</span>
+              </Link>
+              <Link href="/items" className="flex items-center gap-3 p-3 rounded-lg hover:bg-info/5 transition-colors">
+                <i className="ri-archive-line text-info text-[1.2rem]"></i>
+                <span className="font-semibold text-[0.813rem]">Inventory</span>
+              </Link>
+              <Link href="/sync" className="flex items-center gap-3 p-3 rounded-lg hover:bg-warning/5 transition-colors">
+                <i className="ri-refresh-line text-warning text-[1.2rem]"></i>
+                <span className="font-semibold text-[0.813rem]">Sync Dashboard</span>
+              </Link>
             </div>
           </div>
         </div>

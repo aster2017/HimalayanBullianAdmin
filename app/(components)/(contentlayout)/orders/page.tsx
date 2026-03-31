@@ -89,6 +89,7 @@ const OrdersPage = () => {
               <thead>
                 <tr>
                   <th>Order ID</th>
+                  <th>Customer</th>
                   <th>Order Date</th>
                   <th>Total Amount</th>
                   <th>Status</th>
@@ -102,10 +103,11 @@ const OrdersPage = () => {
                     <td>
                       <span className="font-semibold">{order.orderNumber}</span>
                     </td>
-                    <td>{new Date(order.orderDate).toLocaleDateString('en-PK')}</td>
+                    <td className="text-[0.813rem]">{order.customerName || '-'}</td>
+                    <td>{new Date(order.orderDate).toLocaleDateString('en-GB')}</td>
                     <td>
                       <span className="font-semibold">
-                        Rs. {order.totalAmount?.toLocaleString('en-PK')}
+                        Rs. {order.totalAmount?.toLocaleString()}
                       </span>
                     </td>
                     <td>
@@ -113,7 +115,7 @@ const OrdersPage = () => {
                         {order.status}
                       </span>
                     </td>
-                    <td>{order.lineItems?.length || 0}</td>
+                    <td>{order.lineItems?.length || '-'}</td>
                     <td>
                       <Link href={`/orders/${order.id}`}>
                         <button className="ti-btn ti-btn-sm ti-btn-light">View</button>
@@ -128,55 +130,71 @@ const OrdersPage = () => {
       </div>
 
       {/* Pagination */}
-      {!loading && items.length > 0 && pagination.totalCount > 0 && (
-        <div className="flex justify-center mt-8">
-          <nav aria-label="Page navigation">
-            <ul className="flex gap-2">
-              <li>
-                <button
-                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="ti-btn ti-btn-light disabled:opacity-50"
-                >
-                  Previous
-                </button>
-              </li>
-              {Array.from({
-                length: Math.ceil(pagination.totalCount / pageSize),
-              }).map((_, index) => (
-                <li key={index + 1}>
+      {!loading && items.length > 0 && pagination.totalCount > 0 && (() => {
+        const totalPages = Math.ceil(pagination.totalCount / pageSize);
+        if (totalPages <= 1) return null;
+
+        // Build page numbers with ellipsis
+        const getPageNumbers = () => {
+          const pages: (number | string)[] = [];
+          if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+          } else {
+            pages.push(1);
+            if (currentPage > 3) pages.push('...');
+            const start = Math.max(2, currentPage - 1);
+            const end = Math.min(totalPages - 1, currentPage + 1);
+            for (let i = start; i <= end; i++) pages.push(i);
+            if (currentPage < totalPages - 2) pages.push('...');
+            pages.push(totalPages);
+          }
+          return pages;
+        };
+
+        return (
+          <div className="flex items-center justify-between mt-4 px-4 pb-4">
+            <p className="text-[0.813rem] text-[#8c9097]">
+              Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, pagination.totalCount)} of {pagination.totalCount} orders
+            </p>
+            <nav>
+              <ul className="flex gap-1">
+                <li>
                   <button
-                    onClick={() => handlePageChange(index + 1)}
-                    className={`ti-btn ${
-                      currentPage === index + 1
-                        ? 'ti-btn-primary !text-white'
-                        : 'ti-btn-light'
-                    }`}
+                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="ti-btn ti-btn-sm ti-btn-light disabled:opacity-50"
                   >
-                    {index + 1}
+                    Previous
                   </button>
                 </li>
-              ))}
-              <li>
-                <button
-                  onClick={() =>
-                    handlePageChange(
-                      Math.min(
-                        Math.ceil(pagination.totalCount / pageSize),
-                        currentPage + 1
-                      )
-                    )
-                  }
-                  disabled={currentPage === Math.ceil(pagination.totalCount / pageSize)}
-                  className="ti-btn ti-btn-light disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      )}
+                {getPageNumbers().map((pg, idx) => (
+                  <li key={idx}>
+                    {pg === '...' ? (
+                      <span className="ti-btn ti-btn-sm ti-btn-light pointer-events-none">...</span>
+                    ) : (
+                      <button
+                        onClick={() => handlePageChange(pg as number)}
+                        className={`ti-btn ti-btn-sm ${currentPage === pg ? 'ti-btn-primary !text-white' : 'ti-btn-light'}`}
+                      >
+                        {pg}
+                      </button>
+                    )}
+                  </li>
+                ))}
+                <li>
+                  <button
+                    onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="ti-btn ti-btn-sm ti-btn-light disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        );
+      })()}
     </Fragment>
   );
 };

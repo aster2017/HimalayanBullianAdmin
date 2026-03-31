@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/shared/redux/hooks';
 import { fetchOrderById, deleteOrder } from '@/shared/redux/ordersSlice';
@@ -8,6 +8,8 @@ import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import Seo from '@/shared/layout-components/seo/seo';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import apiClient from '@/shared/services/apiClient';
+import toast from 'react-hot-toast';
 
 const OrderDetailPage = () => {
   useProtectedRoute();
@@ -17,6 +19,7 @@ const OrderDetailPage = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { currentOrder, loading, error } = useAppSelector((state) => state.orders);
+  const [fetchingDetails, setFetchingDetails] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -112,11 +115,15 @@ const OrderDetailPage = () => {
               <h4 className="box-title">Order Details</h4>
             </div>
             <div className="box-body">
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div>
+                  <span className="text-[#8c9097] text-[0.875rem]">Customer</span>
+                  <p className="font-semibold">{currentOrder.customerName || '-'}</p>
+                </div>
                 <div>
                   <span className="text-[#8c9097] text-[0.875rem]">Order Date</span>
                   <p className="font-semibold">
-                    {new Date(currentOrder.orderDate).toLocaleDateString('en-PK')}
+                    {new Date(currentOrder.orderDate).toLocaleDateString('en-GB')}
                   </p>
                 </div>
                 <div>
@@ -127,33 +134,71 @@ const OrderDetailPage = () => {
                     </span>
                   </p>
                 </div>
+                <div>
+                  <span className="text-[#8c9097] text-[0.875rem]">Zoho ID</span>
+                  <p className="text-[0.75rem] font-mono text-[#8c9097]">{currentOrder.zohoSalesOrderId || '-'}</p>
+                </div>
               </div>
 
               <div className="border-t pt-6">
                 <h5 className="font-semibold mb-4">Order Items</h5>
                 {currentOrder.lineItems && currentOrder.lineItems.length > 0 ? (
-                  <div className="space-y-4">
-                    {currentOrder.lineItems.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center pb-4 border-b">
-                        <div>
-                          <p className="font-semibold">{item.productName}</p>
-                          <p className="text-[#8c9097] text-[0.875rem]">
-                            Qty: {item.quantity}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            Rs. {(item.unitPrice * item.quantity).toLocaleString('en-PK')}
-                          </p>
-                          <p className="text-[#8c9097] text-[0.875rem]">
-                            @ Rs. {item.unitPrice?.toLocaleString('en-PK')}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="ti-custom-table ti-striped-table ti-custom-table-hover">
+                      <thead>
+                        <tr>
+                          <th>Item</th>
+                          <th>SKU</th>
+                          <th className="text-right">Rate</th>
+                          <th className="text-right">Qty</th>
+                          <th className="text-right">Tax</th>
+                          <th className="text-right">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentOrder.lineItems.map((item: any, index: number) => (
+                          <tr key={index}>
+                            <td className="font-semibold">{item.itemName || item.productName || '-'}</td>
+                            <td className="text-[0.75rem] text-[#8c9097]">{item.sku || item.SKU || '-'}</td>
+                            <td className="text-right">Rs. {(item.rate || item.unitPrice || 0).toLocaleString()}</td>
+                            <td className="text-right">{item.quantity}</td>
+                            <td className="text-right">Rs. {(item.taxAmount || 0).toLocaleString()}</td>
+                            <td className="text-right font-semibold">Rs. {(item.lineTotal || (item.rate || item.unitPrice || 0) * item.quantity).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 ) : (
-                  <p className="text-[#8c9097]">No items in this order</p>
+                  <div className="text-center py-6">
+                    <p className="text-[#8c9097] mb-3">Line items not synced yet.</p>
+                    <button
+                      onClick={async () => {
+                        if (!currentOrder.zohoSalesOrderId) {
+                          toast.error('No Zoho ID linked to this order');
+                          return;
+                        }
+                        setFetchingDetails(true);
+                        try {
+                          await apiClient.post(`/zoho/orders/${id}/fetch-details`);
+                          toast.success('Line items fetched from Zoho!');
+                          dispatch(fetchOrderById(id));
+                        } catch (err: any) {
+                          toast.error(err?.response?.data?.error || 'Failed to fetch details');
+                        } finally {
+                          setFetchingDetails(false);
+                        }
+                      }}
+                      disabled={fetchingDetails}
+                      className="ti-btn ti-btn-primary !text-white"
+                    >
+                      {fetchingDetails ? (
+                        <><i className="ri-loader-4-line animate-spin inline-block me-2"></i>Fetching...</>
+                      ) : (
+                        <><i className="ri-download-line me-2"></i>Fetch Items from Zoho</>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -170,7 +215,7 @@ const OrderDetailPage = () => {
               <div className="flex justify-between">
                 <span className="text-[#8c9097]">Subtotal</span>
                 <span className="font-semibold">
-                  Rs. {(currentOrder.totalAmount - (currentOrder.taxAmount || 0)).toLocaleString('en-PK')}
+                  Rs. {(currentOrder.subTotal || currentOrder.totalAmount || 0).toLocaleString()}
                 </span>
               </div>
               {currentOrder.taxAmount && (
@@ -198,16 +243,10 @@ const OrderDetailPage = () => {
                 </div>
               </div>
 
-              {currentOrder.billingAddress && (
+              {currentOrder.customerNotes && (
                 <div className="border-t pt-4">
-                  <h5 className="font-semibold mb-2">Billing Address</h5>
-                  <p className="text-[0.875rem] text-[#8c9097]">
-                    {currentOrder.billingAddress.street}
-                    <br />
-                    {currentOrder.billingAddress.city}, {currentOrder.billingAddress.state}
-                    <br />
-                    {currentOrder.billingAddress.zipCode}
-                  </p>
+                  <h5 className="font-semibold mb-2">Customer Notes</h5>
+                  <p className="text-[0.875rem] text-[#8c9097]">{currentOrder.customerNotes}</p>
                 </div>
               )}
             </div>
