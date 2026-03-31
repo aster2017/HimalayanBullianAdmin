@@ -107,6 +107,7 @@ const InvoicesPage = () => {
               <thead>
                 <tr>
                   <th>Invoice #</th>
+                  <th>Customer</th>
                   <th>Order #</th>
                   <th>Date</th>
                   <th>Due Date</th>
@@ -121,6 +122,7 @@ const InvoicesPage = () => {
                 {items.map((invoice: any) => (
                   <tr key={invoice.id}>
                     <td><span className="font-semibold">{invoice.invoiceNumber}</span></td>
+                    <td className="text-[0.813rem]">{invoice.customerName || '-'}</td>
                     <td className="text-[0.75rem] text-[#8c9097]">{invoice.orderNumber || '-'}</td>
                     <td>{new Date(invoice.invoiceDate).toLocaleDateString('en-GB')}</td>
                     <td>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : '-'}</td>

@@ -197,10 +197,10 @@ export default function ItemDetailPage() {
 
           <div className="card bg-purple-500/10 border-l-4 border-purple-500 p-6 rounded-lg shadow-sm">
             <p className="text-gray-600 text-sm font-medium mb-1">Unit Price</p>
-            <p className="text-sm font-semibold text-gray-900">${item.rate.toFixed(2)}</p>
+            <p className="text-sm font-semibold text-gray-900">Rs. {item.rate?.toLocaleString()}</p>
           </div>
 
-          <div className={`card border-l-4 p-6 rounded-lg shadow-sm ${stockStatus.color.replace('text-', 'border-')}`}>
+          <div className={`card border-l-4 p-6 rounded-lg shadow-sm ${stockStatus.status === 'OutOfStock' ? 'border-red-500 bg-red-500/10' : stockStatus.status === 'LowStock' ? 'border-yellow-500 bg-yellow-500/10' : 'border-green-500 bg-green-500/10'}`}>
             <p className="text-gray-600 text-sm font-medium mb-1">Status</p>
             <span className={`badge ${stockStatus.color} px-2 py-1 rounded text-xs font-semibold`}>
               {stockStatus.label}
@@ -254,11 +254,11 @@ export default function ItemDetailPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-gray-600 text-sm font-medium mb-1">Rate (Unit Price)</p>
-                    <p className="text-sm font-semibold text-gray-900">${item.rate.toFixed(2)}</p>
+                    <p className="text-sm font-semibold text-gray-900">Rs. {item.rate?.toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-gray-600 text-sm font-medium mb-1">Cost Price</p>
-                    <p className="text-sm font-semibold text-gray-900">${item.costPrice?.toFixed(2) || 'N/A'}</p>
+                    <p className="text-sm font-semibold text-gray-900">Rs. {item.costPrice?.toLocaleString() || '0'}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -371,8 +371,8 @@ export default function ItemDetailPage() {
             <div className="box bg-purple-500/10 border-l-4 border-purple-500">
               <div className="box-body p-6">
                 <p className="text-gray-600 text-sm font-medium mb-2">Stock Value</p>
-                <p className="text-3xl font-bold text-gray-900">${(item.stockOnHand * item.rate).toFixed(2)}</p>
-                <p className="text-xs text-gray-500 mt-2">{item.stockOnHand} units × ${item.rate.toFixed(2)}</p>
+                <p className="text-3xl font-bold text-gray-900">Rs. {(item.stockOnHand * item.rate).toLocaleString()}</p>
+                <p className="text-xs text-gray-500 mt-2">{item.stockOnHand} units × Rs. {item.rate?.toLocaleString()}</p>
               </div>
             </div>
           </div>

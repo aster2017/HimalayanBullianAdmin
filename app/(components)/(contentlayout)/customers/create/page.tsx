@@ -4,7 +4,7 @@ import { Fragment, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import Link from 'next/link';
-import { CustomerService } from '@/shared/services/customerService';
+import apiClient from '@/shared/services/apiClient';
 import toast from 'react-hot-toast';
 
 export default function CreateCustomerPage() {
@@ -40,12 +40,12 @@ export default function CreateCustomerPage() {
 
     setIsLoading(true);
     try {
-      // Use the auth register endpoint for now
-      // A proper backend endpoint for admin customer creation would be better
-      toast.success('Customer creation feature coming soon');
-      // Uncomment when backend endpoint is ready:
-      // await CustomerService.createCustomer(formData);
-      // router.push('/customers');
+      await apiClient.post('/auth/register', {
+        ...formData,
+        confirmPassword: formData.password,
+      });
+      toast.success('Customer created successfully');
+      router.push('/customers');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create customer');
     } finally {
