@@ -165,32 +165,23 @@ export default function SyncDashboardPage() {
             <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">Sync Dashboard</p>
             <p className="font-normal text-[#8c9097] text-[0.813rem]">Monitor Zoho Inventory synchronization status and activity.</p>
           </div>
-          <div className="flex gap-2 mt-2 md:mt-0">
-                <button
-                  onClick={handleItemPull}
-                  disabled={isSyncing}
-                  className="ti-btn ti-btn-sm ti-btn-light !opacity-100"
-                >
-                  <i className="ri-download-line me-1"></i> Pull Items
-                </button>
-                <button
-                  onClick={handleRetryFailed}
-                  disabled={isSyncing || ((errors || []).length === 0)}
-                  className="ti-btn ti-btn-sm ti-btn-warning-full !text-white"
-                >
-                  <i className="ri-refresh-line me-1"></i> Retry Failed
-                </button>
-                <button
-                  onClick={handleFullSync}
-                  disabled={isSyncing}
-                  className="ti-btn ti-btn-sm ti-btn-primary-full !text-white"
-                >
-                  {isSyncing ? (
-                    <><i className="bx bx-loader-alt bx-spin me-1"></i> Syncing...</>
-                  ) : (
-                    <><i className="bx bx-sync me-1"></i> Full Sync</>
-                  )}
-                </button>
+          <div className="flex items-center gap-2 mt-2 md:mt-0">
+            <button onClick={handleItemPull} disabled={isSyncing}
+              className="ti-btn ti-btn-sm ti-btn-light !opacity-100 disabled:!opacity-50">
+              <i className="ri-download-2-line me-1"></i> Pull Items
+            </button>
+            <button onClick={handleRetryFailed} disabled={isSyncing || ((errors || []).length === 0)}
+              className="ti-btn ti-btn-sm ti-btn-warning-full !text-white disabled:!opacity-50">
+              <i className="ri-restart-line me-1"></i> Retry Failed
+            </button>
+            <button onClick={handleFullSync} disabled={isSyncing}
+              className="ti-btn ti-btn-sm ti-btn-primary-full !text-white disabled:!opacity-50">
+              {isSyncing ? (
+                <><i className="ri-loader-4-line animate-spin me-1"></i> Syncing...</>
+              ) : (
+                <><i className="ri-refresh-line me-1"></i> Full Sync</>
+              )}
+            </button>
           </div>
         </div>
 
@@ -436,11 +427,11 @@ export default function SyncDashboardPage() {
         {activeTab === 'logs' && (
           <div className="box">
             <div className="box-header">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <h5 className="box-title">Sync Logs</h5>
-                <div className="flex gap-2 flex-wrap">
+              <div className="md:flex block items-center justify-between gap-3">
+                <h5 className="box-title mb-2 md:mb-0">Sync Logs</h5>
+                <div className="flex items-center gap-2">
                   <select
-                    className="form-select form-select-sm w-auto"
+                    className="form-control form-control-sm !w-[140px] !py-1"
                     value={logFilter.entityType || ''}
                     onChange={(e) => setLogFilter({ ...logFilter, entityType: e.target.value || undefined, pageNumber: 1 })}
                   >
@@ -452,7 +443,7 @@ export default function SyncDashboardPage() {
                     <option value="Payment">Payments</option>
                   </select>
                   <select
-                    className="form-select form-select-sm w-auto"
+                    className="form-control form-control-sm !w-[130px] !py-1"
                     value={logFilter.status || ''}
                     onChange={(e) => setLogFilter({ ...logFilter, status: e.target.value || undefined, pageNumber: 1 })}
                   >
@@ -463,13 +454,13 @@ export default function SyncDashboardPage() {
                     <option value="InProgress">In Progress</option>
                   </select>
                   <select
-                    className="form-select form-select-sm w-auto"
+                    className="form-control form-control-sm !w-[140px] !py-1"
                     value={logFilter.direction || ''}
                     onChange={(e) => setLogFilter({ ...logFilter, direction: e.target.value || undefined, pageNumber: 1 })}
                   >
                     <option value="">All Directions</option>
-                    <option value="FromZoho">Pull (From Zoho)</option>
-                    <option value="ToZoho">Push (To Zoho)</option>
+                    <option value="FromZoho">Pull</option>
+                    <option value="ToZoho">Push</option>
                   </select>
                 </div>
               </div>
