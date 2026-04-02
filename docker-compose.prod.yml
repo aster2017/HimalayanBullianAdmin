@@ -1,0 +1,14 @@
+services:
+  hbc-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://hbc-api.semis.app/api
+        NEXT_PUBLIC_ENV: production
+    container_name: hbc-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3100:3000"
+    environment:
+      - NODE_ENV=production

@@ -123,7 +123,7 @@ const ProductsPage = () => {
                       : 'Out of stock'}
                   </p>
                   <Link href={`/products/${product.id}`}>
-                    <button className="ti-btn ti-btn-primary w-full !text-white">
+                    <button className="ti-btn ti-btn-primary-full w-full !text-white">
                       View Details
                     </button>
                   </Link>

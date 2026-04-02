@@ -7,6 +7,7 @@ const nextConfig = {
   swcMinify: true,
   basePath: "",
   assetPrefix: "",
+  output: "standalone",
   images: {
     unoptimized: true,
   },
