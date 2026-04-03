@@ -95,6 +95,9 @@ const OrderDetailPage = () => {
           </p>
         </div>
         <div className="flex gap-2 mt-2 md:mt-0">
+          <Link href={`/orders/${id}/payment`}>
+            <button className="ti-btn ti-btn-primary-full !text-white">Manage Payment</button>
+          </Link>
           <Link href="/orders">
             <button className="ti-btn ti-btn-light !opacity-100">Back</button>
           </Link>
