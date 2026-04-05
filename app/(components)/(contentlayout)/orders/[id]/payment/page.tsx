@@ -8,6 +8,8 @@ import apiClient from '@/shared/services/apiClient';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
+const API_HOST = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002/api').replace('/api', '');
+
 export default function OrderPaymentPage() {
   useProtectedRoute();
   const params = useParams();
@@ -76,7 +78,12 @@ export default function OrderPaymentPage() {
           <p className="font-semibold text-[1.125rem] text-defaulttextcolor !mb-0">Payment: {d.orderNumber}</p>
           <p className="text-[#8c9097] text-[0.813rem]">{d.customerName}</p>
         </div>
-        <Link href={`/orders/${id}`}><button className="ti-btn ti-btn-light !opacity-100 mt-2 md:mt-0">Back to Order</button></Link>
+        <div className="flex gap-2 mt-2 md:mt-0">
+          <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002/api'}/orders/${id}/invoice-pdf`} target="_blank" rel="noopener noreferrer">
+            <button className="ti-btn ti-btn-success-full !text-white">Download Invoice</button>
+          </a>
+          <Link href={`/orders/${id}`}><button className="ti-btn ti-btn-light !opacity-100">Back to Order</button></Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-12 gap-6">
@@ -85,7 +92,11 @@ export default function OrderPaymentPage() {
           <div className="box">
             <div className="box-header"><h4 className="box-title">Payment Status</h4></div>
             <div className="box-body">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                <div className="p-4 rounded-lg bg-info/5 border-l-4 border-info">
+                  <p className="text-[#8c9097] text-[0.75rem]">Silver Quantity</p>
+                  <p className="font-bold text-[1.25rem]">{d.quantityGrams || '—'}g</p>
+                </div>
                 <div className="p-4 rounded-lg bg-primary/5 border-l-4 border-primary">
                   <p className="text-[#8c9097] text-[0.75rem]">Total Amount</p>
                   <p className="font-bold text-[1.25rem]">Rs. {d.totalAmount?.toLocaleString()}</p>
@@ -126,7 +137,9 @@ export default function OrderPaymentPage() {
                   {d.receipts.map((r: any) => (
                     <div key={r.id} className="flex items-start gap-4 p-4 border rounded-lg">
                       {r.receiptImageUrl && (
-                        <img src={`http://localhost:5002${r.receiptImageUrl}`} alt="Receipt" className="w-20 h-20 object-cover rounded" />
+                        <a href={`${API_HOST}${r.receiptImageUrl}`} target="_blank" rel="noopener noreferrer">
+                          <img src={`${API_HOST}${r.receiptImageUrl}`} alt="Receipt" className="w-20 h-20 object-cover rounded hover:opacity-80 cursor-pointer border" />
+                        </a>
                       )}
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">

@@ -23,7 +23,7 @@ export default function LoginPage() {
   useEffect(() => {
     // Redirect if already authenticated
     if (isAuthenticated && getStoredToken()) {
-      router.push('/dashboards/crm');
+      window.location.href = '/dashboards/admin';
     }
   }, [isAuthenticated, router]);
 

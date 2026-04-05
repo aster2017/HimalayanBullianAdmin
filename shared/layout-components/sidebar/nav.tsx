@@ -53,14 +53,6 @@ export const MenuItems: MenuItem[] = [
         dirchange: false,
         title: "Admin Dashboard",
       },
-      {
-        path: "/dashboards/crm",
-        type: "link",
-        active: false,
-        selected: false,
-        dirchange: false,
-        title: "CRM",
-      },
     ],
   },
 
