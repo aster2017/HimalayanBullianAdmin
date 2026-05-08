@@ -52,7 +52,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const token = storedToken;
+        const token = getStoredToken();
 
         // If no refresh token, clear auth and let login handle it
         if (!token?.refreshToken) {

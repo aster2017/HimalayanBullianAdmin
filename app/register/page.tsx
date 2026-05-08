@@ -2,183 +2,225 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import apiClient from '@/shared/services/apiClient';
-import { setStoredToken } from '@/shared/utils/tokenStorage';
-import toast from 'react-hot-toast';
+import { useState, useEffect, useRef } from 'react';
+import { useAppDispatch, useAppSelector } from '@/shared/redux/hooks';
+import { registerUser, verifyEmail, clearError, clearRequiredAction } from '@/shared/redux/authSlice';
+import { AuthService } from '@/shared/services/authService';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const dispatch = useAppDispatch();
+  const { isLoading, error, requiredAction, pendingEmail } = useAppSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({
-    fullName: '', email: '', phoneNumber: '', password: '', confirmPassword: '',
-    panNumber: '', customerNumber: '', address: '', city: 'Kathmandu', state: '', postalCode: '',
+    firstName: '', lastName: '', email: '', password: '', confirmPassword: '',
   });
+  const [validationError, setValidationError] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendMsg, setResendMsg] = useState('');
+  const cooldownRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
+
+  const startCooldown = () => {
+    setResendCooldown(60);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((v) => { if (v <= 1) { clearInterval(cooldownRef.current!); return 0; } return v - 1; });
+    }, 1000);
+  };
+
+  useEffect(() => { if (requiredAction === 'VerifyEmail') startCooldown(); }, [requiredAction]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    setError('');
-  };
-
-  const validateStep1 = () => {
-    if (!formData.fullName.trim()) return 'Full name is required';
-    if (!formData.email.trim() || !formData.email.includes('@')) return 'Valid email is required';
-    if (formData.password.length < 8) return 'Password must be at least 8 characters';
-    if (formData.password !== formData.confirmPassword) return 'Passwords do not match';
-    return null;
-  };
-
-  const handleNext = () => {
-    const err = validateStep1();
-    if (err) { setError(err); return; }
-    setError('');
-    setStep(2);
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setValidationError('');
+    if (error) dispatch(clearError());
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const err = validateStep1();
-    if (err) { setError(err); return; }
-
-    if (formData.panNumber && !/^\d{9}$/.test(formData.panNumber)) {
-      setError('PAN number must be 9 digits');
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-    try {
-      const res = await apiClient.post('/auth/signup', { ...formData, source: 'Web' });
-      const data = res.data;
-      if (data.success && data.token) {
-        setStoredToken({ token: data.token, refreshToken: data.refreshToken, expiresAt: data.expiresAt, type: 'Bearer' });
-        toast.success('Account created successfully!');
-        router.push('/dashboards/admin');
-      } else {
-        setError(data.message || 'Signup failed');
-      }
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to create account');
-    }
-    setIsLoading(false);
+    if (!formData.firstName.trim()) return setValidationError('First name is required');
+    if (!formData.lastName.trim()) return setValidationError('Last name is required');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) return setValidationError('Valid email required');
+    if (formData.password.length < 8) return setValidationError('Password must be at least 8 characters');
+    if (formData.password !== formData.confirmPassword) return setValidationError('Passwords do not match');
+    dispatch(registerUser({ ...formData }));
   };
 
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otpCode.length !== 6) return setValidationError('Enter the 6-digit code');
+    dispatch(verifyEmail({ email: pendingEmail!, code: otpCode }));
+  };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0 || !pendingEmail) return;
+    try {
+      await AuthService.resendOtp(pendingEmail);
+      startCooldown();
+      setResendMsg('A new code has been sent.');
+    } catch {
+      setResendMsg('Could not resend. Please try again.');
+    }
+  };
+
+  // ── Awaiting approval ───────────────────────────────────────────────────────
+  if (requiredAction === 'AwaitingApproval') {
+    return (
+      <div className="container">
+        <div className="flex justify-center authentication authentication-basic items-center min-h-screen">
+          <div className="grid grid-cols-12">
+            <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-3 sm:col-span-2" />
+            <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-6 sm:col-span-8 col-span-12">
+              <div className="box !p-[3rem] text-center">
+                <div className="flex justify-center mb-4 text-5xl">⏳</div>
+                <h5 className="font-semibold mb-2">Account Under Review</h5>
+                <p className="text-[#8c9097] mb-4 text-sm">
+                  Your email is verified! Our team is reviewing your account.
+                  You will receive an email once approved.
+                </p>
+                <div className="text-start mb-6 space-y-2 bg-light rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-sm text-success font-medium">✓ Account created</div>
+                  <div className="flex items-center gap-2 text-sm text-success font-medium">✓ Email verified</div>
+                  <div className="flex items-center gap-2 text-sm text-[#8c9097]">⏳ Admin approval (pending)</div>
+                </div>
+                <button
+                  onClick={() => { dispatch(clearRequiredAction()); router.push('/'); }}
+                  className="ti-btn ti-btn-primary w-full"
+                >
+                  Back to Sign In
+                </button>
+              </div>
+            </div>
+            <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-3 sm:col-span-2" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── OTP verification ────────────────────────────────────────────────────────
+  if (requiredAction === 'VerifyEmail') {
+    return (
+      <div className="container">
+        <div className="flex justify-center authentication authentication-basic items-center min-h-screen">
+          <div className="grid grid-cols-12">
+            <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-3 sm:col-span-2" />
+            <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-6 sm:col-span-8 col-span-12">
+              <div className="box !p-[3rem]">
+                <div className="flex justify-center mb-4 text-5xl">📧</div>
+                <h5 className="font-semibold mb-2 text-center">Verify Your Email</h5>
+                <p className="text-[#8c9097] text-center mb-4 text-sm">
+                  We sent a 6-digit code to <strong>{pendingEmail}</strong>
+                </p>
+
+                {(error || validationError) && (
+                  <div className="p-3 mb-4 text-sm rounded-lg bg-danger/20 text-danger">
+                    {error || validationError}
+                  </div>
+                )}
+                {resendMsg && !error && (
+                  <div className="p-3 mb-4 text-sm rounded-lg bg-success/20 text-success">{resendMsg}</div>
+                )}
+
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div>
+                    <label className="form-label text-default">Verification Code</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '')); setValidationError(''); }}
+                      className="form-control form-control-lg w-full !rounded-md text-center tracking-[0.5em] text-xl"
+                      placeholder="000000"
+                      autoFocus
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isLoading || otpCode.length !== 6}
+                    className="ti-btn ti-btn-primary w-full disabled:opacity-50"
+                  >
+                    {isLoading ? 'Verifying…' : 'Verify Email'}
+                  </button>
+                </form>
+
+                <p className="text-center text-sm text-[#8c9097] mt-4">
+                  {"Didn't receive it? "}
+                  {resendCooldown > 0
+                    ? <span>Resend in {resendCooldown}s</span>
+                    : <button onClick={handleResend} className="text-primary font-semibold">Resend</button>
+                  }
+                </p>
+              </div>
+            </div>
+            <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-3 sm:col-span-2" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Registration form ───────────────────────────────────────────────────────
   return (
     <div className="container">
       <div className="flex justify-center authentication authentication-basic items-center min-h-screen text-defaultsize text-defaulttextcolor">
         <div className="grid grid-cols-12">
-          <div className="xxl:col-span-3 xl:col-span-3 lg:col-span-3 md:col-span-2 sm:col-span-1"></div>
-          <div className="xxl:col-span-6 xl:col-span-6 lg:col-span-6 md:col-span-8 sm:col-span-10 col-span-12">
-            <div className="box !p-[2rem]">
-              <p className="h5 font-semibold mb-1 text-center">Create Account</p>
-              <p className="mb-4 text-[#8c9097] text-center text-[0.813rem]">
-                Step {step} of 2 — {step === 1 ? 'Basic Info' : 'Identity & Address'}
-              </p>
+          <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-3 sm:col-span-2" />
+          <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-6 sm:col-span-8 col-span-12">
+            <div className="box !p-[3rem]">
+              <p className="h5 font-semibold mb-2 text-center">Create Account</p>
+              <p className="mb-4 text-[#8c9097] opacity-70 font-normal text-center">Join HBC Silver today</p>
 
-              {/* Progress */}
-              <div className="w-full bg-gray-200 rounded-full h-1 mb-6">
-                <div className="bg-primary h-1 rounded-full transition-all" style={{ width: step === 1 ? '50%' : '100%' }}></div>
-              </div>
-
-              {error && (
-                <div className="p-3 mb-4 bg-danger/10 text-sm border-l-4 border-danger text-danger rounded">{error}</div>
+              {(error || validationError) && (
+                <div className="p-4 mb-4 bg-danger/20 text-sm text-danger rounded-lg">{error || validationError}</div>
               )}
 
-              <form onSubmit={handleSubmit}>
-                {step === 1 ? (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="form-label">Full Name *</label>
-                      <input type="text" name="fullName" value={formData.fullName} onChange={handleChange}
-                        className="form-control form-control-lg" placeholder="Ram Bahadur Sharma" required />
-                    </div>
-                    <div>
-                      <label className="form-label">Email *</label>
-                      <input type="email" name="email" value={formData.email} onChange={handleChange}
-                        className="form-control form-control-lg" placeholder="your@email.com" required />
-                    </div>
-                    <div>
-                      <label className="form-label">Phone Number</label>
-                      <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange}
-                        className="form-control form-control-lg" placeholder="+977-98XXXXXXXX" />
-                    </div>
-                    <div>
-                      <label className="form-label">Password * (min 8 chars)</label>
-                      <input type="password" name="password" value={formData.password} onChange={handleChange}
-                        className="form-control form-control-lg" placeholder="Min 8 characters" required />
-                    </div>
-                    <div>
-                      <label className="form-label">Confirm Password *</label>
-                      <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange}
-                        className="form-control form-control-lg" placeholder="Confirm password" required />
-                    </div>
-                    <button type="button" onClick={handleNext}
-                      className="ti-btn ti-btn-primary-full !text-white w-full !text-[1rem] py-3">
-                      Next &rarr;
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-[0.75rem] text-[#8c9097] font-semibold uppercase tracking-wider">Identity</p>
-                    <div>
-                      <label className="form-label">PAN Number (9 digits)</label>
-                      <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange}
-                        className="form-control form-control-lg" placeholder="123456789" maxLength={9} />
-                    </div>
-                    <div>
-                      <label className="form-label">Zoho Customer # (optional)</label>
-                      <input type="text" name="customerNumber" value={formData.customerNumber} onChange={handleChange}
-                        className="form-control form-control-lg" placeholder="For linking existing Zoho account" />
-                    </div>
-
-                    <p className="text-[0.75rem] text-[#8c9097] font-semibold uppercase tracking-wider pt-2">Address</p>
-                    <div>
-                      <label className="form-label">Street Address</label>
-                      <input type="text" name="address" value={formData.address} onChange={handleChange}
-                        className="form-control form-control-lg" placeholder="Street address" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="form-label">City</label>
-                        <input type="text" name="city" value={formData.city} onChange={handleChange}
-                          className="form-control form-control-lg" />
-                      </div>
-                      <div>
-                        <label className="form-label">State</label>
-                        <input type="text" name="state" value={formData.state} onChange={handleChange}
-                          className="form-control form-control-lg" placeholder="Province" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="form-label">Postal Code</label>
-                      <input type="text" name="postalCode" value={formData.postalCode} onChange={handleChange}
-                        className="form-control form-control-lg" placeholder="44600" />
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button type="button" onClick={() => setStep(1)}
-                        className="ti-btn ti-btn-light !opacity-100 flex-1 py-3">
-                        &larr; Back
-                      </button>
-                      <button type="submit" disabled={isLoading}
-                        className="ti-btn ti-btn-primary-full !text-white flex-1 !text-[1rem] py-3 disabled:opacity-50">
-                        {isLoading ? 'Creating...' : 'Create Account'}
-                      </button>
-                    </div>
-                  </div>
-                )}
+              <form onSubmit={handleSubmit} className="grid grid-cols-12 gap-y-4">
+                <div className="xl:col-span-6 col-span-12">
+                  <label className="form-label text-default">First Name</label>
+                  <input type="text" name="firstName" className="form-control form-control-lg w-full !rounded-md"
+                    placeholder="First name" value={formData.firstName} onChange={handleChange} required />
+                </div>
+                <div className="xl:col-span-6 col-span-12">
+                  <label className="form-label text-default">Last Name</label>
+                  <input type="text" name="lastName" className="form-control form-control-lg w-full !rounded-md"
+                    placeholder="Last name" value={formData.lastName} onChange={handleChange} required />
+                </div>
+                <div className="xl:col-span-12 col-span-12">
+                  <label className="form-label text-default">Email</label>
+                  <input type="email" name="email" className="form-control form-control-lg w-full !rounded-md"
+                    placeholder="Enter your email" value={formData.email} onChange={handleChange} required />
+                </div>
+                <div className="xl:col-span-12 col-span-12">
+                  <label className="form-label text-default">Password</label>
+                  <input type="password" name="password" className="form-control form-control-lg w-full !rounded-md"
+                    placeholder="Min. 8 characters" value={formData.password} onChange={handleChange} required />
+                </div>
+                <div className="xl:col-span-12 col-span-12">
+                  <label className="form-label text-default">Confirm Password</label>
+                  <input type="password" name="confirmPassword" className="form-control form-control-lg w-full !rounded-md"
+                    placeholder="Confirm password" value={formData.confirmPassword} onChange={handleChange} required />
+                </div>
+                <div className="xl:col-span-12 col-span-12">
+                  <button type="submit" disabled={isLoading}
+                    className="ti-btn ti-btn-primary !bg-primary !text-white !font-medium w-full disabled:opacity-50">
+                    {isLoading ? 'Creating Account…' : 'Create Account'}
+                  </button>
+                </div>
               </form>
 
               <div className="text-center mt-4">
-                <p className="text-[0.813rem] text-[#8c9097]">
-                  Already have an account? <Link href="/" className="text-primary font-semibold">Sign In</Link>
+                <p className="text-[0.75rem] text-[#8c9097]">
+                  Already have an account?{' '}
+                  <Link href="/" className="text-primary font-semibold">Sign In</Link>
                 </p>
               </div>
             </div>
           </div>
+          <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-3 sm:col-span-2" />
         </div>
       </div>
     </div>

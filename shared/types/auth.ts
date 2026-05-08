@@ -1,10 +1,3 @@
-/**
- * Authentication related types and interfaces
- */
-
-/**
- * User profile information
- */
 export interface User {
   id: string;
   email: string;
@@ -13,15 +6,17 @@ export interface User {
   fullName: string;
   phoneNumber?: string;
   profilePictureUrl?: string;
+  customerNumber?: string;
+  zohoContactId?: string;
+  isZohoLinked?: boolean;
+  isEmailVerified?: boolean;
+  isApproved?: boolean;
   roles: string[];
   permissions: string[];
   createdAt?: string;
   lastLoginAt?: string;
 }
 
-/**
- * User profile details (more comprehensive)
- */
 export interface UserProfile {
   id: string;
   email: string;
@@ -34,30 +29,22 @@ export interface UserProfile {
   lastLoginAt?: string;
 }
 
-/**
- * Login request payload
- */
 export interface LoginRequest {
   email: string;
   password: string;
   rememberMe?: boolean;
 }
 
-/**
- * Login response payload
- */
 export interface LoginResponse {
   success: boolean;
   message: string;
-  token: string;
+  token?: string | null;
   refreshToken?: string;
   expiresAt?: string;
-  user: User;
+  user?: User | null;
+  requiredAction?: 'VerifyEmail' | 'AwaitingApproval' | null;
 }
 
-/**
- * Registration request payload
- */
 export interface RegisterRequest {
   email: string;
   password: string;
@@ -67,35 +54,23 @@ export interface RegisterRequest {
   phoneNumber?: string;
 }
 
-/**
- * Refresh token request
- */
 export interface RefreshTokenRequest {
   token: string;
   refreshToken: string;
 }
 
-/**
- * Profile update request
- */
 export interface UpdateProfileRequest {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
 }
 
-/**
- * Change password request
- */
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 }
 
-/**
- * Auth state in Redux
- */
 export interface AuthState {
   user: User | null;
   token: string | null;
@@ -103,4 +78,6 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  requiredAction: 'VerifyEmail' | 'AwaitingApproval' | null;
+  pendingEmail: string | null;
 }

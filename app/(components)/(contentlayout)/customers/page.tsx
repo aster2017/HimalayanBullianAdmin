@@ -2,8 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
-import apiClient from '@/shared/services/apiClient';
+import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
 export default function CustomersPage() {
   useProtectedRoute();
@@ -12,34 +14,35 @@ export default function CustomersPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [acting, setActing] = useState<string | null>(null);
+  const [acting, setActing] = useState<string|null>(null);
   const [stats, setStats] = useState({ total: 0, newThisMonth: 0, avgLifetimeValue: 0 });
   const pageSize = 20;
 
   const load = async (p = 1, q = search) => {
     setLoading(true);
-    try {
-      const params: any = { page: p, pageSize };
-      if (q) params.search = q;
-      const r = await apiClient.get('/customers', { params });
-      setCustomers(r.data?.data?.items || []);
-      setTotal(r.data?.data?.totalCount || 0);
-      setPage(p);
-    } catch { toast.error('Failed to load customers'); }
+    const params = new URLSearchParams({ page: String(p), pageSize: String(pageSize) });
+    if (q) params.set('search', q);
+    const r = await fetch(`${API}/customers?${params}`, { headers: getAuthHeaders() });
+    const d = await r.json();
+    setCustomers(d.data?.items || []);
+    setTotal(d.data?.totalCount || 0);
+    setPage(p);
     setLoading(false);
   };
 
   useEffect(() => {
     load();
-    apiClient.get('/customers/stats/overview').then(r => setStats(r.data?.data || {})).catch(() => {});
+    fetch(`${API}/customers/stats/overview`, { headers: getAuthHeaders() })
+      .then(r => r.json()).then(d => setStats(d.data || {})).catch(() => {});
   }, []);
 
   const act = async (id: string, endpoint: string, msg: string) => {
-    setActing(id + endpoint);
+    setActing(id);
     try {
-      const r = await apiClient.post(`/customers/${id}/${endpoint}`);
-      if (r.data?.success !== false) { toast.success(r.data?.message || msg); load(page); }
-      else toast.error(r.data?.message || 'Failed');
+      const r = await fetch(`${API}/customers/${id}/${endpoint}`, { method: 'POST', headers: getAuthHeaders() });
+      const d = await r.json();
+      if (d.success) { toast.success(d.message || msg); load(page); }
+      else toast.error(d.message || 'Failed');
     } catch { toast.error('Action failed'); }
     setActing(null);
   };
@@ -47,10 +50,10 @@ export default function CustomersPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   const statusBadge = (c: any) => {
-    if (!c.isActive) return <span className="badge bg-danger/10 text-danger px-2 py-1 rounded text-xs font-semibold">Suspended</span>;
-    if (!c.isEmailVerified) return <span className="badge bg-secondary/10 text-secondary px-2 py-1 rounded text-xs font-semibold">Unverified</span>;
-    if (!c.isApproved) return <span className="badge bg-warning/10 text-warning px-2 py-1 rounded text-xs font-semibold">Pending</span>;
-    return <span className="badge bg-success/10 text-success px-2 py-1 rounded text-xs font-semibold">Active</span>;
+    if (!c.isActive) return <span className="badge bg-red-500/10 text-red-700 px-2 py-1 rounded text-xs">Suspended</span>;
+    if (!c.isEmailVerified) return <span className="badge bg-gray-500/10 text-gray-600 px-2 py-1 rounded text-xs">Unverified</span>;
+    if (!c.isApproved) return <span className="badge bg-yellow-500/10 text-yellow-700 px-2 py-1 rounded text-xs">Pending</span>;
+    return <span className="badge bg-green-500/10 text-green-700 px-2 py-1 rounded text-xs">Active</span>;
   };
 
   return (
@@ -63,26 +66,28 @@ export default function CustomersPage() {
           </div>
           <Link href="/customers/approvals">
             <button className="ti-btn ti-btn-warning !text-white mt-2 md:mt-0">
-              <i className="bx bx-shield-check me-2"></i>Pending Approvals
+              <i className="ri-shield-check-line me-2"></i>Pending Approvals
             </button>
           </Link>
         </div>
 
+        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="box bg-primary/10 border-l-4 border-primary p-5 rounded-lg">
-            <p className="text-[#8c9097] text-sm">Total Customers</p>
+          <div className="box bg-blue-500/10 border-l-4 border-blue-500 p-5 rounded-lg shadow-sm">
+            <p className="text-gray-500 text-sm">Total Customers</p>
             <h3 className="text-2xl font-bold mt-1">{stats.total || total}</h3>
           </div>
-          <div className="box bg-success/10 border-l-4 border-success p-5 rounded-lg">
-            <p className="text-[#8c9097] text-sm">New This Month</p>
+          <div className="box bg-green-500/10 border-l-4 border-green-500 p-5 rounded-lg shadow-sm">
+            <p className="text-gray-500 text-sm">New This Month</p>
             <h3 className="text-2xl font-bold mt-1">{stats.newThisMonth || 0}</h3>
           </div>
-          <div className="box bg-warning/10 border-l-4 border-warning p-5 rounded-lg">
-            <p className="text-[#8c9097] text-sm">Avg Lifetime Value</p>
+          <div className="box bg-purple-500/10 border-l-4 border-purple-500 p-5 rounded-lg shadow-sm">
+            <p className="text-gray-500 text-sm">Avg Lifetime Value</p>
             <h3 className="text-2xl font-bold mt-1">Rs. {Math.round(stats.avgLifetimeValue || 0).toLocaleString()}</h3>
           </div>
         </div>
 
+        {/* Search */}
         <div className="box shadow-sm mb-4 p-4 flex gap-3">
           <input className="form-control flex-1" placeholder="Search by name or email..."
             value={search} onChange={e => setSearch(e.target.value)}
@@ -91,20 +96,28 @@ export default function CustomersPage() {
           <button className="ti-btn ti-btn-light" onClick={() => { setSearch(''); load(1, ''); }}>Clear</button>
         </div>
 
+        {/* Table */}
         <div className="box shadow-sm">
           <div className="table-responsive">
             <table className="ti-custom-table ti-striped-table">
               <thead>
                 <tr>
-                  <th>Customer</th><th>Phone</th><th>Customer #</th>
-                  <th>Status</th><th>Zoho</th><th>Orders</th><th>Value</th><th>Joined</th><th>Actions</th>
+                  <th>Customer</th>
+                  <th>Phone</th>
+                  <th>Customer #</th>
+                  <th>Status</th>
+                  <th>Zoho</th>
+                  <th>Orders</th>
+                  <th>Value</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={9} className="text-center py-10"><i className="bx bx-loader-alt animate-spin text-2xl"></i></td></tr>
+                  <tr><td colSpan={9} className="text-center py-10"><div className="animate-spin ri-loader-4-line text-2xl inline-block"></div></td></tr>
                 ) : customers.length === 0 ? (
-                  <tr><td colSpan={9} className="text-center py-10 text-[#8c9097]">No customers found</td></tr>
+                  <tr><td colSpan={9} className="text-center py-10 text-gray-500">No customers found</td></tr>
                 ) : customers.map((c: any) => (
                   <tr key={c.id}>
                     <td>
@@ -114,33 +127,33 @@ export default function CustomersPage() {
                         </div>
                         <div>
                           <p className="font-semibold text-sm">{c.fullName}</p>
-                          <p className="text-xs text-[#8c9097]">{c.email}</p>
+                          <p className="text-xs text-gray-500">{c.email}</p>
                         </div>
                       </div>
                     </td>
                     <td className="text-sm">{c.phoneNumber || '-'}</td>
-                    <td className="text-sm font-mono">{c.customerNumber || <span className="text-[#8c9097]">-</span>}</td>
+                    <td className="text-sm font-mono">{c.customerNumber || <span className="text-gray-400">-</span>}</td>
                     <td>{statusBadge(c)}</td>
                     <td>
                       {c.isZohoLinked
-                        ? <span className="badge bg-success/10 text-success px-2 py-1 rounded text-xs">Linked</span>
-                        : <span className="badge bg-secondary/10 text-secondary px-2 py-1 rounded text-xs">Not linked</span>}
+                        ? <span className="badge bg-green-500/10 text-green-700 px-2 py-1 rounded text-xs">Linked</span>
+                        : <span className="badge bg-gray-500/10 text-gray-500 px-2 py-1 rounded text-xs">Not linked</span>}
                     </td>
                     <td className="text-sm">{c.totalOrders}</td>
                     <td className="text-sm font-semibold">Rs. {(c.lifetimeValue || 0).toLocaleString()}</td>
-                    <td className="text-sm text-[#8c9097]">{new Date(c.createdAt).toLocaleDateString()}</td>
+                    <td className="text-sm text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
                     <td>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1 flex-wrap">
                         <Link href={`/customers/${c.id}`} className="text-primary hover:underline text-xs font-semibold">View</Link>
                         {!c.isApproved && c.isEmailVerified && c.isActive && (
-                          <button disabled={acting === c.id + 'approve'} onClick={() => act(c.id, 'approve', 'Approved!')}
+                          <button disabled={acting === c.id} onClick={() => act(c.id, 'approve', 'Approved!')}
                             className="text-success hover:underline text-xs font-semibold disabled:opacity-50">Approve</button>
                         )}
                         {c.isActive ? (
-                          <button disabled={acting === c.id + 'suspend'} onClick={() => act(c.id, 'suspend', 'Suspended')}
+                          <button disabled={acting === c.id} onClick={() => act(c.id, 'suspend', 'Suspended')}
                             className="text-danger hover:underline text-xs font-semibold disabled:opacity-50">Suspend</button>
                         ) : (
-                          <button disabled={acting === c.id + 'activate'} onClick={() => act(c.id, 'activate', 'Activated!')}
+                          <button disabled={acting === c.id} onClick={() => act(c.id, 'activate', 'Activated!')}
                             className="text-warning hover:underline text-xs font-semibold disabled:opacity-50">Activate</button>
                         )}
                       </div>
@@ -152,10 +165,10 @@ export default function CustomersPage() {
           </div>
           {totalPages > 1 && (
             <div className="box-footer p-4 flex items-center justify-between">
-              <span className="text-sm text-[#8c9097]">Page {page} of {totalPages} ({total} total)</span>
+              <span className="text-sm text-gray-500">Page {page} of {totalPages} ({total} total)</span>
               <div className="flex gap-2">
-                <button disabled={page === 1} onClick={() => load(page - 1)} className="ti-btn ti-btn-sm ti-btn-light disabled:opacity-50">← Prev</button>
-                <button disabled={page === totalPages} onClick={() => load(page + 1)} className="ti-btn ti-btn-sm ti-btn-light disabled:opacity-50">Next →</button>
+                <button disabled={page === 1} onClick={() => load(page-1)} className="btn btn-sm btn-outline-primary disabled:opacity-50">← Prev</button>
+                <button disabled={page === totalPages} onClick={() => load(page+1)} className="btn btn-sm btn-outline-primary disabled:opacity-50">Next →</button>
               </div>
             </div>
           )}

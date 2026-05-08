@@ -1,7 +1,3 @@
-/**
- * Authentication service - handles all auth-related API calls
- */
-
 import apiClient from './apiClient';
 import {
   ApiResponse,
@@ -15,61 +11,47 @@ import {
   ChangePasswordRequest,
 } from '@/shared/types';
 
-/**
- * Auth service class
- */
 export class AuthService {
-  /**
-   * Login with email and password
-   */
   static async login(request: LoginRequest): Promise<LoginResponse> {
     const response = await apiClient.post<LoginResponse>('/auth/login', request);
     return response.data;
   }
 
-  /**
-   * Register new user
-   */
-  static async register(request: RegisterRequest): Promise<User> {
-    const response = await apiClient.post<User>('/auth/register', request);
+  static async register(request: RegisterRequest): Promise<LoginResponse> {
+    const response = await apiClient.post<LoginResponse>('/auth/register', request);
     return response.data;
   }
 
-  /**
-   * Get current user profile
-   */
+  static async verifyEmail(email: string, code: string): Promise<LoginResponse> {
+    const response = await apiClient.post<LoginResponse>('/auth/verify-email', { email, code });
+    return response.data;
+  }
+
+  static async resendOtp(email: string): Promise<LoginResponse> {
+    const response = await apiClient.post<LoginResponse>('/auth/resend-otp', { email });
+    return response.data;
+  }
+
   static async getCurrentUser(): Promise<User> {
-    const response = await apiClient.get<User>('/auth/me');
-    return response.data;
+    const response = await apiClient.get<ApiResponse<User>>('/auth/me');
+    return (response.data as any).data ?? response.data;
   }
 
-  /**
-   * Refresh JWT token
-   */
   static async refreshToken(request: RefreshTokenRequest): Promise<LoginResponse> {
     const response = await apiClient.post<LoginResponse>('/auth/refresh-token', request);
     return response.data;
   }
 
-  /**
-   * Get detailed user profile
-   */
   static async getProfile(): Promise<UserProfile> {
     const response = await apiClient.get<UserProfile>('/auth/profile');
     return response.data;
   }
 
-  /**
-   * Update user profile
-   */
   static async updateProfile(request: UpdateProfileRequest): Promise<UserProfile> {
     const response = await apiClient.put<UserProfile>('/auth/profile', request);
     return response.data;
   }
 
-  /**
-   * Change password
-   */
   static async changePassword(request: ChangePasswordRequest): Promise<void> {
     await apiClient.post<ApiResponse<boolean>>('/auth/change-password', request);
   }

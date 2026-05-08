@@ -12,7 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const authState = useAppSelector((state) => state.auth);
-  const { isLoading = false, error = null, isAuthenticated = false } = authState || {};
+  const { isLoading = false, error = null, isAuthenticated = false, requiredAction = null } = authState || {};
 
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,7 +23,7 @@ export default function LoginPage() {
   useEffect(() => {
     // Redirect if already authenticated
     if (isAuthenticated && getStoredToken()) {
-      window.location.href = '/dashboards/admin';
+      router.push('/dashboards/admin');
     }
   }, [isAuthenticated, router]);
 
@@ -64,11 +64,20 @@ export default function LoginPage() {
             <div className="box !p-[3rem]">
               <p className="h5 font-semibold mb-2 text-center">Sign In</p>
 
-              {error && (
-                <div
-                  className="p-4 mb-4 bg-danger/40 text-sm border-t-4 border-danger text-danger/60 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400"
-                  role="alert"
-                >
+              {requiredAction === 'AwaitingApproval' && (
+                <div className="p-4 mb-4 bg-warning/20 text-sm border-t-4 border-warning text-warning rounded-lg" role="alert">
+                  <strong>Account Under Review</strong>
+                  <p className="mt-1 text-[#8c9097]">Your email is verified. Our team is reviewing your account — you will receive an email once approved.</p>
+                </div>
+              )}
+              {requiredAction === 'VerifyEmail' && (
+                <div className="p-4 mb-4 bg-info/20 text-sm border-t-4 border-info text-info rounded-lg" role="alert">
+                  <strong>Email Verification Required</strong>
+                  <p className="mt-1 text-[#8c9097]">Please check your inbox for a verification code and complete the sign-up flow.</p>
+                </div>
+              )}
+              {!requiredAction && error && (
+                <div className="p-4 mb-4 bg-danger/40 text-sm border-t-4 border-danger text-danger/60 rounded-lg" role="alert">
                   {error}
                 </div>
               )}

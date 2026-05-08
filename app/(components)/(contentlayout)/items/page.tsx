@@ -1,369 +1,385 @@
-'use client'
+'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useAppDispatch, useAppSelector } from '@/shared/redux/hooks';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
-import { useRouter } from 'next/navigation';
-import { fetchItems, deleteItem, searchItems, clearError } from '@/shared/redux/itemsSlice';
-import { ItemService } from '@/shared/services/itemService';
+import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
-import { StockStatus, getStockStatus } from '@/shared/types';
+
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
+
+interface Item {
+  id: string;
+  sku: string;
+  name: string;
+  category: string | null;
+  unit: string | null;
+  rate: number;
+  stockOnHand: number;
+  reorderLevel: number;
+  isActive: boolean;
+  isFeatured: boolean;
+  showInMobile: boolean;
+  isTargetProduct: boolean;
+  zohoItemId: string | null;
+  syncStatus: number; // 1=Pending, 2=InProgress, 3=Success, 4=Failed
+  lastSyncedAt: string | null;
+  images: { id: string; imageUrl: string; isPrimary: boolean }[];
+}
+
+const SYNC_LABELS: Record<number, { label: string; cls: string }> = {
+  1: { label: 'Pending',    cls: 'bg-warning/20 text-warning' },
+  2: { label: 'Syncing…',  cls: 'bg-info/20 text-info' },
+  3: { label: 'Synced',    cls: 'bg-success/20 text-success' },
+  4: { label: 'Failed',    cls: 'bg-danger/20 text-danger' },
+};
 
 export default function ItemsPage() {
   useProtectedRoute();
 
-  const dispatch = useAppDispatch();
-  const router = useRouter();
-  const itemsState = useAppSelector((state) => state.items);
-  const { list = [], isLoading = false, error = null, totalCount = 0, currentPage = 1, pageSize = 20 } = itemsState || {};
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [editItem, setEditItem] = useState<Item | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Item>>({});
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [search, setSearch] = useState('');
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [stats, setStats] = useState({ total: 0, lowStock: 0, outOfStock: 0, totalValue: 0 });
-
-  // Fetch items on mount
-  useEffect(() => {
-    dispatch(fetchItems({ page: 1, pageSize: 20 }));
-    fetchStats();
-  }, [dispatch]);
-
-  // Fetch stats
-  const fetchStats = async () => {
+  const load = async () => {
+    setLoading(true);
     try {
-      const statsData = await ItemService.getItemStats();
-      setStats(statsData);
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    }
+      const r = await fetch(`${API}/items?pageSize=100`, { headers: getAuthHeaders() });
+      const d = await r.json();
+      setItems(d.data?.items || d.data || d.items || []);
+    } catch { toast.error('Failed to load items'); }
+    setLoading(false);
   };
 
-  // Handle search
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const term = e.target.value;
-    setSearchTerm(term);
+  useEffect(() => { load(); }, []);
 
-    if (term.trim()) {
-      dispatch(searchItems({ searchTerm: term, page: 1, pageSize: 20 }));
-    } else {
-      dispatch(fetchItems({ page: 1, pageSize: 20 }));
-    }
-  };
+  const filtered = items.filter(i =>
+    !search || i.name.toLowerCase().includes(search.toLowerCase()) ||
+    i.sku.toLowerCase().includes(search.toLowerCase())
+  );
 
-  // Handle pagination
-  const handlePageChange = (newPage: number) => {
-    if (searchTerm.trim()) {
-      dispatch(searchItems({ searchTerm, page: newPage, pageSize: 20 }));
-    } else {
-      dispatch(fetchItems({ page: newPage, pageSize: 20 }));
-    }
-  };
-
-  // Handle delete
-  const handleDelete = async (id: string) => {
+  // ── Zoho Sync ───────────────────────────────────────────────────────────────
+  const syncItem = async (id: string) => {
+    setSyncingIds(prev => new Set([...prev, id]));
     try {
-      dispatch(deleteItem(id));
-      setDeleteConfirm(null);
-      toast.success('Item deleted successfully');
-      // Refresh list
-      if (searchTerm.trim()) {
-        dispatch(searchItems({ searchTerm, page: currentPage, pageSize: 20 }));
+      const r = await fetch(`${API}/items/${id}/sync`, { method: 'POST', headers: getAuthHeaders() });
+      const d = await r.json();
+      if (d.success || d.data?.success) {
+        toast.success('Synced to Zoho!');
+        await load();
       } else {
-        dispatch(fetchItems({ page: currentPage, pageSize: 20 }));
+        toast.error(d.message || 'Sync failed');
       }
-    } catch (err) {
-      toast.error('Failed to delete item');
-    }
+    } catch { toast.error('Sync failed'); }
+    setSyncingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
   };
 
-  // Clear error when unmounting
-  useEffect(() => {
-    return () => {
-      dispatch(clearError());
-    };
-  }, [dispatch]);
+  const syncAll = async () => {
+    const pending = items.filter(i => !i.zohoItemId || i.syncStatus === 4);
+    if (pending.length === 0) { toast('All items already synced'); return; }
+    setSyncingAll(true);
+    for (const item of pending) {
+      await syncItem(item.id);
+    }
+    setSyncingAll(false);
+    toast.success(`Synced ${pending.length} item(s) to Zoho`);
+  };
 
-  const totalPages = Math.ceil(totalCount / pageSize);
+  // ── Inline toggle (showInMobile / isActive) ─────────────────────────────────
+  const toggleField = async (item: Item, field: 'showInMobile' | 'isActive') => {
+    const updated = { ...item, [field]: !item[field] };
+    setItems(prev => prev.map(i => i.id === item.id ? updated : i));
+    try {
+      const r = await fetch(`${API}/items/${item.id}`, {
+        method: 'PUT',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...item, [field]: !item[field] }),
+      });
+      if (!r.ok) { setItems(prev => prev.map(i => i.id === item.id ? item : i)); toast.error('Update failed'); }
+      else toast.success(`${field === 'showInMobile' ? 'Mobile visibility' : 'Status'} updated`);
+    } catch { setItems(prev => prev.map(i => i.id === item.id ? item : i)); toast.error('Update failed'); }
+  };
 
-  if (isLoading && list.length === 0) {
-    return (
-      <div className="page-content">
-        <div className="container-fluid">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 py-6 mb-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-24 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse"></div>
-            ))}
-          </div>
-          <div className="h-96 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse"></div>
-        </div>
-      </div>
-    );
-  }
+  // ── Edit modal ───────────────────────────────────────────────────────────────
+  const openEdit = (item: Item) => { setEditItem(item); setEditForm({ ...item }); };
+  const closeEdit = () => { setEditItem(null); setEditForm({}); };
+
+  const saveEdit = async () => {
+    if (!editItem) return;
+    setSavingEdit(true);
+    try {
+      const r = await fetch(`${API}/items/${editItem.id}`, {
+        method: 'PUT',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+      const d = await r.json();
+      if (r.ok && (d.success !== false)) {
+        toast.success('Item saved');
+        closeEdit();
+        await load();
+      } else {
+        toast.error(d.message || 'Save failed');
+      }
+    } catch { toast.error('Save failed'); }
+    setSavingEdit(false);
+  };
+
+  const pendingCount = items.filter(i => !i.zohoItemId || i.syncStatus === 4).length;
 
   return (
     <div className="page-content">
       <div className="container-fluid">
-        {/* Page Header */}
-        <div className="md:flex block items-center justify-between my-[1.5rem] page-header-breadcrumb">
+
+        {/* Header */}
+        <div className="md:flex items-center justify-between my-[1.5rem] gap-4">
           <div>
-            <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">
-              Inventory
-            </p>
-            <p className="font-normal text-[#8c9097] dark:text-white/50 text-[0.813rem]">
-              Manage inventory items and stock levels.
+            <p className="font-semibold text-[1.125rem] text-defaulttextcolor !mb-0">Inventory Items</p>
+            <p className="text-[#8c9097] text-[0.813rem]">
+              {items.length} items · {items.filter(i => i.showInMobile).length} visible in mobile
             </p>
           </div>
-          <div className="flex gap-2 mt-2 md:mt-0">
-            <button
-              onClick={() => router.push('/items')}
-              className="ti-btn ti-btn-primary-full !text-white"
-            >
-              <i className="ri-refresh-line inline-block me-2"></i>Refresh
-            </button>
-            <Link href="/items/create">
-              <button className="ti-btn ti-btn-success !text-white !bg-success !opacity-100">
-                <i className="ri-add-line inline-block me-2"></i>Add Item
+          <div className="flex items-center gap-2 mt-2 md:mt-0 flex-wrap">
+            <input
+              type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search name or SKU…"
+              className="form-control form-control-sm w-52"
+            />
+            {pendingCount > 0 && (
+              <button onClick={syncAll} disabled={syncingAll}
+                className="ti-btn ti-btn-sm bg-violet-600 text-white !font-medium disabled:opacity-50">
+                {syncingAll ? '⏳ Syncing…' : `⬆ Sync ${pendingCount} to Zoho`}
               </button>
-            </Link>
+            )}
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="card bg-blue-500/10 border-l-4 border-blue-500 p-6 rounded-lg shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium">Total Items</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.total || totalCount}</h3>
-              </div>
-              <div className="text-3xl opacity-50">
-                <i className="ri-inbox-line"></i>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-yellow-500/10 border-l-4 border-yellow-500 p-6 rounded-lg shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium">Low Stock Items</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.lowStock || 0}</h3>
-              </div>
-              <div className="text-3xl opacity-50">
-                <i className="ri-error-warning-line"></i>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-red-500/10 border-l-4 border-red-500 p-6 rounded-lg shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium">Out of Stock</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.outOfStock || 0}</h3>
-              </div>
-              <div className="text-3xl opacity-50">
-                <i className="ri-close-circle-line"></i>
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-purple-500/10 border-l-4 border-purple-500 p-6 rounded-lg shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-medium">Inventory Value</p>
-                <h3 className="text-3xl font-bold text-gray-900 mt-2">${(stats.totalValue || 0).toFixed(2)}</h3>
-              </div>
-              <div className="text-3xl opacity-50">
-                <i className="ri-bar-chart-line"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="p-4 mb-4 bg-danger/40 text-sm border-t-4 border-danger text-danger/60 rounded-lg">
-            <i className="ri-error-warning-line me-2"></i>
-            {error}
-          </div>
-        )}
-
-        {/* Search Bar */}
-        <div className="box shadow-sm mb-6">
-          <div className="box-body p-4">
-            <div className="flex items-center gap-2 input-group">
-              <span className="input-group-text">
-                <i className="ri-search-line"></i>
-              </span>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search by name, SKU, or category..."
-                value={searchTerm}
-                onChange={handleSearch}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Items Table */}
+        {/* Table */}
         <div className="box shadow-sm">
-          <div className="box-header border-b p-4">
-            <h5 className="box-title mb-0">Items List</h5>
-          </div>
           <div className="table-responsive">
-            <table className="ti-custom-table ti-striped-table mb-0">
+            <table className="ti-custom-table ti-striped-table">
               <thead>
-                <tr>
-                  <th className="text-sm font-semibold">Item Name</th>
-                  <th className="text-sm font-semibold">SKU</th>
-                  <th className="text-sm font-semibold">Category</th>
-                  <th className="text-sm font-semibold">Stock</th>
-                  <th className="text-sm font-semibold">Status</th>
-                  <th className="text-sm font-semibold">Unit Price</th>
-                  <th className="text-sm font-semibold">Reorder Level</th>
-                  <th className="text-sm font-semibold">Actions</th>
+                <tr className="bg-light">
+                  <th>ITEM</th>
+                  <th>SKU</th>
+                  <th>CATEGORY</th>
+                  <th className="text-center">IMAGES</th>
+                  <th className="text-center">SHOW IN MOBILE</th>
+                  <th className="text-center">ZOHO SYNCED</th>
+                  <th className="text-center">ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
-                {list.length > 0 ? (
-                  list.map((item: any) => {
-                    const stockStatus = getStockStatus(item.stockOnHand, item.reorderLevel);
-                    const statusColor =
-                      stockStatus === StockStatus.OutOfStock ? 'bg-red-500/10 text-red-800' :
-                      stockStatus === StockStatus.LowStock ? 'bg-yellow-500/10 text-yellow-800' :
-                      'bg-green-500/10 text-green-800';
+                {loading ? (
+                  <tr><td colSpan={7} className="text-center py-10 text-[#8c9097]">Loading…</td></tr>
+                ) : filtered.length === 0 ? (
+                  <tr><td colSpan={7} className="text-center py-10 text-[#8c9097]">No items found</td></tr>
+                ) : filtered.map(item => {
+                  const sync = SYNC_LABELS[item.syncStatus] || SYNC_LABELS[1];
+                  const isSyncing = syncingIds.has(item.id);
+                  return (
+                    <tr key={item.id} className="hover:bg-light/50">
+                      <td>
+                        <div className="font-medium text-sm">{item.name}</div>
+                        {item.isTargetProduct && (
+                          <span className="badge bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 rounded">Target Product</span>
+                        )}
+                      </td>
+                      <td><code className="text-xs text-violet-600">{item.sku}</code></td>
+                      <td><span className="text-sm text-[#8c9097]">{item.category || '—'}</span></td>
+                      <td className="text-end">
+                        <span className="text-sm font-mono">{item.rate > 0 ? `NPR ${item.rate.toLocaleString()}` : '—'}</span>
+                      </td>
 
-                    const statusLabel =
-                      stockStatus === StockStatus.OutOfStock ? 'Out of Stock' :
-                      stockStatus === StockStatus.LowStock ? 'Low Stock' :
-                      'In Stock';
+                      {/* ShowInMobile toggle */}
+                      {/* Images count */}
+                      <td className="text-center">
+                        <span className={`inline-flex items-center gap-1 text-sm font-semibold ${(item.images?.length ?? 0) === 0 ? 'text-[#8c9097]' : 'text-primary'}`}>
+                          🖼 {item.images?.length ?? 0}
+                        </span>
+                      </td>
 
-                    return (
-                      <tr key={item.id} className="hover:bg-gray-50 border-b">
-                        <td className="font-semibold">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                              <i className="ri-inbox-line"></i>
-                            </div>
-                            <div>
-                              <p className="font-semibold text-sm">{item.name}</p>
-                            </div>
+                      {/* ShowInMobile toggle */}
+                      <td className="text-center">
+                        <button
+                          onClick={() => toggleField(item, 'showInMobile')}
+                          title={item.showInMobile ? 'Visible in app — click to hide' : 'Hidden in app — click to show'}
+                          className="flex items-center gap-1.5 mx-auto"
+                        >
+                          <div className={`relative w-9 h-5 rounded-full transition-colors ${item.showInMobile ? 'bg-success' : 'bg-[#d1d5db]'}`}>
+                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${item.showInMobile ? 'translate-x-4' : 'translate-x-0.5'}`} />
                           </div>
-                        </td>
-                        <td className="text-sm text-gray-600 font-mono">{item.sku}</td>
-                        <td className="text-sm text-gray-600">{item.category || '-'}</td>
-                        <td className="text-sm font-semibold">{item.stockOnHand}</td>
-                        <td className="text-sm">
-                          <span className={`badge ${statusColor} px-2 py-1 rounded`}>
-                            {statusLabel}
+                          <span className={`text-xs font-medium ${item.showInMobile ? 'text-success' : 'text-[#8c9097]'}`}>
+                            {item.showInMobile ? 'Yes' : 'No'}
                           </span>
-                        </td>
-                        <td className="text-sm font-semibold">${(item.rate || 0).toFixed(2)}</td>
-                        <td className="text-sm text-gray-600">{item.reorderLevel}</td>
-                        <td className="text-sm">
-                          <div className="flex items-center gap-2">
-                            <Link
-                              href={`/items/${item.id}`}
-                              className="text-primary hover:underline text-sm font-semibold"
-                            >
-                              View
-                            </Link>
-                            <button
-                              onClick={() => setDeleteConfirm(item.id)}
-                              className="text-danger hover:underline text-sm font-semibold"
-                            >
-                              Delete
-                            </button>
+                        </button>
+                      </td>
+
+                      {/* Zoho synced */}
+                      <td className="text-center">
+                        {item.zohoItemId ? (
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
+                              Synced
+                            </span>
+                            <code className="text-[9px] text-[#8c9097] mt-0.5">…{item.zohoItemId.slice(-6)}</code>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="text-center py-12 text-gray-500">
-                      <i className="ri-inbox-line text-4xl mb-2 block opacity-50"></i>
-                      <p className="font-semibold">No items found</p>
-                      <p className="text-sm">Try adjusting your search criteria</p>
-                    </td>
-                  </tr>
-                )}
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5">
+                            <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full ${sync.cls}`}>
+                              {isSyncing ? 'Syncing…' : sync.label}
+                            </span>
+                            {!isSyncing && (
+                              <button
+                                onClick={() => syncItem(item.id)}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded transition-colors"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                Sync
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {/* Full edit page with image upload */}
+                          <a
+                            href={`/items/${item.id}`}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-lg transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Edit
+                          </a>
+                          {/* Quick edit for flags only */}
+                          <button
+                            onClick={() => openEdit(item)}
+                            title="Quick edit flags"
+                            className="inline-flex items-center justify-center w-7 h-7 text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="box-footer border-t p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages} ({totalCount} total items)
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="btn btn-sm btn-outline-primary disabled:opacity-50"
-                  >
-                    <i className="ri-arrow-left-s-line"></i> Previous
-                  </button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum = i + 1;
-                      if (totalPages > 5) {
-                        if (currentPage > 3) pageNum = currentPage - 2 + i;
-                        if (currentPage > totalPages - 3) pageNum = totalPages - 4 + i;
-                      }
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`btn btn-sm ${
-                            currentPage === pageNum
-                              ? 'btn-primary'
-                              : 'btn-outline-primary'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="btn btn-sm btn-outline-primary disabled:opacity-50"
-                  >
-                    Next <i className="ri-arrow-right-s-line"></i>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Item?</h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete this item? This action cannot be undone.
-            </p>
-            <div className="flex gap-3 justify-end">
+      {/* Edit Modal */}
+      {editItem && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && closeEdit()}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col" style={{ maxHeight: '90vh' }}>
+
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase tracking-wide">Quick Edit</span>
+                  <h3 className="text-base font-semibold text-gray-900">{editItem.name}</h3>
+                </div>
+                <p className="text-xs text-gray-400 mt-0.5 font-mono">{editItem.sku}</p>
+              </div>
               <button
-                onClick={() => setDeleteConfirm(null)}
-                className="btn btn-outline-secondary"
+                onClick={closeEdit}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition-colors text-base font-medium"
               >
-                Cancel
+                ×
               </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                className="btn btn-danger !text-white !bg-danger !opacity-100"
+            </div>
+
+            {/* Modal Body */}
+            <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
+
+              {/* Name & Category */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Name</label>
+                <input type="text" className="form-control"
+                  value={editForm.name ?? ''} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Category</label>
+                  <input type="text" className="form-control"
+                    value={editForm.category ?? ''} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Unit</label>
+                  <input type="text" className="form-control"
+                    value={editForm.unit ?? ''} onChange={e => setEditForm(f => ({ ...f, unit: e.target.value }))} />
+                </div>
+              </div>
+
+              {/* Flags */}
+              <div className="border border-gray-100 rounded-xl overflow-hidden">
+                {[
+                  { key: 'isActive',       label: 'Active',             desc: 'Item is available for purchase',             icon: '✅' },
+                  { key: 'showInMobile',   label: 'Show in Mobile App', desc: 'Visible in the iOS customer catalog',        icon: '📱' },
+                  { key: 'isFeatured',     label: 'Featured',           desc: 'Highlighted on the home screen',             icon: '⭐' },
+                  { key: 'isTargetProduct',label: 'Target Product',     desc: 'Appears in the layaway / saving plan picker', icon: '🎯' },
+                ].map(({ key, label, desc, icon }, idx, arr) => (
+                  <label key={key} className={`flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${idx < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg leading-none">{icon}</span>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{label}</p>
+                        <p className="text-xs text-gray-400">{desc}</p>
+                      </div>
+                    </div>
+                    <div className="relative flex-shrink-0">
+                      <input type="checkbox" className="sr-only peer"
+                        checked={(editForm as any)[key] ?? false}
+                        onChange={e => setEditForm(f => ({ ...f, [key]: e.target.checked }))} />
+                      <div className="w-10 h-5 bg-gray-200 peer-checked:bg-primary rounded-full transition-colors" />
+                      <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5" />
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+              {/* Top row: full edit link */}
+              <a href={`/items/${editItem.id}`}
+                className="flex items-center justify-center gap-2 w-full text-sm font-medium text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 px-4 py-2 rounded-lg transition-colors mb-3"
               >
-                Delete
-              </button>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Open full editor (images, pricing, details)
+              </a>
+              {/* Bottom row: action buttons */}
+              <div className="flex items-center gap-2">
+                {!editItem.zohoItemId && (
+                  <button
+                    onClick={() => { closeEdit(); syncItem(editItem.id); }}
+                    className="flex items-center gap-1.5 text-xs font-medium text-violet-700 bg-violet-100 hover:bg-violet-200 px-3 py-2 rounded-lg transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    Sync to Zoho
+                  </button>
+                )}
+                <div className="flex-1" />
+                <button onClick={closeEdit} className="text-sm font-medium text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-lg transition-colors">
+                  Cancel
+                </button>
+                <button onClick={saveEdit} disabled={savingEdit}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 px-5 py-2 rounded-lg transition-colors"
+                >
+                  {savingEdit ? 'Saving…' : '✓ Save'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

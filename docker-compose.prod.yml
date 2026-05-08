@@ -1,11 +1,6 @@
 services:
   hbc-web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: https://hbc-api.semis.app/api
-        NEXT_PUBLIC_ENV: production
+    image: hbc-web:latest
     container_name: hbc-web
     restart: unless-stopped
     ports:
