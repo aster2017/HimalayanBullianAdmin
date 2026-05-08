@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HBC Silver — User Manual</title>
+    <style>
+        :root {
+            --gold: #B8960C;
+            --gold-light: #F5D67A;
+            --gold-bg: #FFFBEA;
+            --dark: #111827;
+            --gray-900: #1F2937;
+            --gray-700: #374151;
+            --gray-500: #6B7280;
+            --gray-300: #D1D5DB;
+            --gray-100: #F3F4F6;
+            --white: #FFFFFF;
+            --green: #16A34A;
+            --green-light: #DCFCE7;
+            --blue: #2563EB;
+            --blue-light: #DBEAFE;
+            --orange: #EA580C;
+            --orange-light: #FFEDD5;
+            --red: #DC2626;
+            --red-light: #FEE2E2;
+            --purple: #7C3AED;
+            --purple-light: #EDE9FE;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #F8F9FA;
+            color: var(--gray-700);
+            line-height: 1.6;
+        }
+
+        /* ── Top bar ── */
+        .topbar {
+            background: var(--dark);
+            color: var(--white);
+            padding: 14px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
+        .topbar-brand { display: flex; align-items: center; gap: 12px; }
+        .topbar-logo {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--gold), #D4A017);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 16px; color: #fff; letter-spacing: 1px;
+        }
+        .topbar h1 { font-size: 18px; font-weight: 700; color: var(--white); }
+        .topbar h1 span { color: var(--gold-light); }
+        .topbar-back {
+            background: rgba(255,255,255,0.1);
+            color: var(--white);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 7px 16px; border-radius: 6px;
+            text-decoration: none; font-size: 13px; font-weight: 500;
+            transition: background 0.2s;
+        }
+        .topbar-back:hover { background: rgba(255,255,255,0.18); }
+
+        /* ── Layout ── */
+        .layout { display: flex; min-height: calc(100vh - 64px); }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: 260px;
+            background: var(--white);
+            border-right: 1px solid var(--gray-300);
+            padding: 24px 0;
+            position: sticky;
+            top: 64px;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .sidebar-heading {
+            font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+            color: var(--gray-500); text-transform: uppercase;
+            padding: 16px 20px 6px;
+        }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 20px;
+            font-size: 13px; color: var(--gray-700);
+            cursor: pointer; transition: all 0.15s;
+            border-left: 3px solid transparent;
+            text-decoration: none;
+        }
+        .sidebar-item:hover { background: var(--gray-100); color: var(--dark); }
+        .sidebar-item.active {
+            background: var(--gold-bg);
+            color: var(--gold);
+            border-left-color: var(--gold);
+            font-weight: 600;
+        }
+        .sidebar-item .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--gray-300); flex-shrink: 0;
+        }
+        .sidebar-item.active .dot { background: var(--gold); }
+        .sidebar-badge {
+            margin-left: auto; font-size: 10px; font-weight: 700;
+            padding: 2px 7px; border-radius: 20px;
+        }
+
+        /* ── Main content ── */
+        .main { flex: 1; overflow-y: auto; }
+        .section {
+            padding: 48px 56px;
+            max-width: 900px;
+        }
+        .section + .section { border-top: 1px solid var(--gray-300); }
+
+        /* ── Section headers ── */
+        .section-number {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold), #D4A017);
+            color: var(--white); font-weight: 800; font-size: 16px;
+            margin-bottom: 12px;
+        }
+        .section h2 {
+            font-size: 26px; font-weight: 800; color: var(--dark);
+            margin-bottom: 6px;
+        }
+        .section-subtitle {
+            font-size: 14px; color: var(--gray-500);
+            margin-bottom: 32px; padding-bottom: 20px;
+            border-bottom: 2px solid var(--gold-bg);
+        }
+        .section h3 {
+            font-size: 16px; font-weight: 700; color: var(--dark);
+            margin: 28px 0 12px;
+        }
+        .section p { font-size: 14px; color: var(--gray-700); margin-bottom: 14px; }
+
+        /* ── Step cards ── */
+        .steps { display: flex; flex-direction: column; gap: 0; margin: 20px 0; }
+        .step {
+            display: flex; gap: 16px;
+            padding: 16px 0;
+            position: relative;
+        }
+        .step:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 15px; top: 44px; bottom: 0;
+            width: 2px; background: var(--gray-300);
+        }
+        .step-num {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--dark); color: var(--white);
+            font-weight: 700; font-size: 13px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; z-index: 1;
+        }
+        .step-content { flex: 1; }
+        .step-title { font-weight: 700; font-size: 14px; color: var(--dark); margin-bottom: 4px; }
+        .step-desc { font-size: 13px; color: var(--gray-500); }
+
+        /* ── Info boxes ── */
+        .info-box {
+            border-radius: 10px; padding: 16px 20px;
+            margin: 20px 0; display: flex; gap: 14px; align-items: flex-start;
+        }
+        .info-box .icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+        .info-box .text { flex: 1; }
+        .info-box .text strong { display: block; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+        .info-box .text span { font-size: 13px; }
+        .info-tip    { background: var(--blue-light);   border-left: 4px solid var(--blue); }
+        .info-warn   { background: var(--orange-light); border-left: 4px solid var(--orange); }
+        .info-success{ background: var(--green-light);  border-left: 4px solid var(--green); }
+        .info-gold   { background: var(--gold-bg);      border-left: 4px solid var(--gold); }
+
+        /* ── Status pills ── */
+        .status-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+        .status-pill {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 14px; border-radius: 20px;
+            font-size: 12px; font-weight: 600;
+        }
+        .status-pill .dot2 {
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+        .pill-pending  { background: var(--orange-light); color: var(--orange); }
+        .pill-pending .dot2 { background: var(--orange); }
+        .pill-active   { background: var(--blue-light);   color: var(--blue); }
+        .pill-active .dot2 { background: var(--blue); }
+        .pill-complete { background: var(--green-light);  color: var(--green); }
+        .pill-complete .dot2 { background: var(--green); }
+        .pill-delivered{ background: var(--purple-light); color: var(--purple); }
+        .pill-delivered .dot2 { background: var(--purple); }
+        .pill-cancelled{ background: var(--red-light);    color: var(--red); }
+        .pill-cancelled .dot2 { background: var(--red); }
+        .pill-synced   { background: var(--gray-100);     color: var(--gray-700); }
+        .pill-synced .dot2 { background: var(--gray-500); }
+
+        /* ── Flow diagram ── */
+        .flow {
+            display: flex; align-items: center; flex-wrap: wrap;
+            gap: 6px; margin: 20px 0; padding: 20px;
+            background: var(--gray-100); border-radius: 12px;
+        }
+        .flow-node {
+            padding: 8px 16px; border-radius: 8px;
+            font-size: 12px; font-weight: 700;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .flow-arrow { color: var(--gray-500); font-size: 18px; font-weight: 300; }
+        .fn-register  { background: var(--blue-light);   color: var(--blue); }
+        .fn-pending   { background: var(--orange-light); color: var(--orange); }
+        .fn-approved  { background: var(--green-light);  color: var(--green); }
+        .fn-target    { background: var(--gold-bg);      color: #92700A; }
+        .fn-payment   { background: var(--purple-light); color: var(--purple); }
+        .fn-complete  { background: var(--green-light);  color: var(--green); }
+        .fn-collection{ background: var(--orange-light); color: var(--orange); }
+        .fn-delivered { background: var(--purple-light); color: var(--purple); }
+        .fn-zoho      { background: #FEF3C7; color: #92400E; }
+
+        /* ── Table ── */
+        .manual-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+        .manual-table th {
+            background: var(--dark); color: var(--white);
+            padding: 10px 14px; text-align: left; font-weight: 600;
+        }
+        .manual-table td { padding: 10px 14px; border-bottom: 1px solid var(--gray-300); }
+        .manual-table tr:nth-child(even) td { background: var(--gray-100); }
+        .manual-table tr:last-child td { border-bottom: none; }
+
+        /* ── Code/path ── */
+        code {
+            background: var(--gray-100); border: 1px solid var(--gray-300);
+            border-radius: 4px; padding: 2px 7px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px; color: var(--dark);
+        }
+
+        /* ── Accordion ── */
+        .accordion { margin: 16px 0; }
+        .acc-item { border: 1px solid var(--gray-300); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+        .acc-header {
+            padding: 14px 18px; display: flex; justify-content: space-between;
+            align-items: center; cursor: pointer; font-weight: 600; font-size: 14px;
+            background: var(--white); color: var(--dark);
+            user-select: none;
+        }
+        .acc-header:hover { background: var(--gray-100); }
+        .acc-header .chevron { transition: transform 0.2s; }
+        .acc-item.open .acc-header .chevron { transform: rotate(180deg); }
+        .acc-body { display: none; padding: 16px 18px; font-size: 13px; background: var(--gray-100); }
+        .acc-item.open .acc-body { display: block; }
+
+        /* ── Role tag ── */
+        .role {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: var(--gold-bg); color: #92700A;
+            border: 1px solid var(--gold-light);
+            padding: 2px 10px; border-radius: 20px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Screenshot placeholder ── */
+        .screen-mockup {
+            background: var(--dark); border-radius: 12px;
+            padding: 20px; margin: 20px 0;
+            color: var(--gray-300); font-size: 12px;
+        }
+        .screen-mockup .bar {
+            background: var(--gray-700); border-radius: 4px;
+            padding: 8px 14px; display: flex; gap: 8px; align-items: center;
+            margin-bottom: 16px; font-size: 11px;
+        }
+        .screen-mockup .bar-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .screen-field {
+            background: var(--gray-900); border: 1px solid var(--gray-700);
+            border-radius: 6px; padding: 10px 14px; margin-bottom: 10px;
+            font-size: 12px; color: var(--gray-300);
+        }
+        .screen-btn {
+            background: linear-gradient(135deg, var(--gold), #D4A017);
+            color: var(--white); font-weight: 700; font-size: 13px;
+            padding: 10px 24px; border-radius: 6px; display: inline-block;
+            margin-top: 8px;
+        }
+
+        /* ── Zoho sync box ── */
+        .zoho-box {
+            background: #FFFBF0; border: 1px solid #F5D67A;
+            border-radius: 10px; padding: 18px 20px; margin: 16px 0;
+        }
+        .zoho-box h4 { font-size: 14px; font-weight: 700; color: #92400E; margin-bottom: 10px; }
+
+        /* ── Print ── */
+        @media print {
+            .topbar, .sidebar { display: none; }
+            .section { padding: 24px; }
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="topbar">
+    <div class="topbar-brand">
+        <div class="topbar-logo">HB</div>
+        <h1>HBC Silver — <span>User Manual</span></h1>
+    </div>
+    <a href="/" class="topbar-back">← Back to Admin</a>
+</div>
+
+<div class="layout">
+
+    <!-- Sidebar navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-heading">Overview</div>
+        <a class="sidebar-item active" onclick="scrollTo('overview')">
+            <span class="dot"></span> Introduction
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('roles')">
+            <span class="dot"></span> Roles &amp; Permissions
+        </a>
+
+        <div class="sidebar-heading">Customer Journey</div>
+        <a class="sidebar-item" onclick="scrollTo('registration')">
+            <span class="dot"></span> 1 · User Registration
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('approval')">
+            <span class="dot"></span> 2 · Pending Approval
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('login')">
+            <span class="dot"></span> 3 · Login &amp; Profile
+        </a>
+
+        <div class="sidebar-heading">Silver Targets</div>
+        <a class="sidebar-item" onclick="scrollTo('create-target')">
+            <span class="dot"></span> 4 · Creating a Target
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('payments')">
+            <span class="dot"></span> 5 · Making Payments
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('completion')">
+            <span class="dot"></span> 6 · Target Completion
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('collection')">
+            <span class="dot"></span> 7 · Collection Scheduling
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('delivery')">
+            <span class="dot"></span> 8 · Delivery &amp; Vault
+        </a>
+
+        <div class="sidebar-heading">Zoho Integration</div>
+        <a class="sidebar-item" onclick="scrollTo('zoho-sync')">
+            <span class="dot"></span> 9 · Zoho Sync States
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('invoices')">
+            <span class="dot"></span> 10 · Invoices
+        </a>
+
+        <div class="sidebar-heading">Admin Operations</div>
+        <a class="sidebar-item" onclick="scrollTo('admin-targets')">
+            <span class="dot"></span> 11 · Admin Target Actions
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('credits')">
+            <span class="dot"></span> 12 · Credits Wallet
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('rates')">
+            <span class="dot"></span> 13 · Silver Rates
+        </a>
+        <a class="sidebar-item" onclick="scrollTo('faq')">
+            <span class="dot"></span> FAQ
+        </a>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main" id="main">
+
+        <!-- ─── OVERVIEW ─── -->
+        <div class="section" id="overview">
+            <div class="section-number">★</div>
+            <h2>HBC Silver — Platform Overview</h2>
+            <p class="section-subtitle">Complete end-to-end guide for administrators and staff</p>
+
+            <p>HBC Silver is a digital silver savings platform by <strong>Himalayan Bullion Company</strong> that allows customers to save towards physical silver items (coins, bars) through flexible layaway payments. Administrators manage the full customer lifecycle from registration through delivery.</p>
+
+            <div class="flow">
+                <div class="flow-node fn-register">📱 Register</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node fn-pending">⏳ Pending</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node fn-approved">✅ Approved</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node fn-target">🎯 Target</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node fn-payment">💳 Payments</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node fn-complete">🏆 Complete</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node fn-collection">📅 Collection</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-node fn-delivered">📦 Delivered</div>
+            </div>
+
+            <div class="info-gold">
+                <div class="icon">💡</div>
+                <div class="text">
+                    <strong>Platform Key Concept</strong>
+                    <span>A <em>Target</em> is a layaway plan for a specific silver item. Customers pay in instalments (by grams or NPR) at the current spot rate. When 100% of grams are paid, the target completes, an invoice is generated, and the customer can schedule collection.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── ROLES ─── -->
+        <div class="section" id="roles">
+            <div class="section-number">1</div>
+            <h2>Roles &amp; Permissions</h2>
+            <p class="section-subtitle">Who can do what in the system</p>
+
+            <table class="manual-table">
+                <thead>
+                    <tr><th>Role</th><th>Access Level</th><th>Key Capabilities</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>SuperAdmin</strong></td>
+                        <td>Full access</td>
+                        <td>All operations, user management, settings, Zoho sync</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Admin</strong></td>
+                        <td>High</td>
+                        <td>Approve customers, manage targets, view all data</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Manager</strong></td>
+                        <td>Medium</td>
+                        <td>Approve customers, confirm deliveries, manage collections</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Staff</strong></td>
+                        <td>Limited</td>
+                        <td>View orders, confirm collections</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Customer</strong></td>
+                        <td>Mobile app only</td>
+                        <td>Create targets, make payments, view own data</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ─── REGISTRATION ─── -->
+        <div class="section" id="registration">
+            <div class="section-number">1</div>
+            <h2>User Registration</h2>
+            <p class="section-subtitle">How a new customer creates an account</p>
+
+            <p>Customers register directly through the <strong>HBC Silver mobile app</strong>. Registration collects identity and contact information required for KYC compliance.</p>
+
+            <h3>Registration Fields</h3>
+            <table class="manual-table">
+                <thead><tr><th>Field</th><th>Required</th><th>Notes</th></tr></thead>
+                <tbody>
+                    <tr><td>Full Name</td><td>✓</td><td>First + Last name</td></tr>
+                    <tr><td>Email Address</td><td>✓</td><td>Used for OTP verification and login</td></tr>
+                    <tr><td>Password</td><td>✓</td><td>Minimum 6 characters</td></tr>
+                    <tr><td>Phone Number</td><td>Optional</td><td>10-digit Nepal mobile number</td></tr>
+                    <tr><td>PAN Number</td><td>Optional</td><td>Nepal PAN (9 digits) — for KYC</td></tr>
+                    <tr><td>Address / City / State</td><td>Optional</td><td>Billing address for invoices</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Registration Steps</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Customer opens the HBC Silver app and taps "Sign Up"</div>
+                        <div class="step-desc">App available on iOS. Customer fills in the registration form.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Email OTP verification</div>
+                        <div class="step-desc">A 6-digit verification code is sent to the customer's email. Customer must enter it within 10 minutes to verify their address.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Account created — status: Pending Approval</div>
+                        <div class="step-desc">Email is verified but the account is locked pending staff review. Customer sees a "Your account is under review" message.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Zoho contact created automatically</div>
+                        <div class="step-desc">A contact record is created in Zoho Inventory with the customer's details for order management.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-tip">
+                <div class="icon">ℹ️</div>
+                <div class="text">
+                    <strong>Email Configuration</strong>
+                    <span>OTP emails are sent via SMTP. Credentials can be updated in <strong>Admin → Settings → App Settings</strong>. A static OTP <code>123456</code> is available for testing when SMTP is not configured.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── APPROVAL ─── -->
+        <div class="section" id="approval">
+            <div class="section-number">2</div>
+            <h2>Pending Approval Workflow</h2>
+            <p class="section-subtitle">Staff review and approve new customer accounts</p>
+
+            <p>After email verification, every new customer account enters <strong>Pending Approval</strong> state. No transactions are possible until an admin approves the account. This protects the platform from fraudulent registrations.</p>
+
+            <h3>How to Approve a Customer</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Navigate to Customers → All Customers</div>
+                        <div class="step-desc">In the admin sidebar under <strong>Business → Customers</strong>. Filter by Status = <span class="role">Pending</span> to see only unapproved accounts.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Review customer details</div>
+                        <div class="step-desc">Check the customer's name, email, phone, PAN number, and registration date. Verify identity if required by your KYC policy.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Click "Approve" on the customer row</div>
+                        <div class="step-desc">The account status changes to <span class="role">Active</span>. The customer can now log in and use the full app.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Customer number is assigned</div>
+                        <div class="step-desc">A unique <code>HBC-XXXXX</code> customer number is generated and synced to Zoho as the contact reference ID.</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Account Status Lifecycle</h3>
+            <div class="status-grid">
+                <div class="status-pill pill-pending"><span class="dot2"></span>Pending Approval</div>
+                <div class="status-pill pill-active"><span class="dot2"></span>Active</div>
+                <div class="status-pill pill-cancelled"><span class="dot2"></span>Suspended</div>
+            </div>
+
+            <table class="manual-table">
+                <thead><tr><th>Action</th><th>Who Can Do It</th><th>Effect</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Approve</strong></td><td>Admin, Manager, SuperAdmin</td><td>Account becomes Active; customer can log in and transact</td></tr>
+                    <tr><td><strong>Suspend</strong></td><td>Admin, SuperAdmin</td><td>Account locked; customer cannot log in; existing targets preserved</td></tr>
+                    <tr><td><strong>Activate</strong></td><td>Admin, SuperAdmin</td><td>Restores a Suspended account to Active</td></tr>
+                </tbody>
+            </table>
+
+            <div class="info-warn">
+                <div class="icon">⚠️</div>
+                <div class="text">
+                    <strong>Suspension Policy</strong>
+                    <span>Suspending an account does not cancel existing targets or delete data. The customer's target history is preserved. Use suspension for compliance holds or fraud investigations.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── LOGIN ─── -->
+        <div class="section" id="login">
+            <div class="section-number">3</div>
+            <h2>Login &amp; Profile</h2>
+            <p class="section-subtitle">Customer authentication and profile management</p>
+
+            <h3>Signing In</h3>
+            <p>Customers sign in via the HBC Silver iOS app using their email and password. Face ID / Touch ID is available after the first successful password login.</p>
+
+            <table class="manual-table">
+                <thead><tr><th>Feature</th><th>Details</th></tr></thead>
+                <tbody>
+                    <tr><td>Login with email</td><td>Email + password. Case-insensitive email matching.</td></tr>
+                    <tr><td>Face ID / Touch ID</td><td>Auto-enabled after first successful login. Toggle in More → Security.</td></tr>
+                    <tr><td>Forgot Password</td><td>OTP sent to registered email → enter code → set new password.</td></tr>
+                    <tr><td>Token refresh</td><td>JWT tokens auto-refresh in the background. Sessions last until sign-out.</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Editing Profile</h3>
+            <p>Customers can update their profile from <strong>More → Edit Profile</strong> in the app. The following fields can be modified:</p>
+            <p>First Name · Last Name · Phone Number · PAN Number · Address · City · State · Postal Code</p>
+            <p>Changes sync to Zoho contact automatically if the account is linked.</p>
+        </div>
+
+        <!-- ─── CREATE TARGET ─── -->
+        <div class="section" id="create-target">
+            <div class="section-number">4</div>
+            <h2>Creating a Silver Target</h2>
+            <p class="section-subtitle">How customers choose and lock a silver item for layaway</p>
+
+            <p>A <strong>Target</strong> is a savings plan tied to a specific silver product. The customer commits to paying the full weight of that item over time. Each customer can hold up to <strong>3 active targets</strong> simultaneously.</p>
+
+            <h3>Creating a Target (Customer Flow)</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Browse available products — tap "Buy" tab</div>
+                        <div class="step-desc">Products include silver bars (100g, 500g, 1kg) and coins. Each shows weight, making charge %, thumbnail image, and SKU.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Select a product and review the quote</div>
+                        <div class="step-desc">The app shows the estimated full payment at the current silver rate: <strong>Silver Cost + Making Charge</strong>. Rate is live and updates every 60 seconds.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Accept terms and lock the target</div>
+                        <div class="step-desc">Customer accepts the cancellation policy (10% penalty + buyback at spot for in-store cancellations only) and confirms.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Target is created — status: Active</div>
+                        <div class="step-desc">A unique Target Number (<code>TGT-XXXXX</code>) is assigned. The target appears in the customer's Vault with 0% progress.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-gold">
+                <div class="icon">🎯</div>
+                <div class="text">
+                    <strong>Target Pricing Formula</strong>
+                    <span>Each payment is calculated as: <strong>Grams × Current Rate + (Grams × Rate × Making Charge%)</strong>. The making charge is set per-item in the product catalogue. It can be overridden by admin for specific customers.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── PAYMENTS ─── -->
+        <div class="section" id="payments">
+            <div class="section-number">5</div>
+            <h2>Making Payments</h2>
+            <p class="section-subtitle">Flexible instalment payments against a target</p>
+
+            <p>Customers can pay any amount (minimum NPR 100) towards their active target at any time. Each payment locks the silver rate for 30 seconds to guarantee the quoted price.</p>
+
+            <h3>Payment Flow</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Open the target from the Vault tab</div>
+                        <div class="step-desc">Shows current progress bar, grams paid, grams remaining, and weighted average rate.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Enter amount in grams or NPR</div>
+                        <div class="step-desc">Quick-fill presets: 25%, 50%, 75%, Full remaining. The opposite field mirrors automatically. Minimum NPR 100 per payment.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Rate lock — 30 second countdown</div>
+                        <div class="step-desc">The quoted rate is locked for 30 seconds. After expiry, the system auto-fetches a fresh quote preserving the entered amount.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Confirm payment method and pay</div>
+                        <div class="step-desc">Available methods: <strong>Credits Wallet</strong> (instant) · <strong>ConnectIPS</strong> (bank transfer gateway) · <strong>Cash</strong> (in-store, staff-recorded).</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Payment Methods</h3>
+            <table class="manual-table">
+                <thead><tr><th>Method</th><th>How It Works</th><th>Settlement</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Credits Wallet</strong></td>
+                        <td>Deduct from pre-loaded credit balance. Instant if balance ≥ payment amount.</td>
+                        <td>Instant</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ConnectIPS</strong></td>
+                        <td>Redirects to Nepal's ConnectIPS bank transfer gateway. Customer completes transfer in banking app.</td>
+                        <td>Near real-time</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cash</strong></td>
+                        <td>Customer pays at the HBC store. Staff records the payment in the admin panel.</td>
+                        <td>Manual</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="info-tip">
+                <div class="icon">💡</div>
+                <div class="text">
+                    <strong>Idempotency Protection</strong>
+                    <span>Each payment includes a client-generated idempotency key to prevent duplicate charges on network retries. Safe to retry without double-billing.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── COMPLETION ─── -->
+        <div class="section" id="completion">
+            <div class="section-number">6</div>
+            <h2>Target Completion</h2>
+            <p class="section-subtitle">What happens when a target reaches 100%</p>
+
+            <p>When a customer's final payment brings the target to 100% of the required grams, the system automatically triggers a series of events.</p>
+
+            <h3>Automatic Completion Sequence</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Target status → Completed</div>
+                        <div class="step-desc">Progress reaches 100%. The customer sees a "Ready for Collection" notification in their Vault.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Invoice generated locally</div>
+                        <div class="step-desc">An invoice is automatically created in the system with line items: Silver Cost + Making Charge. Invoice number format: <code>INV-XXXXX</code>.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Invoice pushed to Zoho Inventory</div>
+                        <div class="step-desc">A background job syncs the invoice to Zoho, creating a Sales Order and Invoice in the customer's Zoho contact record.</td>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Customer can download PDF invoice</div>
+                        <div class="step-desc">From the Invoices tab in the app, the customer can download a professional PDF invoice with the HBC logo, item details, and payment summary.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Collection scheduling becomes available</div>
+                        <div class="step-desc">The customer can now choose a Sunday collection date (minimum next week) from the app.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-success">
+                <div class="icon">✅</div>
+                <div class="text">
+                    <strong>Admin View</strong>
+                    <span>Completed targets appear in <strong>Targets → All Targets</strong> with status <span style="color:var(--green);font-weight:700">Completed</span>. The admin can view the associated invoice, payment history, and trigger manual Zoho sync if needed.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── COLLECTION ─── -->
+        <div class="section" id="collection">
+            <div class="section-number">7</div>
+            <h2>Collection Scheduling</h2>
+            <p class="section-subtitle">Booking a Sunday collection appointment</p>
+
+            <p>HBC processes silver collections every <strong>Sunday</strong>. Customers can only book a collection date for the <em>following week or later</em>, giving the store time to prepare the physical silver.</p>
+
+            <h3>Customer: Schedule Collection</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Target must be in Completed state</div>
+                        <div class="step-desc">The "Schedule Collection" button appears once progress = 100%.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Select from available Sundays</div>
+                        <div class="step-desc">The app displays the next 4 available Sundays. Earliest is at least 7 days from today.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Collection date confirmed</div>
+                        <div class="step-desc">Target status shows "Collection on [Date]". Customer receives the date for in-store visit.</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Admin: Manage Collections</h3>
+            <p>Navigate to <strong>Targets → Collections</strong> to see all pending and upcoming collection appointments.</p>
+            <table class="manual-table">
+                <thead><tr><th>Column</th><th>Meaning</th></tr></thead>
+                <tbody>
+                    <tr><td>Target Number</td><td>Unique target ID (<code>TGT-XXXXX</code>)</td></tr>
+                    <tr><td>Customer Name</td><td>Account holder</td></tr>
+                    <tr><td>Item</td><td>Silver product (e.g., 100g Silver Bar)</td></tr>
+                    <tr><td>Collection Date</td><td>Booked Sunday — customer will visit on this date</td></tr>
+                    <tr><td>Grams</td><td>Total silver weight to be handed over</td></tr>
+                </tbody>
+            </table>
+
+            <div class="info-warn">
+                <div class="icon">📋</div>
+                <div class="text">
+                    <strong>Preparation Checklist</strong>
+                    <span>Before each Sunday, review the Collections page and prepare the physical silver items. Verify customer identity at the counter before handing over the product.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── DELIVERY ─── -->
+        <div class="section" id="delivery">
+            <div class="section-number">8</div>
+            <h2>Delivery &amp; Your Vault</h2>
+            <p class="section-subtitle">Confirming physical handover and post-delivery state</p>
+
+            <h3>Confirming Delivery (Staff)</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Customer arrives on collection Sunday</div>
+                        <div class="step-desc">Verify customer identity using the Target Number or Customer Number.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Open target in Admin → Targets → Details</div>
+                        <div class="step-desc">Find the target by Target Number or Customer Name.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Click "Confirm Delivery" button</div>
+                        <div class="step-desc">Optionally add delivery notes (e.g., serial number of bar handed over). Target status changes to <span class="role">Delivered</span>.</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Zoho Sales Order marked as Delivered</div>
+                        <div class="step-desc">The delivery status syncs to Zoho Inventory automatically.</div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Customer: "Your Vault" Section</h3>
+            <p>After delivery, the target moves to the customer's <strong>"Yours"</strong> tab — their personal silver portfolio. This section shows:</p>
+            <table class="manual-table">
+                <thead><tr><th>Field</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td>Total Grams Held</td><td>Physical silver delivered to this customer</td></tr>
+                    <tr><td>Total Cost (NPR)</td><td>Sum of all payments made</td></tr>
+                    <tr><td>Current Spot Value</td><td>Delivered grams × today's buy rate</td></tr>
+                    <tr><td>Profit / Loss</td><td>Current Value − Total Cost (unrealised)</td></tr>
+                    <tr><td>Delivery Date</td><td>Date physical product was handed over</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ─── ZOHO SYNC ─── -->
+        <div class="section" id="zoho-sync">
+            <div class="section-number">9</div>
+            <h2>Zoho Inventory Sync States</h2>
+            <p class="section-subtitle">Understanding how data flows between HBC and Zoho</p>
+
+            <p>HBC Silver is tightly integrated with <strong>Zoho Inventory</strong> for contacts, sales orders, and invoices. All sync operations are logged and can be reviewed in <strong>Settings → Sync Dashboard</strong>.</p>
+
+            <h3>Data Synced to Zoho</h3>
+            <table class="manual-table">
+                <thead><tr><th>HBC Entity</th><th>Zoho Entity</th><th>Trigger</th></tr></thead>
+                <tbody>
+                    <tr><td>Customer</td><td>Contact</td><td>On registration; on profile update</td></tr>
+                    <tr><td>Target (Completed)</td><td>Sales Order</td><td>Auto-sync via background job</td></tr>
+                    <tr><td>Invoice</td><td>Invoice</td><td>Generated on target completion; background job pushes to Zoho</td></tr>
+                    <tr><td>Silver Rate</td><td>Item Price</td><td>Pulled from Zoho item every 30 minutes</td></tr>
+                    <tr><td>Delivery</td><td>Sales Order status</td><td>On Confirm Delivery action</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Zoho Sync Status Values</h3>
+            <div class="status-grid">
+                <div class="status-pill pill-pending"><span class="dot2"></span>Pending</div>
+                <div class="status-pill pill-active"><span class="dot2"></span>In Progress</div>
+                <div class="status-pill pill-complete"><span class="dot2"></span>Synced</div>
+                <div class="status-pill pill-cancelled"><span class="dot2"></span>Failed</div>
+            </div>
+
+            <div class="zoho-box">
+                <h4>🔄 Zoho Sync Troubleshooting</h4>
+                <table class="manual-table" style="margin:0">
+                    <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Action</th></tr></thead>
+                    <tbody>
+                        <tr><td>Status = Failed on Contact</td><td>Zoho token expired</td><td>Settings → Zoho → Re-authenticate</td></tr>
+                        <tr><td>Sales Order not in Zoho</td><td>Background job failed</td><td>Targets → Details → Retry Zoho Sync</td></tr>
+                        <tr><td>Rate not updating</td><td>Zoho item SKU mismatch</td><td>Settings → Zoho → Check item mapping</td></tr>
+                        <tr><td>Duplicate contacts</td><td>Email already in Zoho</td><td>Link existing: Customer → Link Zoho ID</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Target Zoho States Flow</h3>
+            <div class="flow" style="flex-direction:column; align-items:flex-start; gap:10px;">
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="flow-node fn-target">Target Completed</div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-node fn-zoho">Zoho Sales Order Created (Draft)</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="flow-node fn-complete">Invoice Generated</div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-node fn-zoho">Zoho Invoice Created (Sent)</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="flow-node fn-delivered">Delivery Confirmed</div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-node fn-zoho">Zoho Sales Order (Fulfilled)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── INVOICES ─── -->
+        <div class="section" id="invoices">
+            <div class="section-number">10</div>
+            <h2>Invoices</h2>
+            <p class="section-subtitle">Auto-generated tax invoices on target completion</p>
+
+            <p>Every completed target automatically generates a PDF tax invoice. Invoices are stored locally and synced to Zoho.</p>
+
+            <h3>Invoice Line Items</h3>
+            <table class="manual-table">
+                <thead><tr><th>Line Item</th><th>Formula</th></tr></thead>
+                <tbody>
+                    <tr><td>Silver — [Item Name]</td><td>Total Grams × Weighted Average Rate</td></tr>
+                    <tr><td>Making Charge</td><td>Silver Cost × Making Charge %</td></tr>
+                    <tr><td><strong>Total</strong></td><td>Silver Cost + Making Charge</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Accessing Invoices</h3>
+            <table class="manual-table">
+                <thead><tr><th>Where</th><th>How</th></tr></thead>
+                <tbody>
+                    <tr><td>Admin Panel</td><td>Business → Invoices. Filter by Target ID, Customer, Status, Date.</td></tr>
+                    <tr><td>Customer App</td><td>More → Invoices → tap invoice → Download PDF.</td></tr>
+                    <tr><td>Zoho Inventory</td><td>Invoices module — synced after target completion.</td></tr>
+                </tbody>
+            </table>
+
+            <div class="info-success">
+                <div class="icon">📄</div>
+                <div class="text">
+                    <strong>PDF Invoice Contents</strong>
+                    <span>HBC letterhead logo · Invoice number · Date · Customer billing details · Line items table · Subtotal / Tax / Total · Payment status · Terms & Conditions</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── ADMIN TARGETS ─── -->
+        <div class="section" id="admin-targets">
+            <div class="section-number">11</div>
+            <h2>Admin Target Actions</h2>
+            <p class="section-subtitle">Manual overrides and adjustments available to staff</p>
+
+            <table class="manual-table">
+                <thead><tr><th>Action</th><th>When to Use</th><th>Who</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Add Grams</strong></td>
+                        <td>Customer paid cash in-store — add the equivalent grams to their target</td>
+                        <td>Admin, Manager</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Remove Grams</strong></td>
+                        <td>Correct a data entry error or partial refund</td>
+                        <td>SuperAdmin, Admin</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Override Making Charge</strong></td>
+                        <td>Apply a promotional rate or loyalty discount for a specific customer</td>
+                        <td>Admin, SuperAdmin</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Waive Custodian Fee</strong></td>
+                        <td>Remove storage fee for long-held targets as a goodwill gesture</td>
+                        <td>SuperAdmin</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cancel Target</strong></td>
+                        <td>Customer requests cancellation in person. 10% penalty applies. Triggers buyback calculation.</td>
+                        <td>Admin, SuperAdmin</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Confirm Delivery</strong></td>
+                        <td>Physical silver handed to customer at counter</td>
+                        <td>Admin, Manager, Staff</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="info-warn">
+                <div class="icon">⚠️</div>
+                <div class="text">
+                    <strong>All Admin Adjustments Are Audited</strong>
+                    <span>Every manual action requires a <em>Reason</em> field for the audit trail. Reason is stored permanently and visible in Settings → Audit Log. Never skip this field.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── CREDITS ─── -->
+        <div class="section" id="credits">
+            <div class="section-number">12</div>
+            <h2>Credits Wallet</h2>
+            <p class="section-subtitle">Pre-loaded wallet for instant target payments</p>
+
+            <p>Customers can top up a Credits Wallet and use it for instant silver payments without going through a bank gateway each time.</p>
+
+            <h3>Top-Up Methods</h3>
+            <table class="manual-table">
+                <thead><tr><th>Method</th><th>How</th><th>Settlement</th></tr></thead>
+                <tbody>
+                    <tr><td>ConnectIPS</td><td>Customer initiates from app Credits section</td><td>Verified on payment callback</td></tr>
+                    <tr><td>Admin Top-Up</td><td>Admin → Credits → Add Credits for customer</td><td>Instant (manual entry)</td></tr>
+                    <tr><td>Refund Credit</td><td>System issues credit on cancelled payment</td><td>Automatic</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Credit Transaction Types</h3>
+            <div class="status-grid">
+                <div class="status-pill pill-complete"><span class="dot2"></span>Deposit</div>
+                <div class="status-pill pill-cancelled"><span class="dot2"></span>Withdrawal</div>
+                <div class="status-pill pill-active"><span class="dot2"></span>Payment Applied</div>
+                <div class="status-pill pill-pending"><span class="dot2"></span>Pending</div>
+            </div>
+        </div>
+
+        <!-- ─── RATES ─── -->
+        <div class="section" id="rates">
+            <div class="section-number">13</div>
+            <h2>Silver Rates</h2>
+            <p class="section-subtitle">How buy and sell rates are managed</p>
+
+            <p>The silver buy rate (NPR per gram) is the central pricing variable for all target payments. It is displayed in the app's home screen banner (Buy / 10g and Buy / Tola) and updates automatically.</p>
+
+            <h3>Rate Management</h3>
+            <table class="manual-table">
+                <thead><tr><th>Method</th><th>Details</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Auto-sync from Zoho</strong></td><td>Every 30 minutes, the system pulls the latest rate from the silver item price in Zoho Inventory. This is the primary source.</td></tr>
+                    <tr><td><strong>Manual update</strong></td><td>Admin → Settings → Silver Rate → enter new rate → Save. Takes effect immediately for all new payment quotes.</td></tr>
+                    <tr><td><strong>Buyback rate</strong></td><td>Automatically set to 96% of buy rate (4% spread). Shown to customers for portfolio value calculation.</td></tr>
+                </tbody>
+            </table>
+
+            <h3>Price Display</h3>
+            <table class="manual-table">
+                <thead><tr><th>Display</th><th>Calculation</th></tr></thead>
+                <tbody>
+                    <tr><td>Buy / 10g</td><td>Buy Rate × 10</td></tr>
+                    <tr><td>Buy / Tola</td><td>Buy Rate × 11.6638 (1 tola = 11.6638g)</td></tr>
+                    <tr><td>Buy / 1g</td><td>Buy Rate (per gram)</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ─── FAQ ─── -->
+        <div class="section" id="faq">
+            <div class="section-number">?</div>
+            <h2>Frequently Asked Questions</h2>
+            <p class="section-subtitle">Common scenarios and their solutions</p>
+
+            <div class="accordion">
+                <div class="acc-item open">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        A customer says they cannot log in after registering
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="acc-body">
+                        Check their account status in <strong>Customers → All Customers</strong>. If status is <em>Pending Approval</em>, the account has not been approved yet — click Approve. If status is <em>Suspended</em>, check with management before reactivating.
+                    </div>
+                </div>
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        A target shows 100% but no invoice was generated
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="acc-body">
+                        This can happen if the background job failed. Go to <strong>Targets → Details</strong> for that target, and click <em>Re-trigger Zoho Sync</em>. If the invoice still doesn't appear, check <strong>Settings → Sync Dashboard</strong> for errors.
+                    </div>
+                </div>
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        Customer paid but grams didn't update
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="acc-body">
+                        For ConnectIPS payments, the system verifies on the payment callback. If the callback was missed, go to <strong>Targets → Payments</strong> and check the payment status. If it shows <em>Pending</em> for more than 30 minutes, manually verify with the bank and use <em>Admin → Add Grams</em> with the verified amount.
+                    </div>
+                </div>
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        How to cancel a target
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="acc-body">
+                        Target cancellations are <strong>in-person only</strong>. The customer must visit the HBC store. Staff calculates refund: <em>Total Paid − 10% Penalty − (remaining grams × current buy rate)</em>. Use <strong>Targets → Admin Actions → Cancel Target</strong> and record the reason. A credit note can be issued if applicable.
+                    </div>
+                </div>
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        The Zoho sync shows "Failed" for a customer
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="acc-body">
+                        Go to <strong>Settings → Zoho</strong>. Check if the OAuth token needs re-authentication (tokens expire periodically). If re-auth is complete but sync still fails, check that the Zoho Organization ID in App Settings matches the active Zoho Inventory organization.
+                    </div>
+                </div>
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        How to update the silver rate manually
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="acc-body">
+                        Navigate to <strong>Settings → App Settings → Silver Rate</strong>. Enter the new Buy Rate per gram (NPR). Save — the rate applies immediately to all new payment quotes. Historical payments are not affected. The rate also syncs from Zoho automatically every 30 minutes if Zoho integration is active.
+                    </div>
+                </div>
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        A customer wants to pick up their silver but missed the scheduled Sunday
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="acc-body">
+                        The customer can reschedule from the app by selecting a new Sunday from the available dates. There is no limit on how many times a collection can be rescheduled. The target remains in <em>Completed</em> state until delivery is confirmed.
+                    </div>
+                </div>
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        Maximum active targets per customer
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="acc-body">
+                        Each customer can hold a maximum of <strong>3 active targets</strong> simultaneously. This limit can be adjusted by a SuperAdmin in the application configuration. Completed and Delivered targets do not count toward this limit.
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-gold" style="margin-top:32px;">
+                <div class="icon">📞</div>
+                <div class="text">
+                    <strong>Need Further Help?</strong>
+                    <span>Contact the development team or refer to the technical API documentation. For Zoho-specific issues, use the Zoho Inventory Help Center and check the integration logs in Settings → Sync Dashboard.</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+    // Accordion
+    function toggleAcc(header) {
+        const item = header.closest('.acc-item');
+        item.classList.toggle('open');
+    }
+
+    // Sidebar scroll-spy
+    function scrollTo(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        // Update active state
+        document.querySelectorAll('.sidebar-item').forEach(a => a.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+    }
+
+    // Scroll spy on main
+    const sections = document.querySelectorAll('.section[id]');
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+
+    const main = document.getElementById('main');
+    main.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(sec => {
+            if (main.scrollTop + 100 >= sec.offsetTop) {
+                current = sec.id;
+            }
+        });
+        sidebarItems.forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('onclick')?.includes(current)) {
+                item.classList.add('active');
+            }
+        });
+    });
+</script>
+</body>
+</html>

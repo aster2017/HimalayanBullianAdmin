@@ -15,17 +15,13 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 	const auth = useAppSelector((state: any) => state.auth);
 	const [menuitems, setMenuitems] = useState(MenuItems);
 
-	// Filter menu items based on user role and set active states
+	// Filter menu items based on user role
 	React.useEffect(() => {
 		if (auth?.user?.roles && auth.user.roles.length > 0) {
+			// Get primary role (typically "admin" or "user")
 			const userRole = auth.user.roles[0];
 			const filteredItems = getMenuItemsByRole(userRole);
 			setMenuitems(filteredItems);
-			// Re-apply active states after filtering
-			setTimeout(() => {
-				const currentPath = window.location.pathname.endsWith("/") ? window.location.pathname.slice(0, -1) : window.location.pathname;
-				setMenuUsingUrl(currentPath);
-			}, 100);
 		}
 	}, [auth?.user?.roles]);
 
@@ -651,7 +647,7 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 			<aside className="app-sidebar" id="sidebar" onMouseOver={() => Onhover()}
 				onMouseLeave={() => Outhover()}>
 				<div className="main-sidebar-header">
-					<Link href="/dashboards/admin/" className="header-logo">
+					<Link href="/dashboards/crm/" className="header-logo">
 						<img src={`${process.env.NODE_ENV === "production" ? basePath : ""}/assets/images/brand-logos/desktop-logo.png`} alt="logo" className="main-logo desktop-logo" />
 						<img src={`${process.env.NODE_ENV === "production" ? basePath : ""}/assets/images/brand-logos/toggle-logo.png`} alt="logo" className="main-logo toggle-logo" />
 						<img src={`${process.env.NODE_ENV === "production" ? basePath : ""}/assets/images/brand-logos/desktop-dark.png`} alt="logo" className="main-logo desktop-dark" />
@@ -698,6 +694,12 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 													)}
 													</span>
 												</Link>
+												: ""}
+											{levelone.type === "external" ?
+												<a href={levelone.path} target={levelone.target || "_blank"} rel="noopener noreferrer" className="side-menu__item">
+													{local_varaiable.dataVerticalStyle != "doublemenu" ? levelone.icon : ""}
+													<span className="side-menu__label">{levelone.title}</span>
+												</a>
 												: ""}
 											{levelone.type === "empty" ?
 												<Link href="#!" className='side-menu__item'

@@ -13,18 +13,20 @@ const ReportsIcon = <i className="bx bx-bar-chart-square side-menu__icon"></i>;
 const AuditIcon = <i className="bx bx-history side-menu__icon"></i>;
 const SyncIcon = <i className="bx bx-sync side-menu__icon"></i>;
 const SettingsIcon = <i className="bx bx-cog side-menu__icon"></i>;
+const RatesIcon = <i className="bx bx-line-chart side-menu__icon"></i>;
 const TargetsIcon = <i className="bx bx-layer side-menu__icon"></i>;
 const CollectionsIcon = <i className="bx bx-calendar-check side-menu__icon"></i>;
-const RatesIcon = <i className="bx bx-line-chart side-menu__icon"></i>;
+const HelpIcon = <i className="bx bx-help-circle side-menu__icon"></i>;
 
 export interface MenuItem {
   menutitle?: string;
   icon?: React.ReactNode;
   title?: string;
-  type: "sub" | "link" | "empty";
+  type: "sub" | "link" | "empty" | "external";
   active?: boolean;
   selected?: boolean;
   path?: string;
+  target?: string;
   dirchange?: boolean;
   badge?: React.ReactNode;
   children?: MenuItem[];
@@ -112,26 +114,6 @@ export const MenuItems: MenuItem[] = [
     ],
   },
 
-  // Products Module
-  {
-    icon: ProductsIcon,
-    title: "Products",
-    type: "sub",
-    active: false,
-    selected: false,
-    roles: ["admin", "user"],
-    children: [
-      {
-        path: "/products",
-        type: "link",
-        active: false,
-        selected: false,
-        dirchange: false,
-        title: "Product Catalog",
-      },
-    ],
-  },
-
   // Targets Module
   {
     icon: TargetsIcon,
@@ -140,26 +122,35 @@ export const MenuItems: MenuItem[] = [
     active: false,
     selected: false,
     dirchange: false,
-    roles: ["admin"],
     children: [
       { path: "/targets", type: "link", active: false, selected: false, dirchange: false, title: "All Targets" },
       { path: "/targets/collections", type: "link", active: false, selected: false, dirchange: false, title: "Collections" },
     ],
+    roles: ["admin"],
   },
 
   // Customers Module
   {
     icon: CustomersIcon,
     title: "Customers",
-    type: "sub",
+    type: "link",
     active: false,
     selected: false,
     dirchange: false,
+    path: "/customers",
     roles: ["admin"],
-    children: [
-      { path: "/customers", type: "link", active: false, selected: false, dirchange: false, title: "All Customers" },
-      { path: "/customers/approvals", type: "link", active: false, selected: false, dirchange: false, title: "Approvals" },
-    ],
+  },
+
+  // Customer Approvals
+  {
+    icon: CustomersIcon,
+    title: "Approvals",
+    type: "link",
+    active: false,
+    selected: false,
+    dirchange: false,
+    path: "/customers/approvals",
+    roles: ["admin"],
   },
 
   // Inventory/Items Module
@@ -288,6 +279,23 @@ export const MenuItems: MenuItem[] = [
     selected: false,
     dirchange: false,
     path: "/settings",
+    roles: ["admin", "user"],
+  },
+
+  // Help Section
+  {
+    menutitle: "HELP",
+  },
+
+  {
+    icon: HelpIcon,
+    title: "User Manual",
+    type: "external",
+    active: false,
+    selected: false,
+    dirchange: false,
+    path: "/help.html",
+    target: "_blank",
     roles: ["admin", "user"],
   },
 ];
