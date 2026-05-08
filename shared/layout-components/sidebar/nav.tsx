@@ -13,6 +13,9 @@ const ReportsIcon = <i className="bx bx-bar-chart-square side-menu__icon"></i>;
 const AuditIcon = <i className="bx bx-history side-menu__icon"></i>;
 const SyncIcon = <i className="bx bx-sync side-menu__icon"></i>;
 const SettingsIcon = <i className="bx bx-cog side-menu__icon"></i>;
+const TargetsIcon = <i className="bx bx-layer side-menu__icon"></i>;
+const CollectionsIcon = <i className="bx bx-calendar-check side-menu__icon"></i>;
+const RatesIcon = <i className="bx bx-line-chart side-menu__icon"></i>;
 
 export interface MenuItem {
   menutitle?: string;
@@ -129,16 +132,34 @@ export const MenuItems: MenuItem[] = [
     ],
   },
 
+  // Targets Module
+  {
+    icon: TargetsIcon,
+    title: "Targets",
+    type: "sub",
+    active: false,
+    selected: false,
+    dirchange: false,
+    roles: ["admin"],
+    children: [
+      { path: "/targets", type: "link", active: false, selected: false, dirchange: false, title: "All Targets" },
+      { path: "/targets/collections", type: "link", active: false, selected: false, dirchange: false, title: "Collections" },
+    ],
+  },
+
   // Customers Module
   {
     icon: CustomersIcon,
     title: "Customers",
-    type: "link",
+    type: "sub",
     active: false,
     selected: false,
     dirchange: false,
-    path: "/customers",
     roles: ["admin"],
+    children: [
+      { path: "/customers", type: "link", active: false, selected: false, dirchange: false, title: "All Customers" },
+      { path: "/customers/approvals", type: "link", active: false, selected: false, dirchange: false, title: "Approvals" },
+    ],
   },
 
   // Inventory/Items Module
@@ -227,6 +248,18 @@ export const MenuItems: MenuItem[] = [
     selected: false,
     dirchange: false,
     path: "/audit-log",
+    roles: ["admin"],
+  },
+
+  // Silver Rates
+  {
+    icon: RatesIcon,
+    title: "Silver Rates",
+    type: "link",
+    active: false,
+    selected: false,
+    dirchange: false,
+    path: "/rates",
     roles: ["admin"],
   },
 
