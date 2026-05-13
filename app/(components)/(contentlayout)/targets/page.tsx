@@ -108,6 +108,10 @@ export default function TargetsPage() {
     setBbNotes('');
   };
 
+  // Grams eligible = gramsPaid - gramsReturnedTotal (server tracks running total)
+  const bbEligible = (t: any): number =>
+    Math.max(0, (t?.gramsPaid || 0) - (t?.gramsReturnedTotal || 0));
+
   const bbPayout = () => {
     const g = parseFloat(bbGrams) || 0;
     const r = parseFloat(bbRate) || 0;
@@ -118,6 +122,11 @@ export default function TargetsPage() {
     if (!buybackTarget) return;
     if (!bbGrams || parseFloat(bbGrams) <= 0) { toast.error('Enter grams returned'); return; }
     if (!bbRate || parseFloat(bbRate) <= 0) { toast.error('Enter buyback rate'); return; }
+    const eligible = bbEligible(buybackTarget);
+    if (parseFloat(bbGrams) > eligible) {
+      toast.error(`Cannot exceed ${eligible.toFixed(3)}g eligible for buyback`);
+      return;
+    }
     setBbSaving(true);
     try {
       const r = await fetch(`${API}/targets/buybacks`, {
@@ -134,7 +143,12 @@ export default function TargetsPage() {
       });
       const d = await r.json();
       if (r.ok && d.success) {
-        toast.success(`Buyback logged — NPR ${parseFloat(bbPayout()).toLocaleString()} payout recorded`);
+        const remaining = d.data?.gramsEligibleRemaining ?? 0;
+        toast.success(`Buyback logged — NPR ${parseFloat(bbPayout()).toLocaleString()} payout · ${remaining.toFixed(3)}g remaining`);
+        // Update the target row in state so max refreshes without reloading
+        setTargets(prev => prev.map(t => t.id === buybackTarget.id
+          ? { ...t, gramsReturnedTotal: (t.gramsReturnedTotal || 0) + parseFloat(bbGrams) }
+          : t));
         setBuybackTarget(null);
       } else {
         toast.error(d.message || 'Failed to log buyback');
@@ -216,8 +230,9 @@ export default function TargetsPage() {
                   </tr>
                 ) : targets.map((t: any) => {
                   const pct = t.totalGrams > 0 ? Math.round((t.gramsPaid / t.totalGrams) * 100) : 0;
-                  const buybackVal = t.totalGrams > 0
-                    ? (t.gramsPaid * currentBuybackRate).toLocaleString('en-NP', { maximumFractionDigits: 0 })
+                  const eligibleGrams = bbEligible(t);
+                  const buybackVal = eligibleGrams > 0
+                    ? (eligibleGrams * currentBuybackRate).toLocaleString('en-NP', { maximumFractionDigits: 0 })
                     : '—';
                   return (
                     <tr key={t.id}>
@@ -343,11 +358,24 @@ export default function TargetsPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold mb-1">Log Silver Buyback</h3>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-gray-500 mb-2">
               Record HBC buying back silver from{' '}
               <span className="font-semibold text-defaulttextcolor">{buybackTarget.customerName}</span>
               {' '}({buybackTarget.targetNumber})
             </p>
+            <div className="flex items-center gap-3 mb-4 text-xs">
+              <span className="bg-purple-50 text-purple-700 px-2 py-1 rounded">
+                {buybackTarget.gramsPaid}g purchased
+              </span>
+              {(buybackTarget.gramsReturnedTotal || 0) > 0 && (
+                <span className="bg-orange-50 text-orange-600 px-2 py-1 rounded">
+                  {(buybackTarget.gramsReturnedTotal || 0).toFixed(3)}g already returned
+                </span>
+              )}
+              <span className="bg-green-50 text-green-700 px-2 py-1 rounded font-semibold">
+                {bbEligible(buybackTarget).toFixed(3)}g eligible
+              </span>
+            </div>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -356,7 +384,8 @@ export default function TargetsPage() {
                   <input
                     type="number" step="0.001" min="0.001"
                     className="form-control"
-                    placeholder={`Max: ${buybackTarget.gramsPaid}g`}
+                    placeholder={`Max: ${bbEligible(buybackTarget).toFixed(3)}g`}
+                    max={bbEligible(buybackTarget)}
                     value={bbGrams}
                     onChange={e => setBbGrams(e.target.value)}
                   />
