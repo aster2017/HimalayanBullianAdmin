@@ -168,7 +168,7 @@ export default function ItemsPage() {
                   <th>SKU</th>
                   <th>CATEGORY</th>
                   <th className="text-center">IMAGES</th>
-                  <th className="text-center">SHOW IN MOBILE</th>
+                  <th className="text-center">TARGET PRODUCT</th>
                   <th className="text-center">ZOHO SYNCED</th>
                   <th className="text-center">ACTIONS</th>
                 </tr>
@@ -190,12 +190,17 @@ export default function ItemsPage() {
                         )}
                       </td>
                       <td><code className="text-xs text-violet-600">{item.sku}</code></td>
-                      <td><span className="text-sm text-[#8c9097]">{item.category || '—'}</span></td>
-                      <td className="text-end">
-                        <span className="text-sm font-mono">{item.rate > 0 ? `NPR ${item.rate.toLocaleString()}` : '—'}</span>
+                      <td>
+                        <span className="text-sm font-medium">
+                          {item.category
+                            ? item.category
+                            : item.isTargetProduct
+                              ? <span className="text-[#8c9097]">—</span>
+                              : <span className="text-[#8c9097]">—</span>
+                          }
+                        </span>
                       </td>
 
-                      {/* ShowInMobile toggle */}
                       {/* Images count */}
                       <td className="text-center">
                         <span className={`inline-flex items-center gap-1 text-sm font-semibold ${(item.images?.length ?? 0) === 0 ? 'text-[#8c9097]' : 'text-primary'}`}>
@@ -203,20 +208,15 @@ export default function ItemsPage() {
                         </span>
                       </td>
 
-                      {/* ShowInMobile toggle */}
+                      {/* Target Product badge */}
                       <td className="text-center">
-                        <button
-                          onClick={() => toggleField(item, 'showInMobile')}
-                          title={item.showInMobile ? 'Visible in app — click to hide' : 'Hidden in app — click to show'}
-                          className="flex items-center gap-1.5 mx-auto"
-                        >
-                          <div className={`relative w-9 h-5 rounded-full transition-colors ${item.showInMobile ? 'bg-success' : 'bg-[#d1d5db]'}`}>
-                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${item.showInMobile ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                          </div>
-                          <span className={`text-xs font-medium ${item.showInMobile ? 'text-success' : 'text-[#8c9097]'}`}>
-                            {item.showInMobile ? 'Yes' : 'No'}
+                        {item.isTargetProduct ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                            🎯 Yes
                           </span>
-                        </button>
+                        ) : (
+                          <span className="text-[11px] text-[#8c9097]">—</span>
+                        )}
                       </td>
 
                       {/* Zoho synced */}
