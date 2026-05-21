@@ -8,6 +8,7 @@ const ProductsIcon = <i className="bx bx-package side-menu__icon"></i>;
 const CustomersIcon = <i className="bx bx-user-circle side-menu__icon"></i>;
 const ItemsIcon = <i className="bx bx-list-ul side-menu__icon"></i>;
 const PaymentsIcon = <i className="bx bx-credit-card side-menu__icon"></i>;
+const CreditsIcon = <i className="bx bx-wallet side-menu__icon"></i>;
 const AddressIcon = <i className="bx bx-map-pin side-menu__icon"></i>;
 const ReportsIcon = <i className="bx bx-bar-chart-square side-menu__icon"></i>;
 const AuditIcon = <i className="bx bx-history side-menu__icon"></i>;
@@ -174,6 +175,18 @@ export const MenuItems: MenuItem[] = [
     selected: false,
     dirchange: false,
     path: "/payments",
+    roles: ["admin"],
+  },
+
+  // Credits / Wallet Ledger
+  {
+    icon: CreditsIcon,
+    title: "Credits",
+    type: "link",
+    active: false,
+    selected: false,
+    dirchange: false,
+    path: "/credits",
     roles: ["admin"],
   },
 

@@ -16,6 +16,7 @@ export default function CustomerDetailPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [targets, setTargets] = useState<any[]>([]);
+  const [wallet, setWallet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string|null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -26,16 +27,18 @@ export default function CustomerDetailPage() {
   const loadAll = async () => {
     if (!id) return;
     setLoading(true);
-    const [cr, or, ir, tr] = await Promise.allSettled([
+    const [cr, or, ir, tr, wr] = await Promise.allSettled([
       fetch(`${API}/customers/${id}`, { headers: getAuthHeaders() }).then(r => r.json()),
       fetch(`${API}/customers/${id}/orders?page=1&pageSize=10`, { headers: getAuthHeaders() }).then(r => r.json()),
       fetch(`${API}/customers/${id}/invoices?page=1&pageSize=10`, { headers: getAuthHeaders() }).then(r => r.json()),
       fetch(`${API}/targets/customer/${id}`, { headers: getAuthHeaders() }).then(r => r.json()),
+      fetch(`${API}/credits/admin/customers/${id}?page=1&pageSize=10`, { headers: getAuthHeaders() }).then(r => r.json()),
     ]);
     if (cr.status === 'fulfilled') { const c = cr.value.data; setCustomer(c); setEditData({ firstName: c?.firstName || '', lastName: c?.lastName || '', phoneNumber: c?.phoneNumber || '' }); }
     if (or.status === 'fulfilled') setOrders(or.value.data?.items || or.value.data || []);
     if (ir.status === 'fulfilled') setInvoices(ir.value.data?.items || ir.value.data || []);
     if (tr.status === 'fulfilled') setTargets(tr.value.data || []);
+    if (wr.status === 'fulfilled') setWallet(wr.value?.data || null);
     setLoading(false);
   };
 
@@ -154,6 +157,80 @@ export default function CustomerDetailPage() {
             <p className="text-2xl font-bold text-warning">{targets.filter((t:any) => t.status === 'Active').length}</p>
           </div>
         </div>
+
+        {/* Wallet (Credit) */}
+        {wallet && (
+          <div className="box shadow-sm mb-6">
+            <div className="box-header border-b p-4 flex justify-between items-center">
+              <h5 className="box-title mb-0">
+                Wallet
+                <span className="ms-2 text-sm text-gray-500 font-normal">
+                  ({wallet.totalCount ?? 0} transaction{(wallet.totalCount ?? 0) === 1 ? '' : 's'})
+                </span>
+              </h5>
+              <Link href={`/credits?search=${encodeURIComponent(customer.email || '')}`} className="text-primary text-sm hover:underline">View all</Link>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
+              <div className="bg-primary/5 rounded-lg p-3">
+                <p className="text-[0.7rem] text-gray-500 mb-1 uppercase tracking-wide">Current Balance</p>
+                <p className="text-xl font-bold text-primary">Rs. {(wallet.balance || 0).toLocaleString()}</p>
+              </div>
+              <div className="bg-success/5 rounded-lg p-3">
+                <p className="text-[0.7rem] text-gray-500 mb-1 uppercase tracking-wide">Total Deposited</p>
+                <p className="text-base font-semibold text-success">Rs. {(wallet.summary?.totalDeposited || 0).toLocaleString()}</p>
+              </div>
+              <div className="bg-warning/5 rounded-lg p-3">
+                <p className="text-[0.7rem] text-gray-500 mb-1 uppercase tracking-wide">Total Used</p>
+                <p className="text-base font-semibold text-warning">Rs. {(wallet.summary?.totalDeducted || 0).toLocaleString()}</p>
+              </div>
+              <div className="bg-info/5 rounded-lg p-3">
+                <p className="text-[0.7rem] text-gray-500 mb-1 uppercase tracking-wide">Pending</p>
+                <p className="text-base font-semibold text-info">Rs. {(wallet.summary?.pendingTotal || 0).toLocaleString()}</p>
+              </div>
+            </div>
+
+            {(wallet.items?.length ?? 0) > 0 && (
+              <div className="table-responsive border-t">
+                <table className="ti-custom-table ti-striped-table">
+                  <thead>
+                    <tr><th>Date</th><th>Type</th><th>Amount</th><th>Method</th><th>Reference</th><th>Status</th></tr>
+                  </thead>
+                  <tbody>
+                    {wallet.items.map((t: any) => (
+                      <tr key={t.id}>
+                        <td className="text-sm whitespace-nowrap">{new Date(t.createdAt).toLocaleDateString()}</td>
+                        <td>
+                          <span className={`badge px-2 py-1 rounded text-xs ${
+                            t.type === 'Deposit' ? 'bg-green-500/10 text-green-700'
+                            : t.type === 'Refund' ? 'bg-blue-500/10 text-blue-700'
+                            : 'bg-yellow-500/10 text-yellow-700'}`}>
+                            {t.type === 'Deduction' ? '−' : '+'} {t.type}
+                          </span>
+                        </td>
+                        <td className={`text-sm font-semibold ${t.type === 'Deduction' ? 'text-warning' : 'text-success'}`}>
+                          Rs. {(t.amount || 0).toLocaleString()}
+                        </td>
+                        <td className="text-sm">{t.paymentMethod || <span className="text-gray-400">—</span>}</td>
+                        <td className="font-mono text-[0.7rem]">
+                          {t.connectIpsTransactionId || t.referenceNumber || <span className="text-gray-400">—</span>}
+                        </td>
+                        <td>
+                          <span className={`badge px-2 py-1 rounded text-xs ${
+                            t.status === 'Verified' ? 'bg-green-500/10 text-green-700'
+                            : t.status === 'Rejected' ? 'bg-red-500/10 text-red-700'
+                            : 'bg-yellow-500/10 text-yellow-700'}`}>
+                            {t.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Targets */}
         {targets.length > 0 && (
