@@ -23,6 +23,8 @@ export default function CustomerDetailPage() {
   const [editData, setEditData] = useState({ firstName: '', lastName: '', phoneNumber: '' });
   const [rejectModal, setRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [panImgUrl, setPanImgUrl] = useState<string | null>(null);
+  const [panLightbox, setPanLightbox] = useState(false);
 
   const loadAll = async () => {
     if (!id) return;
@@ -43,6 +45,26 @@ export default function CustomerDetailPage() {
   };
 
   useEffect(() => { loadAll(); }, [id]);
+
+  // Fetch PAN card image as a blob through the authenticated endpoint.
+  // Object-URL lifecycle: revoke on unmount so we don't leak memory.
+  useEffect(() => {
+    if (!customer?.hasPanCardImage || !id) { setPanImgUrl(null); return; }
+    let revokeUrl: string | null = null;
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`${API}/customers/${id}/pan-card`, { headers: getAuthHeaders() });
+        if (!r.ok || cancelled) return;
+        const blob = await r.blob();
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        revokeUrl = url;
+        setPanImgUrl(url);
+      } catch {/* swallow — UI shows a fallback */}
+    })();
+    return () => { cancelled = true; if (revokeUrl) URL.revokeObjectURL(revokeUrl); };
+  }, [customer?.hasPanCardImage, id]);
 
   const act = async (endpoint: string, body?: any) => {
     setActing(endpoint);
@@ -155,6 +177,99 @@ export default function CustomerDetailPage() {
           <div className="box p-4 rounded-lg shadow-sm">
             <p className="text-xs text-gray-500 mb-1">Active Targets</p>
             <p className="text-2xl font-bold text-warning">{targets.filter((t:any) => t.status === 'Active').length}</p>
+          </div>
+        </div>
+
+        {/* KYC / AML — Client Type, PAN, UBO declaration */}
+        <div className="box shadow-sm mb-6">
+          <div className="box-header border-b p-4 flex items-center justify-between">
+            <h5 className="box-title mb-0">
+              KYC / Compliance
+              <span className={`ms-2 badge px-2 py-1 rounded text-xs ${
+                customer.clientType === 'Business'
+                  ? 'bg-purple-500/10 text-purple-700'
+                  : 'bg-blue-500/10 text-blue-700'}`}>
+                {customer.clientType || 'Individual'}
+              </span>
+            </h5>
+            {!customer.uboConfirmed && (
+              <span className="badge bg-yellow-500/10 text-yellow-700 px-2 py-1 rounded text-xs font-semibold">
+                <i className="ri-error-warning-line me-1"></i>KYC incomplete
+              </span>
+            )}
+          </div>
+
+          <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* PAN photo */}
+            <div className="md:col-span-1">
+              <p className="text-[0.7rem] text-gray-500 uppercase tracking-wide mb-2">PAN Card Photo</p>
+              {customer.hasPanCardImage && panImgUrl ? (
+                <button
+                  onClick={() => setPanLightbox(true)}
+                  className="block w-full rounded-lg overflow-hidden border border-gray-200 hover:border-primary transition-colors"
+                  title="Click to enlarge"
+                >
+                  <img src={panImgUrl} alt="PAN card" className="w-full h-40 object-cover bg-gray-50" />
+                </button>
+              ) : customer.hasPanCardImage ? (
+                <div className="w-full h-40 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="animate-spin ri-loader-4-line text-2xl text-gray-400"></div>
+                </div>
+              ) : (
+                <div className="w-full h-40 flex flex-col items-center justify-center bg-gray-50 rounded-lg border border-dashed border-gray-300 text-gray-400">
+                  <i className="ri-image-off-line text-3xl mb-1"></i>
+                  <p className="text-xs">Not uploaded</p>
+                </div>
+              )}
+            </div>
+
+            {/* PAN number + UBO */}
+            <div className="md:col-span-2 space-y-3">
+              <div>
+                <p className="text-[0.7rem] text-gray-500 uppercase tracking-wide">PAN Number</p>
+                <p className="font-mono text-sm font-semibold">
+                  {customer.panNumber || <span className="text-gray-400 font-sans font-normal">Not provided</span>}
+                </p>
+              </div>
+
+              {customer.clientType === 'Business' && (
+                <div className="grid grid-cols-2 gap-3 p-3 bg-purple-500/5 rounded border border-purple-200">
+                  <div>
+                    <p className="text-[0.7rem] text-gray-500 uppercase tracking-wide">Business Name</p>
+                    <p className="text-sm font-semibold">{customer.businessName || <span className="text-gray-400 font-normal">—</span>}</p>
+                  </div>
+                  <div>
+                    <p className="text-[0.7rem] text-gray-500 uppercase tracking-wide">Registration No.</p>
+                    <p className="text-sm font-mono font-semibold">{customer.businessRegistrationNumber || <span className="text-gray-400 font-sans font-normal">—</span>}</p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <p className="text-[0.7rem] text-gray-500 uppercase tracking-wide">Ultimate Beneficial Owner</p>
+                {customer.uboConfirmed ? (
+                  <p className="text-sm">
+                    <span className="text-green-600 font-semibold"><i className="ri-checkbox-circle-fill me-1"></i>Confirmed</span>
+                    <span className="text-gray-400 ms-2 text-xs">
+                      on {customer.uboConfirmedAt ? new Date(customer.uboConfirmedAt).toLocaleDateString() : '—'}
+                      {customer.uboDeclarationVersion && <> · <span className="font-mono">{customer.uboDeclarationVersion}</span></>}
+                    </span>
+                  </p>
+                ) : (
+                  <p className="text-sm text-yellow-700">
+                    <i className="ri-error-warning-line me-1"></i>Not confirmed — legacy signup; chase up at approval
+                  </p>
+                )}
+              </div>
+
+              <div className="pt-1">
+                <p className="text-[0.7rem] text-gray-500 uppercase tracking-wide mb-1">Address</p>
+                <p className="text-sm">
+                  {[customer.address, customer.city, customer.state, customer.postalCode, customer.country]
+                    .filter(Boolean).join(', ') || <span className="text-gray-400">Not provided</span>}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -312,6 +427,33 @@ export default function CustomerDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* PAN photo lightbox */}
+      {panLightbox && panImgUrl && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4"
+          onClick={() => setPanLightbox(false)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <button
+              onClick={() => setPanLightbox(false)}
+              className="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300"
+              aria-label="Close"
+            >
+              <i className="ri-close-line"></i>
+            </button>
+            <img
+              src={panImgUrl}
+              alt="PAN card (full size)"
+              className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <p className="text-center text-white/70 text-xs mt-3">
+              KYC document · {customer.fullName} · {customer.panNumber || '—'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {editMode && (

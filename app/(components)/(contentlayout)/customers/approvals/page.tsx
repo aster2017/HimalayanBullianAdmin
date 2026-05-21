@@ -93,7 +93,7 @@ export default function ApprovalsPage() {
           </div>
           <div className="table-responsive">
             <table className="ti-custom-table ti-striped-table">
-              <thead><tr><th>Customer</th><th>Phone</th><th>City</th><th>Source</th><th>Signed Up</th><th>Zoho</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Customer</th><th>Type / KYC</th><th>Phone</th><th>City</th><th>Source</th><th>Signed Up</th><th>Actions</th></tr></thead>
               <tbody>
                 {loading ? (
                   <tr><td colSpan={7} className="text-center py-10"><div className="animate-spin ri-loader-4-line text-2xl inline-block"></div></td></tr>
@@ -113,15 +113,29 @@ export default function ApprovalsPage() {
                         </div>
                       </div>
                     </td>
+                    <td>
+                      <div className="flex flex-col gap-1">
+                        <span className={`badge w-fit px-2 py-1 rounded text-xs ${
+                          c.clientType === 'Business'
+                            ? 'bg-purple-500/10 text-purple-700'
+                            : 'bg-blue-500/10 text-blue-700'}`}>
+                          {c.clientType || 'Individual'}
+                          {c.clientType === 'Business' && c.businessName ? ` · ${c.businessName}` : ''}
+                        </span>
+                        <div className="flex items-center gap-3 text-xs">
+                          <span title="PAN card photo" className={c.hasPanCardImage ? 'text-green-600' : 'text-red-500'}>
+                            {c.hasPanCardImage ? '✓' : '✗'} PAN
+                          </span>
+                          <span title="UBO declaration confirmed" className={c.uboConfirmed ? 'text-green-600' : 'text-yellow-600'}>
+                            {c.uboConfirmed ? '✓' : '⚠'} UBO
+                          </span>
+                        </div>
+                      </div>
+                    </td>
                     <td className="text-sm text-gray-500">{c.phoneNumber || '-'}</td>
                     <td className="text-sm text-gray-500">{c.city || '-'}</td>
                     <td><span className="badge bg-blue-500/10 text-blue-700 px-2 py-1 rounded text-xs">{c.signupSource || 'App'}</span></td>
                     <td className="text-sm text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      {c.isZohoLinked
-                        ? <span className="text-green-600 text-xs">✓ Linked</span>
-                        : <span className="text-orange-500 text-xs">⚠ Pending</span>}
-                    </td>
                     <td>
                       <div className="flex items-center gap-2">
                         <button disabled={acting === c.id} onClick={() => approve(c.id)}
