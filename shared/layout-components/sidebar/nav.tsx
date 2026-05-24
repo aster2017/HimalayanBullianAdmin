@@ -19,6 +19,7 @@ const TargetsIcon = <i className="bx bx-layer side-menu__icon"></i>;
 const CollectionsIcon = <i className="bx bx-calendar-check side-menu__icon"></i>;
 const DeliveryIcon = <i className="bx bx-package side-menu__icon"></i>;
 const BuybackIcon = <i className="bx bx-undo side-menu__icon"></i>;
+const NotificationsIcon = <i className="bx bx-bell side-menu__icon"></i>;
 const HelpIcon = <i className="bx bx-help-circle side-menu__icon"></i>;
 
 export interface MenuItem {
@@ -153,6 +154,18 @@ export const MenuItems: MenuItem[] = [
     selected: false,
     dirchange: false,
     path: "/buybacks",
+    roles: ["admin"],
+  },
+
+  // Push Notifications
+  {
+    icon: NotificationsIcon,
+    title: "Notifications",
+    type: "link",
+    active: false,
+    selected: false,
+    dirchange: false,
+    path: "/notifications",
     roles: ["admin"],
   },
 
