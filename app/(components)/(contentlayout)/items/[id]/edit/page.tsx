@@ -8,6 +8,7 @@ import { fetchItemById, updateItem } from '@/shared/redux/itemsSlice';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { UpdateItemRequest } from '@/shared/types';
+import ItemImagesManager from './ItemImagesManager';
 
 export default function EditItemPage() {
   useProtectedRoute();
@@ -475,6 +476,11 @@ export default function EditItemPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Images — full width, self-contained (calls its own endpoints) */}
+          <div className="col-span-12">
+            <ItemImagesManager itemId={itemId} />
           </div>
 
           {/* Submit Buttons */}
