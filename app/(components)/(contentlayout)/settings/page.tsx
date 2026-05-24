@@ -139,6 +139,32 @@ const SettingsPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Legal / Compliance */}
+        <div className="col-span-12">
+          <div className="box">
+            <div className="box-header"><h4 className="box-title">Legal &amp; Compliance</h4></div>
+            <div className="box-body">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Link
+                  href="/settings/ubo"
+                  className="border rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-start gap-3"
+                >
+                  <div className="p-2 rounded bg-primary/10 text-primary">
+                    <i className="bx bx-shield-quarter text-2xl"></i>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-1">UBO Declaration</p>
+                    <p className="text-[0.75rem] text-[#8c9097]">
+                      Versioned legal text customers accept at signup. Publish a new version to prompt re-confirmation.
+                    </p>
+                  </div>
+                  <i className="bx bx-chevron-right text-xl text-[#8c9097]"></i>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </Fragment>
   );
