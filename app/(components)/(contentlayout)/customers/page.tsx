@@ -64,11 +64,18 @@ export default function CustomersPage() {
             <p className="font-semibold text-[1.125rem] text-defaulttextcolor !mb-0">Customers</p>
             <p className="font-normal text-[#8c9097] text-[0.813rem]">Manage all customers and their accounts.</p>
           </div>
-          <Link href="/customers/approvals">
-            <button className="ti-btn ti-btn-warning !text-white mt-2 md:mt-0">
-              <i className="ri-shield-check-line me-2"></i>Pending Approvals
-            </button>
-          </Link>
+          <div className="flex gap-2 mt-2 md:mt-0">
+            <Link href="/customers/create">
+              <button className="ti-btn ti-btn-primary-full !text-white">
+                <i className="ri-user-add-line me-2"></i>New Customer
+              </button>
+            </Link>
+            <Link href="/customers/approvals">
+              <button className="ti-btn ti-btn-warning !text-white">
+                <i className="ri-shield-check-line me-2"></i>Pending Approvals
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats */}

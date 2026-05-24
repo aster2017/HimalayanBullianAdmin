@@ -21,6 +21,13 @@ export default function TargetDetailPage() {
   const [confirming, setConfirming] = useState(false);
   const [notes, setNotes] = useState('');
 
+  // Staff adjustments
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustType, setAdjustType] = useState<'AddGrams' | 'RemoveGrams' | 'OverrideMakingCharge' | 'WaiveCustodianFee' | 'CancelTarget'>('AddGrams');
+  const [adjustValue, setAdjustValue] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+  const [adjustSubmitting, setAdjustSubmitting] = useState(false);
+
   useEffect(() => {
     if (!id) return;
     Promise.all([
@@ -33,6 +40,62 @@ export default function TargetDetailPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [id]);
+
+  const ADJUST_TYPES = [
+    { value: 'AddGrams',             label: '+ Add Grams',             valueLabel: 'Grams to add',           unit: 'g',  desc: 'Increase the customer\'s paid grams without a payment record (e.g. promotional credit).' },
+    { value: 'RemoveGrams',          label: '− Remove Grams',          valueLabel: 'Grams to remove',        unit: 'g',  desc: 'Decrease paid grams (e.g. correction of an over-credit).' },
+    { value: 'OverrideMakingCharge', label: '% Override Making Charge', valueLabel: 'New making charge %',    unit: '%',  desc: 'Set a custom making charge percentage for this target. Future payments use this percentage.' },
+    { value: 'WaiveCustodianFee',    label: '✗ Waive Custodian Fee',    valueLabel: '',                       unit: '',   desc: 'Waive all outstanding custodian charges accrued on this target.' },
+    { value: 'CancelTarget',         label: '⊘ Cancel Target',         valueLabel: '',                       unit: '',   desc: 'Cancel this target. Refunds via the standard flow are handled separately.' },
+  ] as const;
+
+  const adjustChoice = ADJUST_TYPES.find(a => a.value === adjustType)!;
+  const needsValue = adjustChoice.unit !== '';
+  const adjustValid = adjustReason.trim().length > 0
+    && (!needsValue || (parseFloat(adjustValue) > 0));
+
+  const submitAdjustment = async () => {
+    if (!adjustValid) { toast.error('Reason is required for audit trail'); return; }
+    setAdjustSubmitting(true);
+    try {
+      let url = '';
+      let body: any = {};
+      if (adjustType === 'OverrideMakingCharge') {
+        url = `${API}/targets/${id}/override-making-charge`;
+        body = { newPercent: parseFloat(adjustValue), reason: adjustReason };
+      } else if (adjustType === 'WaiveCustodianFee') {
+        url = `${API}/targets/${id}/waive-custodian-fee`;
+        body = { reason: adjustReason };
+      } else {
+        // AddGrams / RemoveGrams / CancelTarget go through the generic /adjust endpoint
+        url = `${API}/targets/${id}/adjust`;
+        body = {
+          adjustmentType: adjustType,
+          value: needsValue ? parseFloat(adjustValue) : 0,
+          reason: adjustReason,
+        };
+      }
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok || d?.success === false) {
+        toast.error(d?.message || 'Adjustment failed');
+      } else {
+        toast.success(`${adjustChoice.label.replace(/^[+\-%×✗⊘\s]+/, '')} applied`);
+        setAdjustOpen(false);
+        setAdjustValue('');
+        setAdjustReason('');
+        // Reload target
+        const t = await fetch(`${API}/targets/${id}`, { headers: getAuthHeaders() }).then(r => r.json());
+        setTarget(t.data || t);
+      }
+    } catch {
+      toast.error('Adjustment failed');
+    } finally { setAdjustSubmitting(false); }
+  };
 
   const confirmDelivery = async () => {
     const r = await fetch(`${API}/targets/${id}/confirm-delivery`, {
@@ -60,6 +123,11 @@ export default function TargetDetailPage() {
             <p className="font-normal text-[#8c9097] text-[0.813rem]">{target.itemName} · {target.customerName}</p>
           </div>
           <div className="flex gap-2 mt-2 md:mt-0">
+            {target.status !== 'Cancelled' && (
+              <button onClick={() => setAdjustOpen(true)} className="ti-btn ti-btn-warning !text-white !opacity-100">
+                <i className="ri-tools-line me-1"></i>Admin Adjustments
+              </button>
+            )}
             {target.status !== 'Delivered' && target.status !== 'Cancelled' && (
               <button onClick={() => setConfirming(true)} className="ti-btn ti-btn-success !text-white !bg-success !opacity-100">
                 <i className="ri-check-line me-1"></i>Confirm Delivery
@@ -129,6 +197,85 @@ export default function TargetDetailPage() {
             <div className="flex gap-3 justify-end">
               <button onClick={() => setConfirming(false)} className="btn btn-outline-secondary">Cancel</button>
               <button onClick={confirmDelivery} className="btn btn-success !text-white !bg-success !opacity-100">Confirm Delivery</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Adjustments modal */}
+      {adjustOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col" style={{ maxHeight: '90vh' }}>
+            <div className="p-5 border-b flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold">Admin Adjustment</h3>
+                <p className="text-xs text-gray-500">Target {target.targetNumber} · audited</p>
+              </div>
+              <button onClick={() => setAdjustOpen(false)} className="text-gray-400 hover:text-gray-700">
+                <i className="ri-close-line text-xl"></i>
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 overflow-auto">
+              <div>
+                <label className="form-label">Adjustment type</label>
+                <select
+                  value={adjustType}
+                  onChange={e => { setAdjustType(e.target.value as any); setAdjustValue(''); }}
+                  className="form-select"
+                >
+                  {ADJUST_TYPES.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">{adjustChoice.desc}</p>
+              </div>
+
+              {needsValue && (
+                <div>
+                  <label className="form-label">{adjustChoice.valueLabel} *</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step={adjustChoice.unit === '%' ? '0.01' : '0.001'}
+                      min="0"
+                      value={adjustValue}
+                      onChange={e => setAdjustValue(e.target.value)}
+                      className="form-control pr-10"
+                      placeholder={adjustChoice.unit === '%' ? 'e.g. 4.0' : 'e.g. 5.250'}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-mono">
+                      {adjustChoice.unit}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="form-label">Reason * <span className="text-xs text-gray-400">(audit trail — required)</span></label>
+                <textarea
+                  rows={3}
+                  value={adjustReason}
+                  onChange={e => setAdjustReason(e.target.value)}
+                  className="form-control"
+                  placeholder="e.g. Promotional credit — campaign #2026-Q2"
+                />
+              </div>
+
+              <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs text-yellow-800">
+                <i className="ri-alert-line me-1"></i>
+                Every adjustment is recorded against your admin ID and cannot be deleted.
+                The customer's transaction history will show this entry.
+              </div>
+            </div>
+
+            <div className="p-5 border-t flex gap-3 justify-end">
+              <button onClick={() => setAdjustOpen(false)} className="btn btn-outline-secondary">Cancel</button>
+              <button
+                onClick={submitAdjustment}
+                disabled={!adjustValid || adjustSubmitting}
+                className="ti-btn ti-btn-warning !text-white !opacity-100 disabled:!opacity-50"
+              >
+                {adjustSubmitting ? <><i className="ri-loader-4-line animate-spin me-1"></i>Applying…</> : 'Apply Adjustment'}
+              </button>
             </div>
           </div>
         </div>

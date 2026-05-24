@@ -124,6 +124,11 @@ const CreditsPage = () => {
             All wallet top-ups, deductions and refunds across customers
           </p>
         </div>
+        <Link href="/credits/pending">
+          <button className="ti-btn ti-btn-warning !text-white mt-2 md:mt-0">
+            <i className="ri-time-line me-1"></i>Pending Deposits
+          </button>
+        </Link>
       </div>
 
       {/* Summary tiles */}
