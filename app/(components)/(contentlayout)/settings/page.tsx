@@ -140,6 +140,52 @@ const SettingsPage = () => {
           </div>
         </div>
 
+        {/* System Configuration */}
+        <div className="col-span-12">
+          <div className="box">
+            <div className="box-header"><h4 className="box-title">System Configuration</h4></div>
+            <div className="box-body">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Link href="/settings/bank-details" className="border rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-start gap-3">
+                  <div className="p-2 rounded bg-primary/10 text-primary"><i className="bx bx-credit-card text-2xl"></i></div>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-1">Bank Details</p>
+                    <p className="text-[0.75rem] text-[#8c9097]">Accounts and digital wallets shown to customers for offline transfer.</p>
+                  </div>
+                  <i className="bx bx-chevron-right text-xl text-[#8c9097]"></i>
+                </Link>
+
+                <Link href="/settings/smtp" className="border rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-start gap-3">
+                  <div className="p-2 rounded bg-primary/10 text-primary"><i className="bx bx-envelope text-2xl"></i></div>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-1">Email / SMTP</p>
+                    <p className="text-[0.75rem] text-[#8c9097]">Outgoing mail used for OTP, password reset, order confirmations.</p>
+                  </div>
+                  <i className="bx bx-chevron-right text-xl text-[#8c9097]"></i>
+                </Link>
+
+                <Link href="/settings/operations" className="border rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-start gap-3">
+                  <div className="p-2 rounded bg-primary/10 text-primary"><i className="bx bx-toggle-right text-2xl"></i></div>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-1">Operations &amp; App Config</p>
+                    <p className="text-[0.75rem] text-[#8c9097]">Credits toggle, ConnectIPS env, contact info, maintenance banner.</p>
+                  </div>
+                  <i className="bx bx-chevron-right text-xl text-[#8c9097]"></i>
+                </Link>
+
+                <Link href="/rates" className="border rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-start gap-3">
+                  <div className="p-2 rounded bg-primary/10 text-primary"><i className="bx bx-time-five text-2xl"></i></div>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-1">Silver Rates &amp; Store Hours</p>
+                    <p className="text-[0.75rem] text-[#8c9097]">Live silver rate plus store open/close hours used across the app.</p>
+                  </div>
+                  <i className="bx bx-chevron-right text-xl text-[#8c9097]"></i>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Legal / Compliance */}
         <div className="col-span-12">
           <div className="box">
