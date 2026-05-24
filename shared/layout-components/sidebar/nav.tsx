@@ -20,6 +20,7 @@ const CollectionsIcon = <i className="bx bx-calendar-check side-menu__icon"></i>
 const DeliveryIcon = <i className="bx bx-package side-menu__icon"></i>;
 const BuybackIcon = <i className="bx bx-undo side-menu__icon"></i>;
 const NotificationsIcon = <i className="bx bx-bell side-menu__icon"></i>;
+const AccessIcon = <i className="bx bx-shield-quarter side-menu__icon"></i>;
 const HelpIcon = <i className="bx bx-help-circle side-menu__icon"></i>;
 
 export interface MenuItem {
@@ -316,6 +317,20 @@ export const MenuItems: MenuItem[] = [
     dirchange: false,
     path: "/sync",
     roles: ["admin"],
+  },
+
+  // Access (Roles + Staff Users)
+  {
+    icon: AccessIcon,
+    title: "Access",
+    type: "sub",
+    active: false,
+    selected: false,
+    roles: ["admin"],
+    children: [
+      { path: "/access/roles", type: "link", active: false, selected: false, dirchange: false, title: "Roles & Permissions" },
+      { path: "/access/users", type: "link", active: false, selected: false, dirchange: false, title: "Staff Users" },
+    ],
   },
 
   // Settings Section
