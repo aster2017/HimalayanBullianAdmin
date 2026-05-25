@@ -259,8 +259,10 @@ const CreditsPage = () => {
                       </span>
                     </td>
                     <td>
-                      <Link href={`/customers/${t.customerId}`}>
-                        <button className="ti-btn ti-btn-sm ti-btn-light !opacity-100">View</button>
+                      <Link href={`/credits/${t.id}`}>
+                        <button className="ti-btn ti-btn-sm ti-btn-light !opacity-100" title="Open transaction detail">
+                          <i className="ri-eye-line"></i>
+                        </button>
                       </Link>
                     </td>
                   </tr>
