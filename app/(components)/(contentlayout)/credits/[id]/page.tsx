@@ -35,6 +35,20 @@ type Transaction = {
   orderId?: string | null;
   orderNumber?: string | null;
   createdAt: string;
+  callLogs?: CallLog[];
+};
+
+type CallLog = {
+  id: string;
+  callType: 'Initiate' | 'ValidateTxn' | 'CallbackReceived' | string;
+  canonical?: string | null;
+  signedToken?: string | null;
+  requestBody?: string | null;
+  httpStatus?: number | null;
+  responseBody?: string | null;
+  status?: string | null;
+  statusDesc?: string | null;
+  createdAt: string;
 };
 
 type ReverifyResponse = {
@@ -322,6 +336,67 @@ export default function CreditTransactionDetailPage() {
           )}
         </div>
       </div>
+
+      {/* NCHL conversation log */}
+      {isConnectIps && tx.callLogs && tx.callLogs.length > 0 && (
+        <div className="box mt-6">
+          <div className="box-header">
+            <h6 className="box-title mb-0">NCHL conversation ({tx.callLogs.length} {tx.callLogs.length === 1 ? 'event' : 'events'})</h6>
+          </div>
+          <div className="box-body">
+            <ol className="relative border-s border-gray-200 ms-3 space-y-5">
+              {tx.callLogs.map(log => (
+                <li key={log.id} className="ms-4">
+                  <div className={`absolute w-3 h-3 rounded-full -start-1.5 mt-1.5 ${
+                    log.callType === 'CallbackReceived' ? 'bg-info'
+                    : (log.status || '').toUpperCase() === 'SUCCESS' ? 'bg-success'
+                    : (log.status || '').toUpperCase() === 'ERROR' || (log.status || '').toUpperCase() === 'FAILED' ? 'bg-danger'
+                    : 'bg-primary'
+                  }`}></div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{log.callType}</span>
+                    {log.httpStatus !== null && log.httpStatus !== undefined && (
+                      <span className="font-mono text-xs text-gray-500">HTTP {log.httpStatus}</span>
+                    )}
+                    {log.status && (
+                      <span className={`badge bg-${nchlStatusColor(log.status)}/20 text-${nchlStatusColor(log.status)} text-[10px] px-2 py-0.5 rounded`}>
+                        {log.status}{log.statusDesc ? ` / ${log.statusDesc}` : ''}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400 ms-auto">{new Date(log.createdAt).toLocaleString('en-NP')}</span>
+                  </div>
+                  <div className="mt-2 space-y-1 text-xs">
+                    {log.canonical && (
+                      <details>
+                        <summary className="cursor-pointer text-primary">Canonical signed</summary>
+                        <CodeBlock>{log.canonical}</CodeBlock>
+                      </details>
+                    )}
+                    {log.signedToken && (
+                      <details>
+                        <summary className="cursor-pointer text-primary">Signed token</summary>
+                        <CodeBlock>{log.signedToken}</CodeBlock>
+                      </details>
+                    )}
+                    {log.requestBody && (
+                      <details>
+                        <summary className="cursor-pointer text-primary">Request body</summary>
+                        <CodeBlock>{log.requestBody}</CodeBlock>
+                      </details>
+                    )}
+                    {log.responseBody && (
+                      <details>
+                        <summary className="cursor-pointer text-primary">Response body</summary>
+                        <CodeBlock>{log.responseBody}</CodeBlock>
+                      </details>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      )}
 
       {/* Re-verify response */}
       {reverify?.data && (
