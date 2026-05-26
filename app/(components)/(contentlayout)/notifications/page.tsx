@@ -97,9 +97,14 @@ export default function PushNotificationsPage() {
           <p className="font-semibold text-[1.125rem] !mb-0">Push Notifications</p>
           <p className="text-[0.813rem] text-[#8c9097]">Send APNs push to a customer or broadcast to an audience</p>
         </div>
-        <a href="/notifications/history" className="ti-btn ti-btn-light !opacity-100 mt-2 md:mt-0">
-          <i className="ri-history-line me-1"></i>View history
-        </a>
+        <div className="flex gap-2 mt-2 md:mt-0">
+          <a href="/notifications/devices" className="ti-btn ti-btn-light !opacity-100">
+            <i className="ri-smartphone-line me-1"></i>Devices
+          </a>
+          <a href="/notifications/history" className="ti-btn ti-btn-light !opacity-100">
+            <i className="ri-history-line me-1"></i>History
+          </a>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
