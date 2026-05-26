@@ -47,23 +47,15 @@ export const MenuItems: MenuItem[] = [
     menutitle: "MAIN",
   },
 
-  // Dashboard Section
+  // Dashboard — flat link (no sub-menu); we only have one dashboard route
   {
     icon: DashboardIcon,
-    title: "Dashboards",
-    type: "sub",
+    title: "Dashboard",
+    type: "link",
     active: false,
     selected: false,
-    children: [
-      {
-        path: "/dashboards/admin",
-        type: "link",
-        active: false,
-        selected: false,
-        dirchange: false,
-        title: "Admin Dashboard",
-      },
-    ],
+    dirchange: false,
+    path: "/dashboards/admin",
   },
 
   // Business Modules Section
