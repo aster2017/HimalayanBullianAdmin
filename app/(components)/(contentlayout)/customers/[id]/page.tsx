@@ -26,6 +26,20 @@ export default function CustomerDetailPage() {
   const [panImgUrl, setPanImgUrl] = useState<string | null>(null);
   const [panLightbox, setPanLightbox] = useState(false);
 
+  // Unified per-customer timeline — merges orders, invoices, payments, credits,
+  // targets, push notifications, and login attempts into one reverse-chronological
+  // feed. Filtered client-side so chips feel instant.
+  type TimelineItem = {
+    id: string; eventType: string; color: string; timestamp: string;
+    title: string; summary: string; link: string; amount: number | null; badge: string;
+  };
+  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [timelineTotal, setTimelineTotal] = useState(0);
+  const [timelinePage, setTimelinePage] = useState(1);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineFilter, setTimelineFilter] = useState<string>('all');
+  const TIMELINE_PAGE_SIZE = 50;
+
   const loadAll = async () => {
     if (!id) return;
     setLoading(true);
@@ -45,6 +59,24 @@ export default function CustomerDetailPage() {
   };
 
   useEffect(() => { loadAll(); }, [id]);
+
+  const loadTimeline = async (page = 1) => {
+    if (!id) return;
+    setTimelineLoading(true);
+    try {
+      const r = await fetch(
+        `${API}/customers/${id}/timeline?page=${page}&pageSize=${TIMELINE_PAGE_SIZE}`,
+        { headers: getAuthHeaders() }
+      );
+      const d = await r.json();
+      setTimeline(d?.data?.items || []);
+      setTimelineTotal(d?.data?.totalCount || 0);
+      setTimelinePage(page);
+    } catch { /* swallow — UI shows empty state */ }
+    finally { setTimelineLoading(false); }
+  };
+
+  useEffect(() => { loadTimeline(1); }, [id]);
 
   // Fetch PAN card image as a blob through the authenticated endpoint.
   // Object-URL lifecycle: revoke on unmount so we don't leak memory.
@@ -432,7 +464,7 @@ export default function CustomerDetailPage() {
         </div>
 
         {/* Invoices */}
-        <div className="box shadow-sm">
+        <div className="box shadow-sm mb-6">
           <div className="box-header border-b p-4"><h5 className="box-title mb-0">Invoices ({invoices.length})</h5></div>
           <div className="table-responsive">
             <table className="ti-custom-table ti-striped-table">
@@ -451,6 +483,142 @@ export default function CustomerDetailPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Activity Timeline — unified chronological feed of orders / invoices /
+            payments / wallet / targets / push / login. Filter chips are client-side
+            so they feel instant on the page already fetched. */}
+        <div className="box shadow-sm">
+          <div className="box-header border-b p-4 flex flex-wrap items-center justify-between gap-2">
+            <h5 className="box-title mb-0">
+              Activity Timeline
+              <span className="ms-2 text-sm text-gray-500 font-normal">
+                ({timelineTotal} event{timelineTotal === 1 ? '' : 's'})
+              </span>
+            </h5>
+            <button
+              onClick={() => loadTimeline(timelinePage)}
+              disabled={timelineLoading}
+              className="text-primary text-sm hover:underline disabled:opacity-50"
+              title="Refresh timeline"
+            >
+              <i className={`ri-refresh-line me-1 ${timelineLoading ? 'animate-spin' : ''}`}></i>
+              Refresh
+            </button>
+          </div>
+
+          {/* Filter chips */}
+          <div className="px-4 pt-3 flex flex-wrap gap-2">
+            {[
+              { key: 'all',     label: 'All',           icon: 'ri-list-check' },
+              { key: 'order',   label: 'Orders',        icon: 'ri-shopping-cart-line' },
+              { key: 'invoice', label: 'Invoices',      icon: 'ri-bill-line' },
+              { key: 'payment', label: 'Payments',      icon: 'ri-bank-card-line' },
+              { key: 'credit',  label: 'Wallet',        icon: 'ri-wallet-line' },
+              { key: 'target',  label: 'Targets',       icon: 'ri-trophy-line' },
+              { key: 'push',    label: 'Notifications', icon: 'ri-notification-3-line' },
+              { key: 'login',   label: 'Sign-ins',      icon: 'ri-login-circle-line' },
+            ].map(chip => {
+              const active = timelineFilter === chip.key;
+              const count = chip.key === 'all'
+                ? timeline.length
+                : timeline.filter(e => e.eventType === chip.key).length;
+              return (
+                <button
+                  key={chip.key}
+                  onClick={() => setTimelineFilter(chip.key)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                    active
+                      ? 'bg-primary text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <i className={`${chip.icon} me-1`}></i>{chip.label}
+                  {count > 0 && <span className={`ms-1 ${active ? 'opacity-80' : 'opacity-60'}`}>({count})</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="p-4">
+            {timelineLoading && timeline.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="animate-spin ri-loader-4-line text-2xl text-gray-400 inline-block"></div>
+              </div>
+            ) : (() => {
+              const filtered = timelineFilter === 'all'
+                ? timeline
+                : timeline.filter(e => e.eventType === timelineFilter);
+              if (filtered.length === 0) {
+                return (
+                  <p className="text-center text-gray-400 py-8 text-sm">
+                    {timeline.length === 0 ? 'No activity yet.' : `No ${timelineFilter} events on this page.`}
+                  </p>
+                );
+              }
+              return (
+                <ol className="relative border-l-2 border-gray-200 ms-3 space-y-4">
+                  {filtered.map((e, idx) => {
+                    const ts = new Date(e.timestamp);
+                    const colorMap: Record<string, string> = {
+                      success:   'bg-green-500',
+                      info:      'bg-blue-500',
+                      warning:   'bg-yellow-500',
+                      danger:    'bg-red-500',
+                      primary:   'bg-primary',
+                      secondary: 'bg-gray-400',
+                    };
+                    const dot = colorMap[e.color] || 'bg-gray-400';
+                    const badgeColor = colorMap[e.color] || 'bg-gray-400';
+                    return (
+                      <li key={`${e.eventType}-${e.id}-${idx}`} className="ms-6">
+                        <span className={`absolute -start-2 w-4 h-4 rounded-full ${dot} ring-4 ring-white`}></span>
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm">
+                              <Link href={e.link} className="hover:text-primary hover:underline">{e.title}</Link>
+                              <span className={`ms-2 align-middle text-[10px] text-white px-2 py-0.5 rounded ${badgeColor}`}>
+                                {e.badge}
+                              </span>
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">{e.summary}</p>
+                          </div>
+                          <div className="text-[11px] text-gray-400 whitespace-nowrap">
+                            {ts.toLocaleDateString('en-NP')} · {ts.toLocaleTimeString('en-NP', { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              );
+            })()}
+
+            {/* Server pagination — total includes all event types regardless of filter */}
+            {timelineTotal > TIMELINE_PAGE_SIZE && (
+              <div className="flex items-center justify-between mt-6 pt-4 border-t text-sm">
+                <span className="text-gray-500">
+                  Page {timelinePage} of {Math.ceil(timelineTotal / TIMELINE_PAGE_SIZE)}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={timelinePage <= 1 || timelineLoading}
+                    onClick={() => loadTimeline(timelinePage - 1)}
+                    className="ti-btn ti-btn-light ti-btn-sm disabled:opacity-50"
+                  >
+                    <i className="ri-arrow-left-s-line me-1"></i>Newer
+                  </button>
+                  <button
+                    disabled={timelinePage * TIMELINE_PAGE_SIZE >= timelineTotal || timelineLoading}
+                    onClick={() => loadTimeline(timelinePage + 1)}
+                    className="ti-btn ti-btn-light ti-btn-sm disabled:opacity-50"
+                  >
+                    Older<i className="ri-arrow-right-s-line ms-1"></i>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
