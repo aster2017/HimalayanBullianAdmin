@@ -63,66 +63,51 @@ export const MenuItems: MenuItem[] = [
     menutitle: "BUSINESS",
   },
 
-  // Orders Module
+  // Orders — direct link (Create Order is reachable from the +New button on /orders)
   {
     icon: OrdersIcon,
     title: "Orders",
-    type: "sub",
-    active: false,
-    selected: false,
-    roles: ["admin", "user"],
-    children: [
-      {
-        path: "/orders",
-        type: "link",
-        active: false,
-        selected: false,
-        dirchange: false,
-        title: "All Orders",
-      },
-      {
-        path: "/orders/create",
-        type: "link",
-        active: false,
-        selected: false,
-        dirchange: false,
-        title: "Create Order",
-      },
-    ],
-  },
-
-  // Invoices Module
-  {
-    icon: InvoicesIcon,
-    title: "Invoices",
-    type: "sub",
-    active: false,
-    selected: false,
-    roles: ["admin", "user"],
-    children: [
-      {
-        path: "/invoices",
-        type: "link",
-        active: false,
-        selected: false,
-        dirchange: false,
-        title: "All Invoices",
-      },
-    ],
-  },
-
-  // Targets Module
-  {
-    icon: TargetsIcon,
-    title: "Targets",
-    type: "sub",
+    type: "link",
     active: false,
     selected: false,
     dirchange: false,
-    children: [
-      { path: "/targets", type: "link", active: false, selected: false, dirchange: false, title: "All Targets" },
-      { path: "/targets/collections", type: "link", active: false, selected: false, dirchange: false, title: "Collections" },
-    ],
+    path: "/orders",
+    roles: ["admin", "user"],
+  },
+
+  // Invoices — direct link (single destination)
+  {
+    icon: InvoicesIcon,
+    title: "Invoices",
+    type: "link",
+    active: false,
+    selected: false,
+    dirchange: false,
+    path: "/invoices",
+    roles: ["admin", "user"],
+  },
+
+  // Targets — direct link
+  {
+    icon: TargetsIcon,
+    title: "Targets",
+    type: "link",
+    active: false,
+    selected: false,
+    dirchange: false,
+    path: "/targets",
+    roles: ["admin"],
+  },
+
+  // Collections — promoted to top-level so Targets can stay a flat link
+  {
+    icon: CollectionsIcon,
+    title: "Collections",
+    type: "link",
+    active: false,
+    selected: false,
+    dirchange: false,
+    path: "/targets/collections",
     roles: ["admin"],
   },
 
