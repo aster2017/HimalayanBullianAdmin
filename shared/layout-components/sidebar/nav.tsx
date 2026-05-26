@@ -257,6 +257,22 @@ export const MenuItems: MenuItem[] = [
         dirchange: false,
         title: "Customer Report",
       },
+      {
+        path: "/reports/payment-aging",
+        type: "link",
+        active: false,
+        selected: false,
+        dirchange: false,
+        title: "Payment Aging",
+      },
+      {
+        path: "/reports/invoice-overdue",
+        type: "link",
+        active: false,
+        selected: false,
+        dirchange: false,
+        title: "Overdue Invoices",
+      },
     ],
   },
 
