@@ -11,6 +11,42 @@
   @apply lg:ms-60 mt-[60px] transition-all ms-0;
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+ * Mobile responsiveness — global rules
+ * ──────────────────────────────────────────────────────────────────── */
+
+// Tables: any <table> directly inside <.box .box-body> gets a horizontal-scroll
+// wrapper on mobile via the standard ti-* template; on small screens we let
+// the table extend beyond the box-body padding so columns aren't artificially
+// squished. Pairs with the explicit overflow-x-auto wrappers I added to new pages.
+@media screen and (max-width: 640px) {
+  .box-body > table,
+  .box-body > .table-responsive > table {
+    @apply text-[0.75rem];
+  }
+
+  // Boxes themselves can sit edge-to-edge on tiny screens so tables get more room.
+  .main-content {
+    @apply px-3;
+  }
+
+  // Compact action buttons inside tables — the ti-btn-sm class is ~32px which
+  // is below Apple's 44px touch-target guideline. Bump to default size on mobile.
+  td .ti-btn.ti-btn-sm {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+// Modal viewport safety: full-screen fixed overlays (our modals all use
+// `fixed inset-0 bg-black/50 flex items-center justify-center p-4`) get an
+// inner card that should never exceed the viewport on small screens.
+@media screen and (max-width: 480px) {
+  .fixed.inset-0 > [class*="max-w-"] {
+    max-width: calc(100vw - 1rem);
+  }
+}
+
 pre {
   @apply border-gray-200 border dark:border-white/10 bg-slate-200 text-[0.75rem] p-5;
 }

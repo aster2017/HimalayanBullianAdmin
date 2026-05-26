@@ -235,8 +235,16 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
                 </div>
               </div>
               <div className="header-element md:px-[0.325rem] !items-center" onClick={() => toggleSidebar()}>
-                <Link aria-label="Hide Sidebar"
-                  className="sidemenu-toggle animated-arrow hor-toggle horizontal-navtoggle inline-flex items-center" href="#!" scroll={false}><span></span></Link>
+                <Link
+                  aria-label={local_varaiable?.dataToggled === "open" ? "Close menu" : "Open menu"}
+                  aria-expanded={local_varaiable?.dataToggled === "open"}
+                  aria-controls="hbc-sidebar"
+                  role="button"
+                  className="sidemenu-toggle animated-arrow hor-toggle horizontal-navtoggle inline-flex items-center"
+                  href="#!"
+                  scroll={false}>
+                  <span></span>
+                </Link>
               </div>
             </div>
 

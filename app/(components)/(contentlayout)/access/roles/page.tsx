@@ -164,16 +164,16 @@ export default function RolesPage() {
           ) : roles.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-6">No roles. Seed should have created the defaults.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table w-full">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="table w-full min-w-[480px] sm:min-w-0">
                 <thead>
                   <tr className="text-xs text-gray-500 uppercase">
                     <th className="text-left p-2">Role</th>
-                    <th className="text-left p-2">Description</th>
-                    <th className="text-right p-2">Priority</th>
-                    <th className="text-right p-2">Users</th>
-                    <th className="text-right p-2">Permissions</th>
-                    <th className="text-center p-2">Status</th>
+                    <th className="text-left p-2 hidden md:table-cell">Description</th>
+                    <th className="text-right p-2 hidden lg:table-cell">Priority</th>
+                    <th className="text-right p-2 hidden sm:table-cell">Users</th>
+                    <th className="text-right p-2 hidden md:table-cell">Permissions</th>
+                    <th className="text-center p-2 hidden sm:table-cell">Status</th>
                     <th className="text-right p-2">Actions</th>
                   </tr>
                 </thead>
@@ -183,12 +183,23 @@ export default function RolesPage() {
                       <td className="p-2">
                         <div className="font-semibold">{r.name}</div>
                         {r.isSystemRole && <span className="text-[10px] text-gray-500"><i className="ri-lock-line"></i> System role</span>}
+                        {/* Mobile-only meta strip: users · permissions · status */}
+                        <div className="md:hidden text-[0.7rem] text-gray-500 mt-1">
+                          <span className="me-2">{r.userCount} user{r.userCount === 1 ? '' : 's'}</span>
+                          <span className="me-2">·</span>
+                          <span>{r.permissionCount} perms</span>
+                        </div>
+                        <div className="sm:hidden mt-1">
+                          <span className={`badge ${r.isActive ? 'bg-success/20 text-success' : 'bg-gray-400/20 text-gray-500'} text-[10px] px-2 py-0.5 rounded`}>
+                            {r.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
                       </td>
-                      <td className="p-2 text-sm text-gray-600">{r.description || '—'}</td>
-                      <td className="p-2 text-right font-mono text-sm">{r.priority}</td>
-                      <td className="p-2 text-right font-mono">{r.userCount}</td>
-                      <td className="p-2 text-right font-mono">{r.permissionCount}</td>
-                      <td className="p-2 text-center">
+                      <td className="p-2 text-sm text-gray-600 hidden md:table-cell">{r.description || '—'}</td>
+                      <td className="p-2 text-right font-mono text-sm hidden lg:table-cell">{r.priority}</td>
+                      <td className="p-2 text-right font-mono hidden sm:table-cell">{r.userCount}</td>
+                      <td className="p-2 text-right font-mono hidden md:table-cell">{r.permissionCount}</td>
+                      <td className="p-2 text-center hidden sm:table-cell">
                         <span className={`badge ${r.isActive ? 'bg-success/20 text-success' : 'bg-gray-400/20 text-gray-500'} text-[10px] px-2 py-0.5 rounded`}>
                           {r.isActive ? 'Active' : 'Inactive'}
                         </span>
@@ -282,7 +293,7 @@ export default function RolesPage() {
                         {allOn ? 'Clear all' : 'Select all'}
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                       {group.permissions.map(p => {
                         const on = editing.permissions.includes(p.name);
                         return (

@@ -242,6 +242,15 @@
     @apply lg:translate-x-0 #{!important};
   }
 
+  // Hardening: even if the transform glitches (sidebar visible at -translate-x-full
+  // but still receiving taps), make sure clicks fall through. Reset on lg+ where
+  // the sidebar is always visible.
+  @media screen and (max-width: 991px) {
+    .app-sidebar {
+      @apply pointer-events-none invisible;
+    }
+  }
+
   &[dir="ltr"] {
     .app-sidebar {
       @apply -translate-x-full;
@@ -251,6 +260,16 @@
   &[dir="rtl"] {
     .app-sidebar {
       @apply translate-x-full;
+    }
+  }
+}
+
+// When the sidebar IS open (data-toggled="open"), force it interactive +
+// visible at mobile widths. Pair with the responsive-overlay active state.
+[data-toggled="open"] {
+  @media screen and (max-width: 991px) {
+    .app-sidebar {
+      @apply pointer-events-auto visible translate-x-0 #{!important};
     }
   }
 }

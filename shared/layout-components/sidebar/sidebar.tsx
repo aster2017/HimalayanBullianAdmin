@@ -38,6 +38,17 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 		setMenuitems((arr: any) => [...arr]);
 	}
 
+	// Body-scroll lock when the mobile sidebar overlay is open — prevents the
+	// page underneath from scrolling while the user pans through the menu.
+	// On desktop (≥992px) we never overlay, so always release the lock.
+	useEffect(() => {
+		if (typeof document === "undefined") return;
+		const isMobile = typeof window !== "undefined" && window.innerWidth < 992;
+		const open = isMobile && local_varaiable?.dataToggled === "open";
+		document.body.style.overflow = open ? "hidden" : "";
+		return () => { document.body.style.overflow = ""; };
+	}, [local_varaiable?.dataToggled]);
+
 	useEffect(() => {
 
 		window.addEventListener('resize', menuResizeFn);
@@ -642,9 +653,21 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 
 		<Fragment>
 			 
-			<div id="responsive-overlay"
-				onClick={() => { menuClose(); }}></div>
-			<aside className="app-sidebar" id="sidebar" onMouseOver={() => Onhover()}
+			<div
+				id="responsive-overlay"
+				className={local_varaiable?.dataToggled === "open" ? "active" : ""}
+				role="button"
+				tabIndex={local_varaiable?.dataToggled === "open" ? 0 : -1}
+				aria-label="Close menu"
+				aria-hidden={local_varaiable?.dataToggled !== "open"}
+				onClick={() => { menuClose(); }}
+				onKeyDown={(e) => { if (e.key === "Escape" || e.key === "Enter") menuClose(); }}
+			></div>
+			<aside
+				className="app-sidebar"
+				id="hbc-sidebar"
+				aria-label="Main navigation"
+				onMouseOver={() => Onhover()}
 				onMouseLeave={() => Outhover()}>
 				<div className="main-sidebar-header">
 					<Link href="/dashboards/crm/" className="header-logo">

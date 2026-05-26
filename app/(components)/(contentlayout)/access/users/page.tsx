@@ -145,30 +145,41 @@ export default function StaffUsersPage() {
             <p className="text-sm text-gray-500 text-center py-6">No staff users match your filter.</p>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="table w-full">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <table className="table w-full min-w-[520px] sm:min-w-0">
                   <thead>
                     <tr className="text-xs text-gray-500 uppercase">
                       <th className="text-left p-2">Name</th>
-                      <th className="text-left p-2">Email</th>
-                      <th className="text-left p-2">Phone</th>
+                      <th className="text-left p-2 hidden md:table-cell">Email</th>
+                      <th className="text-left p-2 hidden lg:table-cell">Phone</th>
                       <th className="text-left p-2">Role</th>
-                      <th className="text-center p-2">Status</th>
+                      <th className="text-center p-2 hidden sm:table-cell">Status</th>
                       <th className="text-right p-2">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map(u => (
                       <tr key={u.id} className="border-t">
-                        <td className="p-2 font-semibold">{u.fullName}</td>
-                        <td className="p-2 text-sm font-mono">{u.email}</td>
-                        <td className="p-2 text-sm font-mono">{u.phoneNumber || '—'}</td>
+                        <td className="p-2 font-semibold">
+                          {u.fullName}
+                          {/* On mobile: show email + status below name (since those columns are hidden) */}
+                          <div className="md:hidden text-[0.7rem] text-gray-400 font-normal font-mono mt-0.5 truncate max-w-[140px]">
+                            {u.email}
+                          </div>
+                          <div className="sm:hidden mt-1">
+                            <span className={`badge ${u.isActive ? 'bg-success/20 text-success' : 'bg-gray-400/20 text-gray-500'} text-[10px] px-2 py-0.5 rounded`}>
+                              {u.isActive ? 'Active' : 'Disabled'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-2 text-sm font-mono hidden md:table-cell">{u.email}</td>
+                        <td className="p-2 text-sm font-mono hidden lg:table-cell">{u.phoneNumber || '—'}</td>
                         <td className="p-2">
                           {u.roles.length === 0
                             ? <span className="badge bg-danger/20 text-danger text-[10px] px-2 py-0.5 rounded">NO ROLE</span>
                             : u.roles.map(r => <span key={r} className="badge bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded me-1">{r}</span>)}
                         </td>
-                        <td className="p-2 text-center">
+                        <td className="p-2 text-center hidden sm:table-cell">
                           <span className={`badge ${u.isActive ? 'bg-success/20 text-success' : 'bg-gray-400/20 text-gray-500'} text-[10px] px-2 py-0.5 rounded`}>
                             {u.isActive ? 'Active' : 'Disabled'}
                           </span>

@@ -152,30 +152,38 @@ export default function BuybacksPage() {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="ti-custom-table ti-striped-table ti-custom-table-hover">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="ti-custom-table ti-striped-table ti-custom-table-hover min-w-[640px] sm:min-w-0">
               <thead>
                 <tr>
                   <th>Buyback #</th>
-                  <th>Customer</th>
-                  <th>Target / Item</th>
-                  <th>Grams</th>
-                  <th>Rate</th>
+                  <th className="hidden md:table-cell">Customer</th>
+                  <th className="hidden lg:table-cell">Target / Item</th>
+                  <th className="hidden sm:table-cell">Grams</th>
+                  <th className="hidden lg:table-cell">Rate</th>
                   <th>Paid Out</th>
-                  <th>Method</th>
-                  <th>Recorded</th>
+                  <th className="hidden md:table-cell">Method</th>
+                  <th className="hidden sm:table-cell">Recorded</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredItems.map(b => (
                   <tr key={b.id}>
-                    <td><span className="font-mono font-semibold text-sm">{b.buybackNumber}</span></td>
                     <td>
+                      <span className="font-mono font-semibold text-sm">{b.buybackNumber}</span>
+                      <div className="md:hidden text-[0.7rem] text-primary mt-1 truncate max-w-[140px]">
+                        {b.customerName}
+                      </div>
+                      <div className="sm:hidden text-[0.7rem] text-gray-400 font-mono">
+                        {b.gramsReturned?.toFixed(3)}g
+                      </div>
+                    </td>
+                    <td className="hidden md:table-cell">
                       <Link href={`/customers/${b.customerId}`} className="text-primary text-sm hover:underline">
                         {b.customerName}
                       </Link>
                     </td>
-                    <td className="text-sm">
+                    <td className="text-sm hidden lg:table-cell">
                       {b.targetNumber ? (
                         <>
                           <span className="font-mono text-xs">{b.targetNumber}</span>
@@ -183,11 +191,11 @@ export default function BuybacksPage() {
                         </>
                       ) : <span className="text-gray-400">—</span>}
                     </td>
-                    <td><span className="font-mono text-sm font-semibold">{b.gramsReturned?.toFixed(3)}g</span></td>
-                    <td className="text-sm">Rs. {b.buybackRatePerGram?.toFixed(2)}/g</td>
+                    <td className="hidden sm:table-cell"><span className="font-mono text-sm font-semibold">{b.gramsReturned?.toFixed(3)}g</span></td>
+                    <td className="text-sm hidden lg:table-cell">Rs. {b.buybackRatePerGram?.toFixed(2)}/g</td>
                     <td><span className="text-sm font-bold text-warning">Rs. {b.totalPaidOut?.toLocaleString()}</span></td>
-                    <td><span className="badge bg-blue-500/10 text-blue-700 px-2 py-1 rounded text-xs">{b.paymentMethod}</span></td>
-                    <td className="text-[0.813rem] whitespace-nowrap">
+                    <td className="hidden md:table-cell"><span className="badge bg-blue-500/10 text-blue-700 px-2 py-1 rounded text-xs">{b.paymentMethod}</span></td>
+                    <td className="text-[0.813rem] whitespace-nowrap hidden sm:table-cell">
                       {new Date(b.recordedAt).toLocaleDateString('en-NP')}
                       <div className="text-[0.7rem] text-gray-400">{new Date(b.recordedAt).toLocaleTimeString('en-NP', { hour: '2-digit', minute: '2-digit' })}</div>
                     </td>

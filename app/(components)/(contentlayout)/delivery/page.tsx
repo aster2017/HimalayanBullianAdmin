@@ -172,17 +172,17 @@ export default function DeliveryListPage() {
             <p className="text-[#8c9097]">No delivery requests {status ? `in ${status} state` : 'found'}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="ti-custom-table ti-striped-table ti-custom-table-hover">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="ti-custom-table ti-striped-table ti-custom-table-hover min-w-[640px] sm:min-w-0">
               <thead>
                 <tr>
                   <th>Collection #</th>
-                  <th>Customer</th>
-                  <th>Method</th>
-                  <th>Grams</th>
+                  <th className="hidden md:table-cell">Customer</th>
+                  <th className="hidden lg:table-cell">Method</th>
+                  <th className="hidden sm:table-cell">Grams</th>
                   <th>Charge</th>
                   <th>Status</th>
-                  <th>Created</th>
+                  <th className="hidden lg:table-cell">Created</th>
                   <th></th>
                 </tr>
               </thead>
@@ -192,19 +192,26 @@ export default function DeliveryListPage() {
                     <td>
                       <span className="font-mono font-semibold text-sm">{r.collectionNumber || '—'}</span>
                       {r.itemCount > 0 && <div className="text-[0.7rem] text-gray-400">{r.itemCount} item{r.itemCount === 1 ? '' : 's'}</div>}
+                      {/* Mobile-only inline meta: customer + grams */}
+                      <div className="md:hidden text-[0.7rem] text-primary mt-1 truncate max-w-[140px]">
+                        {r.customerName.trim() || r.customerEmail}
+                      </div>
+                      <div className="sm:hidden text-[0.7rem] text-gray-400 font-mono">
+                        {r.quantityGrams?.toFixed(2)}g
+                      </div>
                     </td>
-                    <td>
+                    <td className="hidden md:table-cell">
                       <Link href={`/customers/${r.customerId}`} className="text-primary text-sm hover:underline">
                         {r.customerName.trim() || r.customerEmail}
                       </Link>
                       <div className="text-[0.7rem] text-gray-400">{r.customerPhone || r.customerEmail}</div>
                     </td>
-                    <td>
+                    <td className="hidden lg:table-cell">
                       <span className={`badge px-2 py-1 rounded text-xs ${r.deliveryMethod === 'HomeDelivery' ? 'bg-blue-500/10 text-blue-700' : 'bg-gray-500/10 text-gray-700'}`}>
                         {r.deliveryMethod === 'HomeDelivery' ? 'Home' : 'Pickup'}
                       </span>
                     </td>
-                    <td><span className="font-mono text-sm font-semibold">{r.quantityGrams?.toFixed(2)}g</span></td>
+                    <td className="hidden sm:table-cell"><span className="font-mono text-sm font-semibold">{r.quantityGrams?.toFixed(2)}g</span></td>
                     <td>
                       <span className="font-semibold text-sm">Rs. {(r.totalCharge || 0).toLocaleString()}</span>
                       {r.makingChargeAmount > 0 && (
@@ -217,7 +224,7 @@ export default function DeliveryListPage() {
                       </span>
                       {r.trackingNumber && <div className="text-[0.7rem] text-gray-400 font-mono mt-1">trk: {r.trackingNumber}</div>}
                     </td>
-                    <td className="text-[0.813rem] whitespace-nowrap">
+                    <td className="text-[0.813rem] whitespace-nowrap hidden lg:table-cell">
                       {new Date(r.createdAt).toLocaleDateString('en-NP')}
                       <div className="text-[0.7rem] text-gray-400">
                         {new Date(r.createdAt).toLocaleTimeString('en-NP', { hour: '2-digit', minute: '2-digit' })}

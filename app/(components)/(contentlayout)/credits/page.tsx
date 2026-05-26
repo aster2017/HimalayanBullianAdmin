@@ -201,16 +201,16 @@ const CreditsPage = () => {
             <p className="text-[#8c9097]">No credit transactions found</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="ti-custom-table ti-striped-table ti-custom-table-hover">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <table className="ti-custom-table ti-striped-table ti-custom-table-hover min-w-[640px] sm:min-w-0">
               <thead>
                 <tr>
                   <th>Date</th>
-                  <th>Customer</th>
-                  <th>Type</th>
+                  <th className="hidden md:table-cell">Customer</th>
+                  <th className="hidden sm:table-cell">Type</th>
                   <th>Amount</th>
-                  <th>Method</th>
-                  <th>Reference</th>
+                  <th className="hidden md:table-cell">Method</th>
+                  <th className="hidden lg:table-cell">Reference</th>
                   <th>Status</th>
                   <th></th>
                 </tr>
@@ -223,14 +223,18 @@ const CreditsPage = () => {
                       <div className="text-[0.7rem] text-gray-400">
                         {new Date(t.createdAt).toLocaleTimeString('en-NP', { hour: '2-digit', minute: '2-digit' })}
                       </div>
+                      {/* Customer name shows here on mobile (where the Customer column is hidden) */}
+                      <div className="md:hidden text-[0.7rem] text-primary mt-1 truncate max-w-[140px]">
+                        {t.customerName.trim() || t.customerEmail}
+                      </div>
                     </td>
-                    <td>
+                    <td className="hidden md:table-cell">
                       <Link href={`/customers/${t.customerId}`} className="text-primary text-sm hover:underline">
                         {t.customerName.trim() || t.customerEmail}
                       </Link>
                       <div className="text-[0.7rem] text-gray-400">{t.customerEmail}</div>
                     </td>
-                    <td>
+                    <td className="hidden sm:table-cell">
                       <span className={`badge bg-${typeColor(t.type)}/20 text-${typeColor(t.type)}`}>
                         {t.type === 'Deduction' ? '−' : '+'} {t.type}
                       </span>
@@ -243,12 +247,12 @@ const CreditsPage = () => {
                         <div className="text-[0.7rem] text-gray-400">bal Rs. {t.balanceAfter.toLocaleString()}</div>
                       )}
                     </td>
-                    <td>
+                    <td className="hidden md:table-cell">
                       <span className={`badge bg-${methodColor(t.paymentMethod)}/20 text-${methodColor(t.paymentMethod)}`}>
                         {t.paymentMethod || '—'}
                       </span>
                     </td>
-                    <td className="font-mono text-[0.7rem]">
+                    <td className="hidden lg:table-cell font-mono text-[0.7rem]">
                       {t.connectIpsTransactionId
                         ? <span title={t.connectIpsTransactionId}>{t.connectIpsTransactionId}</span>
                         : t.referenceNumber || <span className="text-gray-400">—</span>}
