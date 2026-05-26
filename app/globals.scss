@@ -13,13 +13,72 @@
       #responsive-overlay {
         @apply visible #{!important};
         --tw-bg-opacity: 0.5;
-
       }
-    } 
+    }
   }
 
   @media screen and (min-width: 992px) {
     [data-vertical-style=doublemenu] .app-sidebar .slide.has-sub.active > .slide-menu {
         display: block !important;
     }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+ * Mobile sidebar — force-visible when data-toggled="open" + force-hidden
+ * when "close". The pre-compiled style.css only handles "close" via a CSS
+ * transform that can desync from JS state. These overrides live in
+ * globals.scss (which Next.js DOES recompile at build time) because edits
+ * to style.css's SCSS partials don't propagate unless `npm run sass` is
+ * run separately.
+ * ──────────────────────────────────────────────────────────────── */
+@media screen and (max-width: 991px) {
+  /* Closed on mobile: off-screen + uninteractive. Also covers the
+   * "no attribute yet" first-paint case via html:not([data-toggled]). */
+  [data-toggled="close"] .app-sidebar,
+  html:not([data-toggled]) .app-sidebar {
+    transform: translateX(-100%) !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: transform 0.3s ease, visibility 0.3s ease !important;
+  }
+
+  /* Opened on mobile: slide in + become interactive + above the overlay. */
+  [data-toggled="open"] .app-sidebar {
+    transform: translateX(0) !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: 102 !important;
+  }
+
+  /* Overlay must be clickable to dismiss when sidebar is open. */
+  [data-toggled="open"] #responsive-overlay {
+    pointer-events: auto !important;
+    cursor: pointer;
+  }
+
+  /* RTL — mirror the slide direction. */
+  [dir="rtl"][data-toggled="close"] .app-sidebar {
+    transform: translateX(100%) !important;
+  }
+}
+
+/* Smaller mobile (<=640px) — slim padding so tables breathe + touch-friendly
+ * action buttons that meet the 36px tap-target minimum we settled on. */
+@media screen and (max-width: 640px) {
+  .main-content {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  td .ti-btn.ti-btn-sm {
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+/* Modal viewport safety — clamp any max-w-* card inside a fullscreen
+ * overlay to the screen on very narrow phones. */
+@media screen and (max-width: 480px) {
+  .fixed.inset-0 > [class*="max-w-"] {
+    max-width: calc(100vw - 1rem) !important;
+  }
 }

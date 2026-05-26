@@ -25,7 +25,14 @@ function Layout({children, local_varaiable, ThemeChanger}:any) {
       if (local_varaiable.dataVerticalStyle) htmlEl.setAttribute('data-vertical-style', local_varaiable.dataVerticalStyle);
       if (local_varaiable.dataNavLayout) htmlEl.setAttribute('data-nav-layout', local_varaiable.dataNavLayout);
       if (local_varaiable.dataMenuStyles) htmlEl.setAttribute('data-menu-styles', local_varaiable.dataMenuStyles);
-      if (local_varaiable.dataToggled) htmlEl.setAttribute('data-toggled', local_varaiable.dataToggled);
+      // Always reflect dataToggled into the DOM — including the empty-string
+      // case — otherwise CSS rules that key off [data-toggled="open"] vs
+      // [data-toggled="close"] desync from the Redux state.
+      if (local_varaiable.dataToggled) {
+        htmlEl.setAttribute('data-toggled', local_varaiable.dataToggled);
+      } else {
+        htmlEl.removeAttribute('data-toggled');
+      }
       if (local_varaiable.dataNavStyle) htmlEl.setAttribute('data-nav-style', local_varaiable.dataNavStyle);
       if (local_varaiable.horStyle) htmlEl.setAttribute('hor-style', local_varaiable.horStyle);
       if (local_varaiable.dataPageStyle) htmlEl.setAttribute('data-page-style', local_varaiable.dataPageStyle);

@@ -138,31 +138,22 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
         }
       }
     } else {
-      if (theme.dataToggled === "close") {
+      // Mobile: open if not already open. Treat "close" AND empty/undefined
+      // (first-load race) as "closed" — otherwise the first hamburger tap on a
+      // fresh page can land in the else branch and just set "close" (which the
+      // sidebar already was), forcing the user to tap twice to see the menu.
+      if (theme.dataToggled !== "open") {
         ThemeChanger({ ...theme, "dataToggled": "open" });
         setTimeout(() => {
-          if (theme.dataToggled == "open") {
-            const overlay = document.querySelector("#responsive-overlay");
-            if (overlay) {
-              overlay.classList.add("active");
-              overlay.addEventListener("click", () => {
-                const overlay = document.querySelector("#responsive-overlay");
-                if (overlay) {
-                  overlay.classList.remove("active");
-                  menuClose();
-                }
-              });
-            }
+          const overlay = document.querySelector("#responsive-overlay");
+          if (overlay) {
+            overlay.classList.add("active");
           }
-          window.addEventListener("resize", () => {
-            if (window.screen.width >= 992) {
-              const overlay = document.querySelector("#responsive-overlay");
-              if (overlay) overlay.classList.remove("active");
-            }
-          });
-        }, 100);
+        }, 50);
       } else {
         ThemeChanger({ ...theme, "dataToggled": "close" });
+        const overlay = document.querySelector("#responsive-overlay");
+        if (overlay) overlay.classList.remove("active");
       }
     }
   };
