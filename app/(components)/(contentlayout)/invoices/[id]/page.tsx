@@ -18,11 +18,70 @@ const InvoiceDetailPage = () => {
   const dispatch = useAppDispatch();
   const { currentInvoice, loading, error } = useAppSelector((state) => state.invoices);
 
+  const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [payAmount, setPayAmount] = useState('');
+  const [payMethod, setPayMethod] = useState('BankTransfer');
+  const [payTransactionId, setPayTransactionId] = useState('');
+
   useEffect(() => {
     if (id) {
       dispatch(fetchInvoiceById(id));
     }
   }, [dispatch, id]);
+
+  const sendEmail = async () => {
+    setActionBusy('send');
+    try {
+      const r = await apiClient.post(`/invoices/${id}/send-email`);
+      if (r.data?.success === false) toast.error(r.data?.message || 'Send failed');
+      else toast.success(r.data?.message || 'Invoice emailed');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Send failed');
+    } finally { setActionBusy(null); }
+  };
+
+  const downloadPdf = async () => {
+    setActionBusy('download');
+    try {
+      const r = await apiClient.get(`/invoices/${id}/download`, { responseType: 'blob' });
+      const blob = new Blob([r.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(currentInvoice as any)?.invoiceNumber || 'invoice'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Could not download PDF');
+    } finally { setActionBusy(null); }
+  };
+
+  const recordPayment = async () => {
+    const amount = Number(payAmount);
+    if (!amount || amount <= 0) { toast.error('Enter a positive amount'); return; }
+    setActionBusy('record');
+    try {
+      const r = await apiClient.post('/payments', {
+        invoiceId: id,
+        amount,
+        paymentMethod: payMethod,
+        transactionId: payTransactionId.trim() || null,
+      });
+      if (r.data?.success === false) {
+        toast.error(r.data?.message || 'Record failed');
+      } else {
+        toast.success(`Payment of NPR ${amount.toLocaleString()} recorded`);
+        setPaymentOpen(false);
+        setPayAmount(''); setPayTransactionId('');
+        dispatch(fetchInvoiceById(id));
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Record failed');
+    } finally { setActionBusy(null); }
+  };
 
   if (loading) {
     return (
@@ -75,12 +134,116 @@ const InvoiceDetailPage = () => {
             Invoice {inv.invoiceNumber}
           </p>
         </div>
-        <div className="flex gap-2 mt-2 md:mt-0">
+        <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
           <Link href="/invoices">
             <button className="ti-btn ti-btn-light !opacity-100">Back</button>
           </Link>
+          <button
+            onClick={downloadPdf}
+            disabled={!!actionBusy}
+            className="ti-btn ti-btn-light !opacity-100 disabled:!opacity-50"
+            title="Download invoice PDF"
+          >
+            {actionBusy === 'download'
+              ? <><i className="ri-loader-4-line animate-spin me-1"></i>Downloading…</>
+              : <><i className="ri-download-line me-1"></i>Download PDF</>}
+          </button>
+          {!!inv.customerEmail && (
+            <button
+              onClick={sendEmail}
+              disabled={!!actionBusy}
+              className="ti-btn ti-btn-info-full !text-white !opacity-100 disabled:!opacity-50"
+              title={`Email this invoice to ${inv.customerEmail}`}
+            >
+              {actionBusy === 'send'
+                ? <><i className="ri-loader-4-line animate-spin me-1"></i>Sending…</>
+                : <><i className="ri-mail-send-line me-1"></i>Send email</>}
+            </button>
+          )}
+          {inv.balanceAmount > 0 && (
+            <button
+              onClick={() => { setPayAmount(String(inv.balanceAmount)); setPaymentOpen(true); }}
+              className="ti-btn ti-btn-primary-full !text-white !opacity-100"
+            >
+              <i className="ri-money-rupee-circle-line me-1"></i>Record payment
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Record payment modal */}
+      {paymentOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-5 border-b flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold">Record payment</h3>
+                <p className="text-xs text-gray-500">Invoice {inv.invoiceNumber} · balance NPR {Number(inv.balanceAmount).toLocaleString()}</p>
+              </div>
+              <button onClick={() => setPaymentOpen(false)} className="text-gray-400 hover:text-gray-700">
+                <i className="ri-close-line text-xl"></i>
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div>
+                <label className="form-label">Amount (NPR) *</label>
+                <input
+                  type="number"
+                  min="0.01"
+                  max={inv.balanceAmount}
+                  step="0.01"
+                  value={payAmount}
+                  onChange={e => setPayAmount(e.target.value)}
+                  className="form-control font-mono"
+                  required
+                />
+                {Number(payAmount) > Number(inv.balanceAmount) && (
+                  <p className="text-xs text-danger mt-1">Amount exceeds outstanding balance</p>
+                )}
+              </div>
+              <div>
+                <label className="form-label">Method *</label>
+                <select
+                  value={payMethod}
+                  onChange={e => setPayMethod(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="BankTransfer">Bank Transfer</option>
+                  <option value="Cheque">Cheque</option>
+                  <option value="Card">Card</option>
+                  <option value="ConnectIPS">ConnectIPS</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="form-label">Transaction / reference (optional)</label>
+                <input
+                  type="text"
+                  value={payTransactionId}
+                  onChange={e => setPayTransactionId(e.target.value)}
+                  placeholder="Bank ref, cheque #, etc."
+                  className="form-control font-mono"
+                />
+              </div>
+              <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded text-xs text-blue-800">
+                <i className="ri-information-line me-1"></i>
+                Creates a verified Payment record + decrements the invoice balance. If balance reaches 0, the invoice is marked Paid.
+              </div>
+            </div>
+            <div className="p-5 border-t flex justify-end gap-2">
+              <button onClick={() => setPaymentOpen(false)} className="btn btn-outline-secondary">Cancel</button>
+              <button
+                onClick={recordPayment}
+                disabled={!Number(payAmount) || Number(payAmount) <= 0 || Number(payAmount) > Number(inv.balanceAmount) || actionBusy === 'record'}
+                className="ti-btn ti-btn-primary-full !text-white !opacity-100 disabled:!opacity-50"
+              >
+                {actionBusy === 'record' ? 'Recording…' : 'Record payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-6">
         {/* Invoice Details */}

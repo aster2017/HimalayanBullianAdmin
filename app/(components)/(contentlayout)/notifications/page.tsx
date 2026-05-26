@@ -92,11 +92,14 @@ export default function PushNotificationsPage() {
 
   return (
     <Fragment>
-      <div className="md:flex items-center justify-between my-[1.5rem]">
+      <div className="md:flex items-center justify-between my-[1.5rem] gap-3">
         <div>
           <p className="font-semibold text-[1.125rem] !mb-0">Push Notifications</p>
           <p className="text-[0.813rem] text-[#8c9097]">Send APNs push to a customer or broadcast to an audience</p>
         </div>
+        <a href="/notifications/history" className="ti-btn ti-btn-light !opacity-100 mt-2 md:mt-0">
+          <i className="ri-history-line me-1"></i>View history
+        </a>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -80,6 +80,23 @@ export default function CustomerDetailPage() {
     setActing(null);
   };
 
+  /** Admin override of the OTP step — used when SMTP is flaky or the user
+   *  never received the code. Calls /auth/admin/force-verify-email/{id}. */
+  const forceVerifyEmail = async () => {
+    if (!id) return;
+    if (!window.confirm('Override the OTP and mark this email as verified?')) return;
+    setActing('force-verify');
+    try {
+      const r = await fetch(`${API}/auth/admin/force-verify-email/${id}`, {
+        method: 'POST', headers: getAuthHeaders(),
+      });
+      const d = await r.json();
+      if (d.success) { toast.success(d.message || 'Email verified'); loadAll(); }
+      else toast.error(d.message || 'Failed');
+    } catch { toast.error('Force-verify failed'); }
+    setActing(null);
+  };
+
   const saveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     setActing('edit');
@@ -127,6 +144,16 @@ export default function CustomerDetailPage() {
             {!customer.isApproved && customer.isEmailVerified && customer.isActive && (
               <button disabled={!!acting} onClick={() => setRejectModal(true)} className="ti-btn ti-btn-danger !text-white !bg-danger !opacity-100">
                 <i className="ri-close-circle-line me-1"></i>Reject
+              </button>
+            )}
+            {!customer.isEmailVerified && customer.isActive && (
+              <button
+                disabled={!!acting}
+                onClick={forceVerifyEmail}
+                className="ti-btn ti-btn-info !text-white !bg-info !opacity-100"
+                title="Skip the OTP step (use when SMTP is down or customer can't receive the code)"
+              >
+                {acting === 'force-verify' ? '...' : <><i className="ri-mail-check-line me-1"></i>Force-verify email</>}
               </button>
             )}
             {customer.isActive && customer.isApproved && (

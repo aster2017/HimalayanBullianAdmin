@@ -20,6 +20,9 @@ const OrderDetailPage = () => {
   const dispatch = useAppDispatch();
   const { currentOrder, loading, error } = useAppSelector((state) => state.orders);
   const [fetchingDetails, setFetchingDetails] = useState(false);
+  const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   useEffect(() => {
     if (id) {
@@ -33,6 +36,109 @@ const OrderDetailPage = () => {
         router.push('/orders');
       });
     }
+  };
+
+  /** Generic action runner — posts to an endpoint, shows toast, refetches. */
+  const runAction = async (
+    label: string,
+    endpoint: string,
+    successMsg: string,
+    confirm?: string
+  ) => {
+    if (confirm && !window.confirm(confirm)) return;
+    setActionBusy(label);
+    try {
+      const r = await apiClient.post(endpoint);
+      if (r.data?.success === false) {
+        toast.error(r.data?.message || `${label} failed`);
+      } else {
+        toast.success(successMsg);
+        dispatch(fetchOrderById(id));
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || `${label} failed`);
+    } finally {
+      setActionBusy(null);
+    }
+  };
+
+  const cancelOrder = async () => {
+    if (!cancelReason.trim()) {
+      toast.error('Cancellation reason is required');
+      return;
+    }
+    setActionBusy('cancel');
+    try {
+      const r = await apiClient.delete(`/orders/${id}`, { data: { reason: cancelReason } });
+      if (r.data?.success !== false) {
+        toast.success('Order cancelled');
+        setCancelOpen(false);
+        setCancelReason('');
+        dispatch(fetchOrderById(id));
+      } else {
+        toast.error(r.data?.message || 'Cancel failed');
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Cancel failed');
+    } finally {
+      setActionBusy(null);
+    }
+  };
+
+  /** Buttons the admin should see based on current order status. */
+  const availableActions = (): { label: string; run: () => void; tone: 'primary' | 'warning' | 'danger' | 'info' }[] => {
+    if (!currentOrder) return [];
+    const s = String(currentOrder.status || '').toLowerCase();
+    const isCollected = !!(currentOrder as any).collectedAt;
+    const isCancelled = s === 'cancelled';
+    if (isCancelled) return [];
+
+    const actions: any[] = [];
+
+    // Step 1: collect (parsed silver weight at collection time)
+    if (!isCollected && (s === 'confirmed' || s === 'draft')) {
+      actions.push({
+        label: 'Mark Collected',
+        tone: 'primary',
+        run: () => runAction('Mark Collected', `/orders/${id}/mark-collected`, 'Order marked as collected'),
+      });
+    }
+
+    // Step 2: generate invoice (admin-only path; sets status=Invoiced)
+    if (s === 'confirmed' || s === 'draft') {
+      actions.push({
+        label: 'Generate Invoice',
+        tone: 'info',
+        run: () => runAction('Generate Invoice', `/orders/${id}/generate-invoice`, 'Invoice generated'),
+      });
+    }
+
+    // Step 3+: ship + deliver
+    if (s !== 'shipped' && s !== 'delivered') {
+      actions.push({
+        label: 'Mark Shipped',
+        tone: 'primary',
+        run: () => runAction('Mark Shipped', `/orders/${id}/mark-shipped`, 'Order marked as shipped'),
+      });
+    }
+    if (s !== 'delivered') {
+      actions.push({
+        label: 'Mark Delivered',
+        tone: 'primary',
+        run: () => runAction('Mark Delivered', `/orders/${id}/mark-delivered`, 'Order marked as delivered'),
+      });
+    }
+
+    // Cancel — always available unless terminal
+    if (s !== 'delivered') {
+      actions.push({
+        label: 'Cancel Order',
+        tone: 'danger',
+        run: () => setCancelOpen(true),
+      });
+    }
+
+    return actions;
   };
 
   if (loading) {
@@ -94,18 +200,75 @@ const OrderDetailPage = () => {
             Order {currentOrder.orderNumber}
           </p>
         </div>
-        <div className="flex gap-2 mt-2 md:mt-0">
+        <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
           <Link href="/orders">
             <button className="ti-btn ti-btn-light !opacity-100">Back</button>
           </Link>
-          <button
-            onClick={handleDelete}
-            className="ti-btn ti-btn-danger-full !text-white"
-          >
-            Delete
-          </button>
+          {availableActions().map(a => {
+            const cls = a.tone === 'danger' ? 'ti-btn-danger-full' :
+                        a.tone === 'warning' ? 'ti-btn-warning-full' :
+                        a.tone === 'info' ? 'ti-btn-info-full' : 'ti-btn-primary-full';
+            return (
+              <button
+                key={a.label}
+                onClick={a.run}
+                disabled={!!actionBusy}
+                className={`ti-btn ${cls} !text-white !opacity-100 disabled:!opacity-50`}
+              >
+                {actionBusy === a.label
+                  ? <><i className="ri-loader-4-line animate-spin me-1"></i>{a.label}…</>
+                  : a.label}
+              </button>
+            );
+          })}
         </div>
       </div>
+
+      {/* Cancel order modal */}
+      {cancelOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div className="p-5 border-b flex items-center justify-between">
+              <h3 className="text-lg font-bold">Cancel order</h3>
+              <button onClick={() => setCancelOpen(false)} className="text-gray-400 hover:text-gray-700">
+                <i className="ri-close-line text-xl"></i>
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <p className="text-sm">
+                This will cancel order <span className="font-mono font-semibold">{currentOrder.orderNumber}</span>.
+                {currentOrder.status?.toLowerCase() === 'invoiced' && (
+                  <span className="block text-warning text-xs mt-2">
+                    <i className="ri-alert-line me-1"></i>
+                    The associated invoice will need to be voided separately.
+                  </span>
+                )}
+              </p>
+              <div>
+                <label className="form-label">Reason *</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  value={cancelReason}
+                  onChange={e => setCancelReason(e.target.value)}
+                  placeholder="e.g. Customer requested cancellation / out of stock / duplicate"
+                  required
+                />
+              </div>
+            </div>
+            <div className="p-5 border-t flex justify-end gap-2">
+              <button onClick={() => setCancelOpen(false)} className="btn btn-outline-secondary">Keep order</button>
+              <button
+                onClick={cancelOrder}
+                disabled={!cancelReason.trim() || actionBusy === 'cancel'}
+                className="ti-btn ti-btn-danger-full !text-white !opacity-100 disabled:!opacity-50"
+              >
+                {actionBusy === 'cancel' ? 'Cancelling…' : 'Cancel order'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-6">
         {/* Order Summary */}
