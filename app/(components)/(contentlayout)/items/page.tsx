@@ -102,8 +102,8 @@ export default function ItemsPage() {
     toast.success(`Synced ${pending.length} item(s) to Zoho`);
   };
 
-  // ── Inline toggle (showInMobile / isActive) ─────────────────────────────────
-  const toggleField = async (item: Item, field: 'showInMobile' | 'isActive') => {
+  // ── Inline toggle (showInMobile / isActive / isTargetProduct) ──────────────
+  const toggleField = async (item: Item, field: 'showInMobile' | 'isActive' | 'isTargetProduct') => {
     const updated = { ...item, [field]: !item[field] };
     setItems(prev => prev.map(i => i.id === item.id ? updated : i));
     try {
@@ -113,7 +113,12 @@ export default function ItemsPage() {
         body: JSON.stringify({ ...item, [field]: !item[field] }),
       });
       if (!r.ok) { setItems(prev => prev.map(i => i.id === item.id ? item : i)); toast.error('Update failed'); }
-      else toast.success(`${field === 'showInMobile' ? 'Mobile visibility' : 'Status'} updated`);
+      else {
+        const label = field === 'showInMobile' ? 'Mobile visibility'
+                    : field === 'isTargetProduct' ? 'Target product flag'
+                    : 'Status';
+        toast.success(`${label} updated`);
+      }
     } catch { setItems(prev => prev.map(i => i.id === item.id ? item : i)); toast.error('Update failed'); }
   };
 
@@ -222,15 +227,21 @@ export default function ItemsPage() {
                         </span>
                       </td>
 
-                      {/* Target Product badge */}
+                      {/* Target Product — click to toggle */}
                       <td className="text-center">
-                        {item.isTargetProduct ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                            🎯 Yes
-                          </span>
-                        ) : (
-                          <span className="text-[11px] text-[#8c9097]">—</span>
-                        )}
+                        <button
+                          onClick={() => toggleField(item, 'isTargetProduct')}
+                          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
+                            item.isTargetProduct
+                              ? 'text-primary bg-primary/10 hover:bg-primary/20'
+                              : 'text-[#8c9097] bg-gray-100 hover:bg-gray-200'
+                          }`}
+                          title={item.isTargetProduct
+                            ? 'Click to remove target-product flag'
+                            : 'Click to mark as target product (mobile customers can buy this towards a savings goal)'}
+                        >
+                          {item.isTargetProduct ? '🎯 Yes' : '— No'}
+                        </button>
                       </td>
 
                       {/* Zoho synced */}
