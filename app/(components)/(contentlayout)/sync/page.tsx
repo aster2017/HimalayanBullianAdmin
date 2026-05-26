@@ -165,7 +165,16 @@ export default function SyncDashboardPage() {
             <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">Sync Dashboard</p>
             <p className="font-normal text-[#8c9097] text-[0.813rem]">Monitor Zoho Inventory synchronization status and activity.</p>
           </div>
-          <div className="flex items-center gap-2 mt-2 md:mt-0">
+          <div className="flex items-center gap-2 mt-2 md:mt-0 flex-wrap">
+            <a
+              href="https://hbc-api.semis.app/hangfire"
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm bg-white text-defaulttextcolor hover:bg-gray-50 transition-colors inline-flex items-center"
+              title="Hangfire job dashboard — requires SuperAdmin JWT bearer (ModHeader extension)"
+            >
+              <i className="ri-dashboard-line me-1"></i>Hangfire
+            </a>
             <button onClick={handleItemPull} disabled={isSyncing}
               className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm bg-white text-defaulttextcolor hover:bg-gray-50 disabled:opacity-50 transition-colors inline-flex items-center">
               <i className="ri-download-2-line me-1"></i> Pull Items

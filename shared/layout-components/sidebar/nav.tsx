@@ -307,6 +307,7 @@ export const MenuItems: MenuItem[] = [
     children: [
       { path: "/access/roles", type: "link", active: false, selected: false, dirchange: false, title: "Roles & Permissions" },
       { path: "/access/users", type: "link", active: false, selected: false, dirchange: false, title: "Staff Users" },
+      { path: "/access/security", type: "link", active: false, selected: false, dirchange: false, title: "Security & Audit" },
       { path: "/access/connectips-probe", type: "link", active: false, selected: false, dirchange: false, title: "ConnectIPS Probe" },
     ],
   },
