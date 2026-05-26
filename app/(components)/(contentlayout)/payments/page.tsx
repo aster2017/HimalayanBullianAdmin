@@ -2,6 +2,8 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
+import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch';
+import { Pagination } from '@/shared/components/Pagination';
 import Seo from '@/shared/layout-components/seo/seo';
 import Link from 'next/link';
 import apiClient from '@/shared/services/apiClient';
@@ -13,14 +15,19 @@ const PaymentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 20;
+  const search = useDebouncedSearch('', 300);
+
+  useEffect(() => { setCurrentPage(1); }, [search.value, pageSize]);
 
   useEffect(() => {
     const fetchPayments = async () => {
       setLoading(true);
       try {
-        const res = await apiClient.get('/payments', { params: { page: currentPage, pageSize } });
+        const params: any = { page: currentPage, pageSize };
+        if (search.value.trim()) params.search = search.value.trim();
+        const res = await apiClient.get('/payments', { params });
         const data = res.data?.data || res.data;
         setPayments(data?.items || []);
         setTotalCount(data?.totalCount || 0);
@@ -31,7 +38,7 @@ const PaymentsPage = () => {
       }
     };
     fetchPayments();
-  }, [currentPage]);
+  }, [currentPage, pageSize, search.value]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -65,14 +72,23 @@ const PaymentsPage = () => {
     <Fragment>
       <Seo title="Payments" />
 
-      <div className="md:flex block items-center justify-between my-[1.5rem] page-header-breadcrumb">
+      <div className="md:flex block items-center justify-between my-[1.5rem] page-header-breadcrumb gap-4">
         <div>
           <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">
             Payments
           </p>
           <p className="font-normal text-[#8c9097] dark:text-white/50 text-[0.813rem]">
-            View all payment records
+            {totalCount} payments total
           </p>
+        </div>
+        <div className="mt-2 md:mt-0">
+          <input
+            type="text"
+            value={search.immediate}
+            onChange={e => search.setValue(e.target.value)}
+            placeholder="Search reference / customer…"
+            className="form-control w-full md:w-64"
+          />
         </div>
       </div>
 
@@ -135,32 +151,17 @@ const PaymentsPage = () => {
       </div>
 
       {/* Pagination */}
-      {!loading && payments.length > 0 && totalPages > 1 && (
+      {!loading && totalCount > 0 && (
         <div className="box mt-4">
-          <div className="box-body flex items-center justify-between flex-wrap gap-4">
-            <p className="text-[0.813rem] text-[#8c9097] mb-0">
-              Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalCount)} of {totalCount} payments
-            </p>
-            <div className="flex items-center gap-1">
-              <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}
-                className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm text-defaulttextcolor hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50 disabled:pointer-events-none transition-colors">
-                &laquo; Previous
-              </button>
-              {getPageNumbers().map((pg, idx) => (
-                pg === '...' ? (
-                  <span key={idx} className="px-3 py-1.5 text-[0.813rem] text-[#8c9097]">...</span>
-                ) : (
-                  <button key={idx} onClick={() => setCurrentPage(pg as number)}
-                    className={`px-3 py-1.5 text-[0.813rem] border rounded-sm transition-colors ${
-                      currentPage === pg ? 'bg-primary text-white border-primary' : 'border-defaultborder text-defaulttextcolor hover:bg-primary hover:text-white hover:border-primary'
-                    }`}>{pg}</button>
-                )
-              ))}
-              <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}
-                className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm text-defaulttextcolor hover:bg-primary hover:text-white hover:border-primary disabled:opacity-50 disabled:pointer-events-none transition-colors">
-                Next &raquo;
-              </button>
-            </div>
+          <div className="box-body">
+            <Pagination
+              page={currentPage}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              onPageChange={setCurrentPage}
+              pageSizeOptions={[25, 50, 100]}
+              onPageSizeChange={setPageSize}
+            />
           </div>
         </div>
       )}

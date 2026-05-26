@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
+import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch';
+import { Pagination } from '@/shared/components/Pagination';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 
@@ -37,30 +39,41 @@ export default function ItemsPage() {
   useProtectedRoute();
 
   const [items, setItems] = useState<Item[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
   const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
   const [syncingAll, setSyncingAll] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [editForm, setEditForm] = useState<Partial<Item>>({});
   const [savingEdit, setSavingEdit] = useState(false);
-  const [search, setSearch] = useState('');
+  const search = useDebouncedSearch('', 300);
 
   const load = async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${API}/items?pageSize=100`, { headers: getAuthHeaders() });
+      const params = new URLSearchParams({
+        pageNumber: String(page),
+        pageSize: String(pageSize),
+      });
+      if (search.value.trim()) params.set('searchTerm', search.value.trim());
+      const r = await fetch(`${API}/items?${params}`, { headers: getAuthHeaders() });
       const d = await r.json();
-      setItems(d.data?.items || d.data || d.items || []);
+      const data = d.data || {};
+      setItems(data.items || []);
+      setTotalCount(data.totalCount || 0);
     } catch { toast.error('Failed to load items'); }
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  // Reset to page 1 whenever search/pageSize changes (avoids landing on an empty out-of-range page)
+  useEffect(() => { setPage(1); }, [search.value, pageSize]);
+  useEffect(() => { load(); }, [page, pageSize, search.value]);
 
-  const filtered = items.filter(i =>
-    !search || i.name.toLowerCase().includes(search.toLowerCase()) ||
-    i.sku.toLowerCase().includes(search.toLowerCase())
-  );
+  // Backwards compat with the rest of the file — `filtered` was used as the
+  // rendered list. With server-side pagination + search, the list is just `items`.
+  const filtered = items;
 
   // ── Zoho Sync ───────────────────────────────────────────────────────────────
   const syncItem = async (id: string) => {
@@ -140,19 +153,20 @@ export default function ItemsPage() {
           <div>
             <p className="font-semibold text-[1.125rem] text-defaulttextcolor !mb-0">Inventory Items</p>
             <p className="text-[#8c9097] text-[0.813rem]">
-              {items.length} items · {items.filter(i => i.showInMobile).length} visible in mobile
+              {totalCount} items total · {items.filter(i => i.showInMobile).length} on this page visible in mobile
             </p>
           </div>
           <div className="flex items-center gap-2 mt-2 md:mt-0 flex-wrap">
             <input
-              type="text" value={search} onChange={e => setSearch(e.target.value)}
+              type="text" value={search.immediate} onChange={e => search.setValue(e.target.value)}
               placeholder="Search name or SKU…"
               className="form-control form-control-sm w-52"
             />
             {pendingCount > 0 && (
               <button onClick={syncAll} disabled={syncingAll}
-                className="ti-btn ti-btn-sm bg-violet-600 text-white !font-medium disabled:opacity-50">
-                {syncingAll ? '⏳ Syncing…' : `⬆ Sync ${pendingCount} to Zoho`}
+                className="ti-btn ti-btn-sm bg-violet-600 text-white !font-medium disabled:opacity-50"
+                title="Syncs the items visible on this page only">
+                {syncingAll ? '⏳ Syncing…' : `⬆ Sync ${pendingCount} on this page`}
               </button>
             )}
           </div>
@@ -274,6 +288,18 @@ export default function ItemsPage() {
               </tbody>
             </table>
           </div>
+          {!loading && totalCount > 0 && (
+            <div className="px-4 pb-4">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalCount={totalCount}
+                onPageChange={setPage}
+                pageSizeOptions={[25, 50, 100]}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </div>
       </div>
 

@@ -37,6 +37,16 @@ export default function RolesPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [newRole, setNewRole] = useState({ name: '', description: '', priority: 50 });
   const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const visibleRoles = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return roles;
+    return roles.filter(r =>
+      r.name.toLowerCase().includes(q) ||
+      (r.description || '').toLowerCase().includes(q)
+    );
+  }, [roles, search]);
 
   const load = async () => {
     setLoading(true);
@@ -142,7 +152,7 @@ export default function RolesPage() {
 
   return (
     <Fragment>
-      <div className="md:flex items-center justify-between my-[1.5rem]">
+      <div className="md:flex items-center justify-between my-[1.5rem] gap-4">
         <div>
           <p className="font-semibold text-[1.125rem] !mb-0">Roles &amp; Permissions</p>
           <p className="text-[0.813rem] text-[#8c9097]">
@@ -150,9 +160,18 @@ export default function RolesPage() {
             <Link href="/access/users" className="text-primary ms-2">Assign roles to users →</Link>
           </p>
         </div>
-        <button onClick={() => setCreateOpen(true)} className="ti-btn ti-btn-primary-full !text-white !opacity-100 mt-2 md:mt-0">
-          <i className="ri-add-line me-1"></i>New Role
-        </button>
+        <div className="flex gap-2 items-center mt-2 md:mt-0">
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search roles…"
+            className="form-control w-full md:w-56"
+          />
+          <button onClick={() => setCreateOpen(true)} className="ti-btn ti-btn-primary-full !text-white !opacity-100 whitespace-nowrap">
+            <i className="ri-add-line me-1"></i>New Role
+          </button>
+        </div>
       </div>
 
       <div className="box">
@@ -161,8 +180,10 @@ export default function RolesPage() {
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary inline-block"></div>
             </div>
-          ) : roles.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-6">No roles. Seed should have created the defaults.</p>
+          ) : visibleRoles.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-6">
+              {search ? `No roles match "${search}"` : 'No roles. Seed should have created the defaults.'}
+            </p>
           ) : (
             <div className="overflow-x-auto -mx-4 sm:mx-0">
               <table className="table w-full min-w-[480px] sm:min-w-0">
@@ -178,7 +199,7 @@ export default function RolesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {roles.map(r => (
+                  {visibleRoles.map(r => (
                     <tr key={r.id} className="border-t">
                       <td className="p-2">
                         <div className="font-semibold">{r.name}</div>

@@ -3,6 +3,8 @@
 import { Fragment, useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
+import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch';
+import { Pagination } from '@/shared/components/Pagination';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 
@@ -34,25 +36,28 @@ export default function BuybacksPage() {
   useProtectedRoute();
 
   const [items, setItems] = useState<Buyback[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
   const [date, setDate] = useState('');
-  const [customerFilter, setCustomerFilter] = useState('');
-  const [debouncedFilter, setDebouncedFilter] = useState('');
+  const search = useDebouncedSearch('', 300);
   const [showLogModal, setShowLogModal] = useState(false);
 
   // Current system buyback rate (for default in modal)
   const [currentRate, setCurrentRate] = useState(0);
 
-  useEffect(() => { const t = setTimeout(() => setDebouncedFilter(customerFilter), 300); return () => clearTimeout(t); }, [customerFilter]);
-
   const load = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: '100' });
+      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (date) params.set('date', date);
+      if (search.value.trim()) params.set('search', search.value.trim());
       const r = await fetch(`${API}/targets/buybacks?${params}`, { headers: getAuthHeaders() });
       const d = await r.json();
-      setItems(d?.data || d || []);
+      const data = d?.data || {};
+      setItems(data.items || []);
+      setTotalCount(data.totalCount || 0);
     } catch { toast.error('Failed to load buybacks'); }
     finally { setLoading(false); }
   };
@@ -65,14 +70,14 @@ export default function BuybacksPage() {
     } catch {/* swallow */}
   };
 
-  useEffect(() => { load(); }, [date]);
+  // Reset to page 1 whenever search/date/pageSize changes
+  useEffect(() => { setPage(1); }, [search.value, date, pageSize]);
+  useEffect(() => { load(); }, [page, pageSize, search.value, date]);
   useEffect(() => { loadRate(); }, []);
 
-  // Client-side filter for customer search since backend filters by customerId only
-  const filteredItems = debouncedFilter
-    ? items.filter(b => b.customerName?.toLowerCase().includes(debouncedFilter.toLowerCase())
-                     || b.buybackNumber?.toLowerCase().includes(debouncedFilter.toLowerCase()))
-    : items;
+  // Search + date are server-side now; the `filteredItems` indirection stays
+  // for the existing aggregate-totals code below.
+  const filteredItems = items;
 
   // Aggregate over the filtered list
   const totals = filteredItems.reduce(
@@ -102,8 +107,8 @@ export default function BuybacksPage() {
       {/* Summary tiles */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
         <div className="box p-4">
-          <p className="text-xs text-gray-500 mb-1 uppercase">Buybacks {debouncedFilter || date ? '(filtered)' : ''}</p>
-          <p className="text-xl font-bold text-primary">{totals.count}</p>
+          <p className="text-xs text-gray-500 mb-1 uppercase">Buybacks {search.value || date ? '(filtered)' : ''}</p>
+          <p className="text-xl font-bold text-primary">{totalCount}</p>
         </div>
         <div className="box p-4">
           <p className="text-xs text-gray-500 mb-1 uppercase">Total Grams Returned</p>
@@ -120,8 +125,8 @@ export default function BuybacksPage() {
         <div className="box-body grid grid-cols-1 md:grid-cols-3 gap-3">
           <input
             type="text"
-            value={customerFilter}
-            onChange={e => setCustomerFilter(e.target.value)}
+            value={search.immediate}
+            onChange={e => search.setValue(e.target.value)}
             placeholder="Filter by customer name / buyback #"
             className="form-control"
           />
@@ -131,7 +136,7 @@ export default function BuybacksPage() {
             onChange={e => setDate(e.target.value)}
             className="form-control"
           />
-          <button onClick={() => { setCustomerFilter(''); setDate(''); }} className="ti-btn ti-btn-light">
+          <button onClick={() => { search.reset(); setDate(''); }} className="ti-btn ti-btn-light">
             Reset filters
           </button>
         </div>
@@ -146,7 +151,7 @@ export default function BuybacksPage() {
         ) : filteredItems.length === 0 ? (
           <div className="box-body text-center py-12">
             <i className="ri-arrow-go-back-line text-5xl text-gray-400 block mb-2"></i>
-            <p className="text-[#8c9097]">No buybacks {debouncedFilter || date ? 'match the filter' : 'recorded yet'}</p>
+            <p className="text-[#8c9097]">No buybacks {search.value || date ? 'match the filter' : 'recorded yet'}</p>
             <button onClick={() => setShowLogModal(true)} className="ti-btn ti-btn-primary-full !text-white !opacity-100 mt-3">
               Log the first one
             </button>
@@ -203,6 +208,18 @@ export default function BuybacksPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {!loading && totalCount > 0 && (
+          <div className="px-4 pb-4">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              onPageChange={setPage}
+              pageSizeOptions={[25, 50, 100]}
+              onPageSizeChange={setPageSize}
+            />
           </div>
         )}
       </div>

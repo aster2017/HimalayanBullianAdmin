@@ -3,6 +3,8 @@
 import { Fragment, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
+import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch';
+import { Pagination } from '@/shared/components/Pagination';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 
@@ -23,11 +25,15 @@ type PendingDeposit = {
 export default function PendingDepositsPage() {
   useProtectedRoute();
   const [items, setItems] = useState<PendingDeposit[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<PendingDeposit | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const search = useDebouncedSearch('', 300);
 
   const absoluteUrl = (u?: string) =>
     !u ? null : u.startsWith('http') ? u : `${IMAGE_BASE}${u.startsWith('/') ? u : '/' + u}`;
@@ -35,14 +41,18 @@ export default function PendingDepositsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${API}/credits/deposits/pending`, { headers: getAuthHeaders() });
+      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+      if (search.value.trim()) params.set('search', search.value.trim());
+      const r = await fetch(`${API}/credits/deposits/pending?${params}`, { headers: getAuthHeaders() });
       const d = await r.json();
       setItems(d?.data || []);
+      setTotalCount(d?.totalCount || 0);
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { setPage(1); }, [search.value, pageSize]);
+  useEffect(() => { load(); }, [page, pageSize, search.value]);
 
   const verify = async (id: string) => {
     setActing(id);
@@ -79,20 +89,29 @@ export default function PendingDepositsPage() {
 
   return (
     <Fragment>
-      <div className="md:flex items-center justify-between my-[1.5rem]">
+      <div className="md:flex items-center justify-between my-[1.5rem] gap-4">
         <div>
           <p className="font-semibold text-[1.125rem] !mb-0">Pending Deposits</p>
           <p className="text-[0.813rem] text-[#8c9097]">Bank-transfer receipts waiting on admin verification</p>
         </div>
-        <Link href="/credits">
-          <button className="ti-btn ti-btn-light mt-2 md:mt-0">← Back to full ledger</button>
-        </Link>
+        <div className="flex gap-2 items-center mt-2 md:mt-0">
+          <input
+            type="text"
+            value={search.immediate}
+            onChange={e => search.setValue(e.target.value)}
+            placeholder="Search customer / reference…"
+            className="form-control w-full md:w-56"
+          />
+          <Link href="/credits">
+            <button className="ti-btn ti-btn-light whitespace-nowrap">← Ledger</button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
         <div className="box p-4">
-          <p className="text-xs text-gray-500 uppercase">Pending count</p>
-          <p className="text-xl font-bold text-warning">{items.length}</p>
+          <p className="text-xs text-gray-500 uppercase">Pending count{search.value ? ' (filtered)' : ''}</p>
+          <p className="text-xl font-bold text-warning">{totalCount}</p>
         </div>
         <div className="box p-4">
           <p className="text-xs text-gray-500 uppercase">Total amount</p>
@@ -180,6 +199,21 @@ export default function PendingDepositsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {!loading && totalCount > 0 && (
+        <div className="box mt-4">
+          <div className="box-body">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              onPageChange={setPage}
+              pageSizeOptions={[25, 50, 100]}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
         </div>
       )}
 

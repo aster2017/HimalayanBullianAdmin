@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
+import { Pagination } from '@/shared/components/Pagination';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 
@@ -11,6 +12,9 @@ export default function CollectionsPage() {
   useProtectedRoute();
   const [tab, setTab] = useState<'today'|'overdue'|'scheduled'|'unscheduled'>('today');
   const [targets, setTargets] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<string|null>(null);
   const [notes, setNotes] = useState('');
@@ -18,7 +22,7 @@ export default function CollectionsPage() {
   const load = async () => {
     setLoading(true);
     const today = new Date().toISOString().split('T')[0];
-    const q = new URLSearchParams({ pageNumber: "1", pageSize: '50' });
+    const q = new URLSearchParams({ pageNumber: String(page), pageSize: String(pageSize) });
     if (tab === 'today') q.set('collectionDate', today);
     else if (tab === 'overdue') { q.set('overdueOnly', 'true'); }
     else if (tab === 'scheduled') q.set('status', 'Completed');
@@ -26,15 +30,19 @@ export default function CollectionsPage() {
     const r = await fetch(`${API}/targets?${q}`, { headers: getAuthHeaders() });
     const d = await r.json();
     let items = d.data?.items || d.data || [];
+    const apiTotal = d.data?.totalCount ?? items.length;
     if (tab === 'today') items = items.filter((t:any) => t.collectionDate?.startsWith(today));
     else if (tab === 'overdue') items = items.filter((t:any) => t.collectionDate && new Date(t.collectionDate) < new Date() && t.status !== 'Delivered');
     else if (tab === 'scheduled') items = items.filter((t:any) => t.collectionDate && t.status === 'Completed');
     else items = items.filter((t:any) => !t.collectionDate && (t.status === 'Completed' || t.status === 'Active'));
     setTargets(items);
+    setTotalCount(apiTotal);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [tab]);
+  // Reset to page 1 when tab or pageSize changes
+  useEffect(() => { setPage(1); }, [tab, pageSize]);
+  useEffect(() => { load(); }, [tab, page, pageSize]);
 
   const confirmDelivery = async (id: string) => {
     setConfirming(id);
@@ -122,6 +130,18 @@ export default function CollectionsPage() {
               </tbody>
             </table>
           </div>
+          {!loading && totalCount > 0 && (
+            <div className="px-4 pb-4">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalCount={totalCount}
+                onPageChange={setPage}
+                pageSizeOptions={[25, 50, 100]}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          )}
         </div>
       </div>
 
