@@ -179,4 +179,16 @@ export class SyncService {
       message: response.data?.message ?? 'Retry enqueued',
     };
   }
+
+  /** Mark a dead-letter row as manually resolved with optional notes. */
+  static async resolveErrorRow(errorId: string, notes?: string): Promise<{ message: string }> {
+    const response = await apiClient.post(`/sync/errors/${errorId}/resolve`, { notes });
+    return { message: response.data?.message ?? 'Marked resolved' };
+  }
+
+  /** Mark a dead-letter row as ignored (known broken, won't be retried). */
+  static async ignoreErrorRow(errorId: string, notes?: string): Promise<{ message: string }> {
+    const response = await apiClient.post(`/sync/errors/${errorId}/ignore`, { notes });
+    return { message: response.data?.message ?? 'Marked ignored' };
+  }
 }

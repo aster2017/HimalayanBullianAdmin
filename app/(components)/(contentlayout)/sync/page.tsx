@@ -127,6 +127,38 @@ export default function SyncDashboardPage() {
     }
   };
 
+  /** Mark a dead-letter row as manually Resolved (admin fixed it elsewhere). */
+  const handleResolveErrorRow = async (errorId: string, label: string) => {
+    const notes = window.prompt(`Resolve "${label}"?\n\nOptional resolution notes (left blank if you just want it off the list):`);
+    if (notes === null) return; // user cancelled
+    setRetryingId(errorId);
+    try {
+      const res = await SyncService.resolveErrorRow(errorId, notes || undefined);
+      toast.success(res.message);
+      setTimeout(fetchData, 500);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Resolve failed');
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
+  /** Mark a dead-letter row as Ignored (known broken, won't retry). */
+  const handleIgnoreErrorRow = async (errorId: string, label: string) => {
+    const notes = window.prompt(`Ignore "${label}"?\n\nOptional reason (e.g. "stale test data"):`);
+    if (notes === null) return;
+    setRetryingId(errorId);
+    try {
+      const res = await SyncService.ignoreErrorRow(errorId, notes || undefined);
+      toast.success(res.message);
+      setTimeout(fetchData, 500);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Ignore failed');
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'Never';
     const date = new Date(dateStr);
@@ -634,18 +666,38 @@ export default function SyncDashboardPage() {
                             HTTP {err.httpStatusCode}
                           </span>
                         )}
-                        <button
-                          onClick={() => handleRetryErrorRow(err.id, `${err.entityType} ${err.direction === 'FromZoho' ? 'pull' : 'push'}`)}
-                          disabled={retryingId === err.id}
-                          className="px-2 py-1 text-[0.7rem] rounded-sm bg-warning text-white hover:bg-warning/90 disabled:opacity-50 transition-colors inline-flex items-center whitespace-nowrap"
-                          title="Re-enqueue this single sync"
-                        >
-                          {retryingId === err.id ? (
-                            <><i className="ri-loader-4-line animate-spin me-1"></i>Retrying</>
-                          ) : (
-                            <><i className="bx bx-refresh me-1"></i>Retry</>
-                          )}
-                        </button>
+                        {(() => {
+                          const label = `${err.entityType} ${err.direction === 'FromZoho' ? 'pull' : 'push'}`;
+                          const busy = retryingId === err.id;
+                          return (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleRetryErrorRow(err.id, label)}
+                                disabled={busy}
+                                className="px-2 py-1 text-[0.7rem] rounded-sm bg-warning text-white hover:bg-warning/90 disabled:opacity-50 transition-colors inline-flex items-center whitespace-nowrap"
+                                title="Re-enqueue this single sync"
+                              >
+                                {busy ? <i className="ri-loader-4-line animate-spin"></i> : <><i className="bx bx-refresh me-1"></i>Retry</>}
+                              </button>
+                              <button
+                                onClick={() => handleResolveErrorRow(err.id, label)}
+                                disabled={busy}
+                                className="px-2 py-1 text-[0.7rem] rounded-sm bg-success text-white hover:bg-success/90 disabled:opacity-50 transition-colors inline-flex items-center whitespace-nowrap"
+                                title="Mark as manually resolved (fixed elsewhere)"
+                              >
+                                <i className="ri-check-line me-1"></i>Resolve
+                              </button>
+                              <button
+                                onClick={() => handleIgnoreErrorRow(err.id, label)}
+                                disabled={busy}
+                                className="px-2 py-1 text-[0.7rem] rounded-sm bg-gray-300 text-gray-700 hover:bg-gray-400 disabled:opacity-50 transition-colors inline-flex items-center whitespace-nowrap"
+                                title="Ignore — drop off the list without retrying"
+                              >
+                                <i className="ri-eye-off-line me-1"></i>Ignore
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                     <p className="text-sm text-red-600 mb-1">{err.errorMessage}</p>
