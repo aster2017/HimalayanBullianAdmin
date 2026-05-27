@@ -18,6 +18,9 @@ export default function SyncDashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'errors'>('overview');
   const [logFilter, setLogFilter] = useState<SyncLogFilter>({ pageNumber: 1, pageSize: 20 });
   const [totalLogPages, setTotalLogPages] = useState(1);
+  // Per-row retry in-flight tracking — keyed by SyncLog id or SyncError id so
+  // we can disable just the row's button while its enqueue is awaiting.
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -93,6 +96,34 @@ export default function SyncDashboardPage() {
       toast.error(err?.response?.data?.message || 'Failed to retry');
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  /** Re-enqueue a single failed row from the Logs tab (SyncLog id). */
+  const handleRetryLogRow = async (logId: string, label: string) => {
+    setRetryingId(logId);
+    try {
+      const res = await SyncService.retrySingle(logId);
+      toast.success(res.message || `Retry queued for ${label}`);
+      setTimeout(fetchData, 3000);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Retry failed');
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
+  /** Re-enqueue a single dead-letter row from the Errors tab (ZohoSyncError id). */
+  const handleRetryErrorRow = async (errorId: string, label: string) => {
+    setRetryingId(errorId);
+    try {
+      const res = await SyncService.retryErrorRow(errorId);
+      toast.success(res.message || `Retry queued for ${label}`);
+      setTimeout(fetchData, 3000);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Retry failed');
+    } finally {
+      setRetryingId(null);
     }
   };
 
@@ -488,6 +519,7 @@ export default function SyncDashboardPage() {
                     <th>Duration</th>
                     <th>Time</th>
                     <th>Error</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -516,11 +548,27 @@ export default function SyncDashboardPage() {
                         <td className="text-[0.7rem] text-danger max-w-[200px] truncate" title={log.errorMessage || ''}>
                           {log.errorMessage || '-'}
                         </td>
+                        <td className="text-right">
+                          {log.status?.toLowerCase() === 'failed' ? (
+                            <button
+                              onClick={() => handleRetryLogRow(log.id, `${log.entityType} ${log.direction === 'FromZoho' ? 'pull' : 'push'}`)}
+                              disabled={retryingId === log.id}
+                              className="px-2 py-1 text-[0.7rem] rounded-sm bg-warning text-white hover:bg-warning/90 disabled:opacity-50 transition-colors inline-flex items-center whitespace-nowrap"
+                              title="Re-enqueue this single sync"
+                            >
+                              {retryingId === log.id ? (
+                                <i className="ri-loader-4-line animate-spin"></i>
+                              ) : (
+                                <><i className="bx bx-refresh me-1"></i>Retry</>
+                              )}
+                            </button>
+                          ) : null}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={10} className="text-center py-8 text-muted">
+                      <td colSpan={11} className="text-center py-8 text-muted">
                         No logs match the current filter
                       </td>
                     </tr>
@@ -586,6 +634,18 @@ export default function SyncDashboardPage() {
                             HTTP {err.httpStatusCode}
                           </span>
                         )}
+                        <button
+                          onClick={() => handleRetryErrorRow(err.id, `${err.entityType} ${err.direction === 'FromZoho' ? 'pull' : 'push'}`)}
+                          disabled={retryingId === err.id}
+                          className="px-2 py-1 text-[0.7rem] rounded-sm bg-warning text-white hover:bg-warning/90 disabled:opacity-50 transition-colors inline-flex items-center whitespace-nowrap"
+                          title="Re-enqueue this single sync"
+                        >
+                          {retryingId === err.id ? (
+                            <><i className="ri-loader-4-line animate-spin me-1"></i>Retrying</>
+                          ) : (
+                            <><i className="bx bx-refresh me-1"></i>Retry</>
+                          )}
+                        </button>
                       </div>
                     </div>
                     <p className="text-sm text-red-600 mb-1">{err.errorMessage}</p>

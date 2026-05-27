@@ -159,4 +159,24 @@ export class SyncService {
   static async retryFailed(): Promise<void> {
     await apiClient.post('/sync/retry-failed');
   }
+
+  /** Re-enqueue a single failed sync row by its SyncLog id. */
+  static async retrySingle(logId: string): Promise<{ jobId: string; message: string }> {
+    const response = await apiClient.post(`/sync/retry/${logId}`);
+    const data = unwrap<any>(response.data);
+    return {
+      jobId: typeof data === 'string' ? data : (data?.data ?? data ?? ''),
+      message: response.data?.message ?? 'Retry enqueued',
+    };
+  }
+
+  /** Re-enqueue a dead-letter row from ZohoSyncErrorQueue by its error id. */
+  static async retryErrorRow(errorId: string): Promise<{ jobId: string; message: string }> {
+    const response = await apiClient.post(`/sync/errors/${errorId}/retry`);
+    const data = unwrap<any>(response.data);
+    return {
+      jobId: typeof data === 'string' ? data : (data?.data ?? data ?? ''),
+      message: response.data?.message ?? 'Retry enqueued',
+    };
+  }
 }
