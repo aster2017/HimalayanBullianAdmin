@@ -273,6 +273,14 @@ export const MenuItems: MenuItem[] = [
         dirchange: false,
         title: "Overdue Invoices",
       },
+      {
+        path: "/reports/connectips-reconciliation",
+        type: "link",
+        active: false,
+        selected: false,
+        dirchange: false,
+        title: "ConnectIPS Recon",
+      },
     ],
   },
 
