@@ -36,6 +36,7 @@ const CreditsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 25;
+  const [pendingCount, setPendingCount] = useState(0);
 
   // Filters
   const [type, setType] = useState('');
@@ -48,6 +49,13 @@ const CreditsPage = () => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
   }, [search]);
+
+  // Fetch pending deposit count for the alert banner
+  useEffect(() => {
+    apiClient.get('/credits/deposits/pending?pageSize=1')
+      .then(r => setPendingCount(r.data?.totalCount || r.data?.data?.length || 0))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchLedger = async () => {
@@ -127,9 +135,27 @@ const CreditsPage = () => {
         <Link href="/credits/pending">
           <button className="ti-btn ti-btn-warning !text-white mt-2 md:mt-0">
             <i className="ri-time-line me-1"></i>Pending Deposits
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center justify-center w-5 h-5 ms-2 text-xs font-bold text-white bg-danger rounded-full">
+                {pendingCount > 99 ? '99+' : pendingCount}
+              </span>
+            )}
           </button>
         </Link>
       </div>
+
+      {pendingCount > 0 && (
+        <div className="alert alert-warning flex items-center gap-3 mb-4 p-4 rounded-lg border border-warning/30 bg-warning/10">
+          <i className="ri-error-warning-line text-warning text-xl flex-shrink-0"></i>
+          <div className="flex-1">
+            <span className="font-semibold text-warning">{pendingCount} cash deposit{pendingCount !== 1 ? 's' : ''} awaiting verification.</span>
+            <span className="text-[#8c9097] ms-2 text-sm">Customers cannot use these funds until approved.</span>
+          </div>
+          <Link href="/credits/pending" className="ti-btn ti-btn-sm ti-btn-warning !text-white">
+            Review Now →
+          </Link>
+        </div>
+      )}
 
       {/* Summary tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">

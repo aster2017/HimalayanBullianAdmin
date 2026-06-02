@@ -199,12 +199,27 @@ export const MenuItems: MenuItem[] = [
   {
     icon: CreditsIcon,
     title: "Credits",
-    type: "link",
+    type: "sub",
     active: false,
     selected: false,
     dirchange: false,
-    path: "/credits",
     roles: ["admin"],
+    children: [
+      {
+        path: "/credits",
+        type: "link",
+        active: false,
+        selected: false,
+        title: "Ledger",
+      },
+      {
+        path: "/credits/pending",
+        type: "link",
+        active: false,
+        selected: false,
+        title: "Pending Deposits",
+      },
+    ],
   },
 
   // Addresses Module
