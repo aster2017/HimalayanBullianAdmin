@@ -187,12 +187,15 @@ export const MenuItems: MenuItem[] = [
   {
     icon: PaymentsIcon,
     title: "Payments",
-    type: "link",
+    type: "sub",
     active: false,
     selected: false,
     dirchange: false,
-    path: "/payments",
     roles: ["admin"],
+    children: [
+      { path: "/payments",               type: "link", active: false, selected: false, title: "All Payments" },
+      { path: "/payments/store-pending", type: "link", active: false, selected: false, title: "Store Payments" },
+    ],
   },
 
   // Credits / Wallet Ledger
