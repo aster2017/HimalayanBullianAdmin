@@ -28,6 +28,38 @@ export default function TargetDetailPage() {
   const [adjustReason, setAdjustReason] = useState('');
   const [adjustSubmitting, setAdjustSubmitting] = useState(false);
 
+  // Pay at Store — mark paid
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+  const [storeNoteTarget, setStoreNoteTarget] = useState<any | null>(null);
+  const [storeNote, setStoreNote] = useState('');
+
+  const markStorePaid = async (payment: any, note?: string) => {
+    setMarkingPaid(payment.id);
+    try {
+      const r = await fetch(`${API}/targets/payments/${payment.id}/mark-store-paid`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: note || '' }),
+      });
+      const d = await r.json();
+      if (r.ok && d.success) {
+        toast.success(`✓ ${payment.paymentNumber || 'Payment'} confirmed — ${payment.gramsPurchased}g credited`);
+        setStoreNoteTarget(null);
+        // Refresh
+        const [td, pd] = await Promise.all([
+          fetch(`${API}/targets/${id}`, { headers: getAuthHeaders() }).then(r => r.json()),
+          fetch(`${API}/targets/${id}/payments`, { headers: getAuthHeaders() }).then(r => r.json()),
+        ]);
+        setTarget(td.data || td);
+        const pList = pd.data || pd;
+        setPayments(Array.isArray(pList) ? pList : pList?.items || []);
+      } else {
+        toast.error(d.message || 'Failed to confirm payment');
+      }
+    } catch { toast.error('Network error'); }
+    setMarkingPaid(null);
+  };
+
   useEffect(() => {
     if (!id) return;
     Promise.all([
@@ -166,20 +198,43 @@ export default function TargetDetailPage() {
               <div className="box-header border-b p-4"><h6 className="box-title mb-0">Payment History <span className="badge bg-primary/10 text-primary ms-2">{payments.length}</span></h6></div>
               <div className="table-responsive">
                 <table className="ti-custom-table ti-striped-table">
-                  <thead><tr><th>#</th><th>Date</th><th>Grams</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+                  <thead><tr><th>#</th><th>Date</th><th>Grams</th><th>Amount</th><th>Method</th><th>Status</th><th></th></tr></thead>
                   <tbody>
                     {payments.length === 0 ? (
-                      <tr><td colSpan={6} className="text-center py-8 text-gray-500">No payments yet</td></tr>
-                    ) : payments.map((p: any, i: number) => (
+                      <tr><td colSpan={7} className="text-center py-8 text-gray-500">No payments yet</td></tr>
+                    ) : payments.map((p: any, i: number) => {
+                      const isPayAtStore = (p.paymentMethod || '').toLowerCase().includes('store') || p.paymentMethod === 'PayAtStore';
+                      const isPending = p.status === 'Pending';
+                      return (
                       <tr key={p.id}>
                         <td className="text-sm text-gray-500">{i+1}</td>
                         <td className="text-sm">{new Date(p.paymentDate || p.paidAt || p.createdAt).toLocaleDateString()}</td>
                         <td className="text-sm font-semibold">{p.gramsPurchased ?? p.gramsAdded ?? p.grams ?? '-'}g</td>
                         <td className="text-sm font-semibold">Rs. {(p.totalAmount ?? p.amountNpr ?? p.amount ?? 0).toLocaleString()}</td>
-                        <td className="text-sm"><span className="badge bg-blue-500/10 text-blue-700 px-2 py-1 rounded">{p.paymentMethod || p.method || 'Cash'}</span></td>
-                        <td className="text-sm"><span className={`badge px-2 py-1 rounded ${p.status === 'Completed' || p.status === 'Verified' ? 'bg-green-500/10 text-green-700' : 'bg-yellow-500/10 text-yellow-700'}`}>{p.status || 'Completed'}</span></td>
+                        <td className="text-sm">
+                          <span className={`badge px-2 py-1 rounded text-xs font-semibold ${isPayAtStore ? 'bg-orange-100 text-orange-700' : 'bg-blue-500/10 text-blue-700'}`}>
+                            {p.paymentMethod || p.method || 'Cash'}
+                          </span>
+                        </td>
+                        <td className="text-sm">
+                          <span className={`badge px-2 py-1 rounded ${p.status === 'Completed' || p.status === 'Verified' ? 'bg-green-500/10 text-green-700' : p.status === 'Failed' ? 'bg-red-500/10 text-red-700' : 'bg-yellow-500/10 text-yellow-700'}`}>
+                            {p.status || 'Completed'}
+                          </span>
+                        </td>
+                        <td>
+                          {isPayAtStore && isPending && (
+                            <button
+                              onClick={() => { setStoreNoteTarget(p); setStoreNote(''); }}
+                              disabled={markingPaid === p.id}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-success hover:bg-success/90 disabled:opacity-50 px-2.5 py-1 rounded-lg whitespace-nowrap"
+                            >
+                              {markingPaid === p.id ? '…' : '✓ Mark Paid'}
+                            </button>
+                          )}
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -281,5 +336,36 @@ export default function TargetDetailPage() {
         </div>
       )}
     </div>
+
+      {/* Pay at Store — Mark Paid modal */}
+      {storeNoteTarget && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+             onClick={e => e.target === e.currentTarget && setStoreNoteTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold mb-1">Confirm Store Payment</h3>
+            <p className="text-sm text-[#8c9097] mb-4">
+              Confirm that the customer has paid{' '}
+              <strong>Rs. {(storeNoteTarget.totalAmount ?? 0).toLocaleString()}</strong> in person at an HBC location.
+            </p>
+            <div className="bg-success/5 border border-success/20 rounded-lg p-3 mb-4 text-sm space-y-1">
+              <div className="flex justify-between"><span className="text-[#8c9097]">Payment</span><span className="font-mono font-semibold">{storeNoteTarget.paymentNumber}</span></div>
+              <div className="flex justify-between"><span className="text-[#8c9097]">Grams to credit</span><span className="font-mono font-semibold text-success">+{storeNoteTarget.gramsPurchased}g</span></div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-[#8c9097] uppercase tracking-wide mb-1.5">Notes (optional)</label>
+              <input type="text" className="form-control" placeholder="e.g. Cash received, receipt #1234"
+                value={storeNote} onChange={e => setStoreNote(e.target.value)} />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setStoreNoteTarget(null)} className="ti-btn ti-btn-light">Cancel</button>
+              <button onClick={() => markStorePaid(storeNoteTarget, storeNote)}
+                disabled={markingPaid === storeNoteTarget.id}
+                className="ti-btn ti-btn-success !text-white">
+                {markingPaid === storeNoteTarget.id ? 'Confirming…' : '✓ Confirm Payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
   );
 }
