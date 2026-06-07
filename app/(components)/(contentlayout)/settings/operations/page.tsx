@@ -30,9 +30,9 @@ type AppConfig = {
 };
 
 const DEFAULT_CONFIG: AppConfig = {
-  contactPhone: '',
-  contactEmail: '',
-  contactAddress: '',
+  contactPhone: '9820999999',
+  contactEmail: 'info@asterinnovations.com',
+  contactAddress: 'Gyaneshwor, Kathmandu, Nepal',
   supportHours: 'Sun–Fri, 10:00–18:00 NPT',
   maintenanceActive: false,
   maintenanceMessage: '',
