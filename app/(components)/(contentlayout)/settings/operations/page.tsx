@@ -8,6 +8,11 @@ import toast from 'react-hot-toast';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
+type PaymentMethodConfig = {
+  enabled: boolean;
+  label: string;
+};
+
 type AppConfig = {
   contactPhone: string;
   contactEmail: string;
@@ -17,6 +22,10 @@ type AppConfig = {
   maintenanceMessage: string;
   minOrderAmount: number;
   maxOrderAmount: number;
+  paymentMethods: {
+    connectIps: PaymentMethodConfig;
+    payAtStore: PaymentMethodConfig;
+  };
 };
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -28,6 +37,10 @@ const DEFAULT_CONFIG: AppConfig = {
   maintenanceMessage: '',
   minOrderAmount: 0,
   maxOrderAmount: 0,
+  paymentMethods: {
+    connectIps: { enabled: true,  label: 'Pay via ConnectIPS' },
+    payAtStore: { enabled: false, label: 'Pay at Store' },
+  },
 };
 
 export default function OperationsSettingsPage() {
@@ -206,6 +219,133 @@ export default function OperationsSettingsPage() {
                   <label className="form-label">Max order amount (NPR, 0 = none)</label>
                   <input type="number" min="0" className="form-control font-mono" value={appConfig.maxOrderAmount} onChange={e => setAppConfig({ ...appConfig, maxOrderAmount: Number(e.target.value) || 0 })} />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Methods */}
+          <div className="box lg:col-span-2">
+            <div className="box-header flex items-center justify-between">
+              <div>
+                <h6 className="box-title mb-0">Payment methods</h6>
+                <p className="text-xs text-[#8c9097] mt-0.5">
+                  Controls which payment buttons appear on the customer&apos;s payment screen. Saves with <strong>Save app config</strong>.
+                </p>
+              </div>
+              {!appConfig.paymentMethods.connectIps.enabled && !appConfig.paymentMethods.payAtStore.enabled && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-danger/10 text-danger">
+                  <i className="bx bx-error-circle"></i>No methods enabled
+                </span>
+              )}
+            </div>
+            <div className="box-body space-y-5">
+              {/* ConnectIPS row */}
+              <div className="border border-[#e9edf4] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-500/10">
+                      <i className="bx bx-credit-card text-xl text-blue-500"></i>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">ConnectIPS</p>
+                      <p className="text-xs text-[#8c9097]">Online bank transfer via NCHL gateway</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAppConfig({
+                      ...appConfig,
+                      paymentMethods: {
+                        ...appConfig.paymentMethods,
+                        connectIps: { ...appConfig.paymentMethods.connectIps, enabled: !appConfig.paymentMethods.connectIps.enabled },
+                      },
+                    })}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                      appConfig.paymentMethods.connectIps.enabled ? 'bg-success' : 'bg-[#e9edf4]'
+                    }`}
+                    role="switch"
+                    aria-checked={appConfig.paymentMethods.connectIps.enabled}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                      appConfig.paymentMethods.connectIps.enabled ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+                <div>
+                  <label className="form-label text-xs">Button label shown to customer</label>
+                  <input
+                    type="text"
+                    className="form-control text-sm"
+                    value={appConfig.paymentMethods.connectIps.label}
+                    onChange={e => setAppConfig({
+                      ...appConfig,
+                      paymentMethods: {
+                        ...appConfig.paymentMethods,
+                        connectIps: { ...appConfig.paymentMethods.connectIps, label: e.target.value },
+                      },
+                    })}
+                    placeholder="Pay via ConnectIPS"
+                  />
+                  <p className="text-[11px] text-[#8c9097] mt-1">
+                    The app prefixes the amount: e.g. <em>&quot;Pay NPR 5200 via ConnectIPS&quot;</em> — your label is used as the base when no amount is set.
+                  </p>
+                </div>
+              </div>
+
+              {/* Pay at Store row */}
+              <div className="border border-[#e9edf4] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-amber-500/10">
+                      <i className="bx bx-buildings text-xl text-amber-500"></i>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Pay at Store</p>
+                      <p className="text-xs text-[#8c9097]">Customer visits an HBC location to pay in person</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAppConfig({
+                      ...appConfig,
+                      paymentMethods: {
+                        ...appConfig.paymentMethods,
+                        payAtStore: { ...appConfig.paymentMethods.payAtStore, enabled: !appConfig.paymentMethods.payAtStore.enabled },
+                      },
+                    })}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                      appConfig.paymentMethods.payAtStore.enabled ? 'bg-success' : 'bg-[#e9edf4]'
+                    }`}
+                    role="switch"
+                    aria-checked={appConfig.paymentMethods.payAtStore.enabled}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                      appConfig.paymentMethods.payAtStore.enabled ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+                <div>
+                  <label className="form-label text-xs">Button label shown to customer</label>
+                  <input
+                    type="text"
+                    className="form-control text-sm"
+                    value={appConfig.paymentMethods.payAtStore.label}
+                    onChange={e => setAppConfig({
+                      ...appConfig,
+                      paymentMethods: {
+                        ...appConfig.paymentMethods,
+                        payAtStore: { ...appConfig.paymentMethods.payAtStore, label: e.target.value },
+                      },
+                    })}
+                    placeholder="Pay at Store"
+                  />
+                  <p className="text-[11px] text-[#8c9097] mt-1">
+                    The app prefixes the amount: e.g. <em>&quot;Pay NPR 5200 at Store&quot;</em> — your label is used as the base when no amount is set.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2 p-3 bg-[#f8fafc] border border-[#e9edf4] rounded-lg text-[11px] text-[#8c9097]">
+                <i className="bx bx-info-circle mt-0.5 shrink-0"></i>
+                <span>Changes take effect within 30 minutes as the app refreshes its config cache on every payment screen open. Click <strong>Save app config</strong> in the section above to persist.</span>
               </div>
             </div>
           </div>
