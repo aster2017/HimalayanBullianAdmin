@@ -23,8 +23,9 @@ type AppConfig = {
   minOrderAmount: number;
   maxOrderAmount: number;
   paymentMethods: {
-    connectIps: PaymentMethodConfig;
-    payAtStore: PaymentMethodConfig;
+    connectIps:  PaymentMethodConfig;
+    payAtStore:  PaymentMethodConfig;
+    creditsNchl: PaymentMethodConfig;
   };
 };
 
@@ -38,8 +39,9 @@ const DEFAULT_CONFIG: AppConfig = {
   minOrderAmount: 0,
   maxOrderAmount: 0,
   paymentMethods: {
-    connectIps: { enabled: true,  label: 'Pay via ConnectIPS' },
-    payAtStore: { enabled: false, label: 'Pay at Store' },
+    connectIps:  { enabled: true,  label: 'Pay via ConnectIPS' },
+    payAtStore:  { enabled: false, label: 'Pay at Store' },
+    creditsNchl: { enabled: true,  label: 'Credits + ConnectIPS' },
   },
 };
 
@@ -339,6 +341,58 @@ export default function OperationsSettingsPage() {
                   />
                   <p className="text-[11px] text-[#8c9097] mt-1">
                     The app prefixes the amount: e.g. <em>&quot;Pay NPR 5200 at Store&quot;</em> — your label is used as the base when no amount is set.
+                  </p>
+                </div>
+              </div>
+
+              {/* Credits + NCHL row */}
+              <div className="border border-[#e9edf4] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-purple-500/10">
+                      <i className="bx bx-wallet text-xl text-purple-500"></i>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">Credits + ConnectIPS (NCHL)</p>
+                      <p className="text-xs text-[#8c9097]">Shown only when customer has partial credits — pays remainder via NCHL</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAppConfig({
+                      ...appConfig,
+                      paymentMethods: {
+                        ...appConfig.paymentMethods,
+                        creditsNchl: { ...appConfig.paymentMethods.creditsNchl, enabled: !appConfig.paymentMethods.creditsNchl.enabled },
+                      },
+                    })}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                      appConfig.paymentMethods.creditsNchl.enabled ? 'bg-success' : 'bg-[#e9edf4]'
+                    }`}
+                    role="switch"
+                    aria-checked={appConfig.paymentMethods.creditsNchl.enabled}
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ${
+                      appConfig.paymentMethods.creditsNchl.enabled ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+                <div>
+                  <label className="form-label text-xs">Button label shown to customer</label>
+                  <input
+                    type="text"
+                    className="form-control text-sm"
+                    value={appConfig.paymentMethods.creditsNchl.label}
+                    onChange={e => setAppConfig({
+                      ...appConfig,
+                      paymentMethods: {
+                        ...appConfig.paymentMethods,
+                        creditsNchl: { ...appConfig.paymentMethods.creditsNchl, label: e.target.value },
+                      },
+                    })}
+                    placeholder="Credits + ConnectIPS"
+                  />
+                  <p className="text-[11px] text-[#8c9097] mt-1">
+                    The app appends the shortfall amount: e.g. <em>&quot;Credits + ConnectIPS (NPR 3200)&quot;</em>. Only shown when customer has credits but not enough to pay in full.
                   </p>
                 </div>
               </div>
