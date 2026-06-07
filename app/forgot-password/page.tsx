@@ -7,20 +7,59 @@ import toast from 'react-hot-toast';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
-/**
- * Two-step in-page flow:
- *   1) "request"  — enter email → POST /auth/forgot-password (backend emails a 6-digit code)
- *   2) "reset"    — enter code + new password → POST /auth/reset-password
- * After step 2 succeeds we redirect to the login page.
- */
+function StepBar({ current }: { current: 1 | 2 }) {
+  return (
+    <div className="flex items-center gap-2 mb-8">
+      {([1, 2] as const).map((n) => {
+        const done = n < current;
+        const active = n === current;
+        return (
+          <div key={n} className="flex items-center gap-2">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+              style={
+                done
+                  ? { background: '#C8A86B', color: '#fff' }
+                  : active
+                  ? { background: 'linear-gradient(135deg, #C8A86B 0%, #a8863d 100%)', color: '#000' }
+                  : { background: '#f1f5f9', color: '#94a3b8' }
+              }
+            >
+              {done ? '✓' : n}
+            </div>
+            {n < 2 && (
+              <div className="h-0.5 w-10 rounded" style={{ background: done ? '#C8A86B' : '#e2e8f0' }} />
+            )}
+          </div>
+        );
+      })}
+      <span className="ml-2 text-xs text-[#8c9097]">Step {current} of 2</span>
+    </div>
+  );
+}
+
+function GoldButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      className="w-full py-3 px-6 rounded-xl text-sm font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+      style={{ background: 'linear-gradient(135deg, #C8A86B 0%, #a8863d 100%)' }}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function ForgotPasswordPage() {
   const router = useRouter();
-  const [step, setStep] = useState<'request' | 'reset'>('request');
+  const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const requestCode = async (e: React.FormEvent) => {
@@ -34,10 +73,8 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email: email.trim() }),
       });
       const d = await r.json();
-      // Backend deliberately returns success even for unknown emails
-      // (anti-enumeration), so we always advance to step 2.
       toast.success(d?.message || 'If that email exists, we sent a reset code.');
-      setStep('reset');
+      setStep(2);
     } catch {
       toast.error('Network error — please try again.');
     } finally { setBusy(false); }
@@ -45,7 +82,7 @@ export default function ForgotPasswordPage() {
 
   const resetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim()) { toast.error('Enter the 6-digit code from the email'); return; }
+    if (!code.trim()) { toast.error('Enter the 6-digit code'); return; }
     if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     if (newPassword !== confirmPassword) { toast.error('Passwords do not match'); return; }
     setBusy(true);
@@ -53,12 +90,7 @@ export default function ForgotPasswordPage() {
       const r = await fetch(`${API}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim(),
-          code: code.trim(),
-          newPassword,
-          confirmPassword,
-        }),
+        body: JSON.stringify({ email: email.trim(), code: code.trim(), newPassword, confirmPassword }),
       });
       const d = await r.json();
       if (!r.ok || d?.success === false) {
@@ -73,115 +105,161 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="container">
-      <div className="flex justify-center authentication authentication-basic items-center min-h-screen text-defaultsize text-defaulttextcolor">
-        <div className="grid grid-cols-12 w-full">
-          <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-3 sm:col-span-2"></div>
-          <div className="xxl:col-span-4 xl:col-span-4 lg:col-span-4 md:col-span-6 sm:col-span-8 col-span-12 px-4">
-            <div className="box shadow-sm p-6 my-8">
-              <p className="text-2xl font-semibold mb-2">Forgot password?</p>
-              <p className="text-[#8c9097] mb-6 text-sm">
-                {step === 'request'
-                  ? 'Enter your account email — we\'ll send a 6-digit code.'
-                  : `We sent a code to ${email}. Enter it below with your new password.`}
-              </p>
-
-              {step === 'request' && (
-                <form onSubmit={requestCode} className="space-y-4">
-                  <div>
-                    <label className="form-label">Email</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      autoComplete="email"
-                      className="form-control form-control-lg"
-                      placeholder="you@example.com"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={busy || !email.trim()}
-                    className="ti-btn ti-btn-primary-full !text-white w-full !opacity-100 disabled:!opacity-60"
-                  >
-                    {busy ? 'Sending…' : 'Send reset code'}
-                  </button>
-                </form>
-              )}
-
-              {step === 'reset' && (
-                <form onSubmit={resetPassword} className="space-y-4">
-                  <div>
-                    <label className="form-label">6-digit code</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="\d{6}"
-                      maxLength={6}
-                      value={code}
-                      onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
-                      className="form-control form-control-lg font-mono tracking-widest text-center"
-                      placeholder="······"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">New password</label>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      autoComplete="new-password"
-                      minLength={6}
-                      className="form-control form-control-lg"
-                      placeholder="At least 6 characters"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Confirm new password</label>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      autoComplete="new-password"
-                      minLength={6}
-                      className="form-control form-control-lg"
-                      required
-                    />
-                  </div>
-                  <label className="flex items-center gap-2 text-sm text-[#8c9097]">
-                    <input
-                      type="checkbox"
-                      checked={showPassword}
-                      onChange={e => setShowPassword(e.target.checked)}
-                    />
-                    Show passwords
-                  </label>
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className="ti-btn ti-btn-primary-full !text-white w-full !opacity-100 disabled:!opacity-60"
-                  >
-                    {busy ? 'Resetting…' : 'Reset password'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setStep('request'); setCode(''); }}
-                    className="text-sm text-primary hover:underline w-full text-center"
-                  >
-                    ← Use a different email
-                  </button>
-                </form>
-              )}
-
-              <div className="mt-6 pt-4 border-t border-defaultborder text-center text-sm">
-                Remembered it? <Link href="/" className="text-primary font-semibold">Sign in</Link>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-bodybg p-6">
+      <div className="w-full max-w-[420px]">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <img src="/assets/images/brand-logos/desktop-logo.png" alt="HBC" style={{ height: 48 }} className="dark:hidden" />
+          <img src="/assets/images/brand-logos/desktop-dark.png" alt="HBC" style={{ height: 48 }} className="hidden dark:block" />
+          <p className="mt-2 text-[10px] font-bold tracking-[0.2em]" style={{ color: '#C8A86B', fontFamily: 'monospace' }}>
+            HIMALAYAN BULLION COMPANY
+          </p>
         </div>
+
+        <StepBar current={step} />
+
+        {/* ── Step 1: Request reset code ── */}
+        {step === 1 && (
+          <>
+            <h2 className="text-xl font-bold text-defaulttextcolor dark:text-white mb-1">Forgot your password?</h2>
+            <p className="text-sm text-[#8c9097] mb-6">
+              Enter your account email and we'll send you a 6-digit reset code.
+            </p>
+            <form onSubmit={requestCode} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor dark:text-white mb-1.5">
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  className="form-control form-control-lg w-full !rounded-xl"
+                  placeholder="you@example.com"
+                  required
+                />
+              </div>
+              <GoldButton disabled={busy || !email.trim()}>
+                {busy ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Sending…
+                  </span>
+                ) : 'Send reset code'}
+              </GoldButton>
+            </form>
+          </>
+        )}
+
+        {/* ── Step 2: Enter code + new password ── */}
+        {step === 2 && (
+          <>
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-3"
+                   style={{ background: '#C8A86B22' }}>
+                📧
+              </div>
+              <h2 className="text-xl font-bold text-defaulttextcolor dark:text-white mb-1">Check your email</h2>
+              <p className="text-sm text-[#8c9097]">
+                We sent a 6-digit code to <strong>{email}</strong>
+              </p>
+            </div>
+
+            <form onSubmit={resetPassword} className="space-y-5">
+              {/* Code input */}
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor dark:text-white mb-1.5 text-center">
+                  Reset Code
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  className="form-control form-control-lg w-full !rounded-xl text-center tracking-[0.6em] text-2xl font-mono"
+                  placeholder="000000"
+                  autoFocus
+                />
+              </div>
+
+              {/* New password */}
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor dark:text-white mb-1.5">
+                  New Password
+                </label>
+                <div className="input-group">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    className="form-control form-control-lg !rounded-s-xl !border-e-0"
+                    placeholder="Min. 6 characters"
+                    required
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="ti-btn ti-btn-light !rounded-e-xl !mb-0 border border-s-0 border-inputborder">
+                    <i className={`${showPassword ? 'ri-eye-line' : 'ri-eye-off-line'} align-middle`} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm password */}
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor dark:text-white mb-1.5">
+                  Confirm New Password
+                </label>
+                <div className="input-group">
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
+                    className="form-control form-control-lg !rounded-s-xl !border-e-0"
+                    placeholder="Re-enter new password"
+                    required
+                  />
+                  <button type="button" onClick={() => setShowConfirm(!showConfirm)}
+                    className="ti-btn ti-btn-light !rounded-e-xl !mb-0 border border-s-0 border-inputborder">
+                    <i className={`${showConfirm ? 'ri-eye-line' : 'ri-eye-off-line'} align-middle`} />
+                  </button>
+                </div>
+              </div>
+
+              <GoldButton disabled={busy || code.length !== 6}>
+                {busy ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Resetting…
+                  </span>
+                ) : 'Reset password'}
+              </GoldButton>
+
+              <button
+                type="button"
+                onClick={() => { setStep(1); setCode(''); }}
+                className="w-full text-sm text-center text-[#8c9097] hover:underline"
+              >
+                ← Use a different email
+              </button>
+            </form>
+          </>
+        )}
+
+        <p className="text-center text-xs text-[#8c9097] mt-8">
+          Remembered it?{' '}
+          <Link href="/" className="font-semibold hover:underline" style={{ color: '#C8A86B' }}>
+            Sign In
+          </Link>
+        </p>
       </div>
     </div>
   );
