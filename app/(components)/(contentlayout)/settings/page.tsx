@@ -144,7 +144,12 @@ const SettingsPage = () => {
                 </div>
                 <div>
                   <p className="text-[#8c9097] text-[0.813rem] mb-1">Manage Sync</p>
-                  <Link href="/sync" className="ti-btn ti-btn-sm ti-btn-light !opacity-100">Open Sync Dashboard</Link>
+                  <Link
+                    href="/sync"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[0.813rem] font-medium rounded-md border border-[#e9edf4] text-defaulttextcolor hover:bg-light hover:border-defaultborder transition-colors"
+                  >
+                    <i className="bx bx-sync text-sm"></i>Open Sync Dashboard
+                  </Link>
                 </div>
                 <div>
                   <p className="text-[#8c9097] text-[0.813rem] mb-1">Account Info</p>
@@ -215,17 +220,19 @@ const SettingsPage = () => {
         {/* Cache Management */}
         <div className="col-span-12">
           <div className="box">
-            <div className="box-header">
-              <h4 className="box-title">Cache Management</h4>
-              <p className="text-[0.75rem] text-[#8c9097] mt-1">
-                Force-refresh Redis cache groups. Use after manual data changes that bypass the Zoho sync.
-              </p>
+            <div className="box-header flex items-center justify-between">
+              <div>
+                <h4 className="box-title">Cache Management</h4>
+                <p className="text-[0.75rem] text-[#8c9097] mt-0.5">
+                  Force-refresh Redis cache groups. Use after manual data changes that bypass the Zoho sync.
+                </p>
+              </div>
             </div>
             <div className="box-body">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
 
                 {/* Products */}
-                <div className="border rounded-lg p-4 flex flex-col gap-3">
+                <div className="border border-[#e9edf4] rounded-lg p-4 flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded bg-primary/10 text-primary">
                       <i className="bx bx-package text-xl"></i>
@@ -243,16 +250,17 @@ const SettingsPage = () => {
                   <button
                     onClick={() => handleFlush('products')}
                     disabled={flushing !== null}
-                    className="ti-btn ti-btn-sm ti-btn-primary-full !text-white w-full"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[0.813rem] font-medium rounded-md text-white w-full disabled:opacity-60 cursor-pointer"
+                    style={{ background: '#3b82f6' }}
                   >
                     {flushing === 'products'
-                      ? <><span className="loading loading-spinner loading-xs mr-1"></span>Flushing…</>
-                      : <><i className="bx bx-refresh mr-1"></i>Flush</>}
+                      ? <><i className="bx bx-loader-alt bx-spin text-sm"></i>Flushing…</>
+                      : <><i className="bx bx-refresh text-sm"></i>Flush Products &amp; Catalog</>}
                   </button>
                 </div>
 
                 {/* Settings */}
-                <div className="border rounded-lg p-4 flex flex-col gap-3">
+                <div className="border border-[#e9edf4] rounded-lg p-4 flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded bg-warning/10 text-warning">
                       <i className="bx bx-cog text-xl"></i>
@@ -270,16 +278,17 @@ const SettingsPage = () => {
                   <button
                     onClick={() => handleFlush('settings')}
                     disabled={flushing !== null}
-                    className="ti-btn ti-btn-sm ti-btn-warning-full !text-white w-full"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[0.813rem] font-medium rounded-md text-white w-full disabled:opacity-60 cursor-pointer"
+                    style={{ background: '#f59e0b' }}
                   >
                     {flushing === 'settings'
-                      ? <><span className="loading loading-spinner loading-xs mr-1"></span>Flushing…</>
-                      : <><i className="bx bx-refresh mr-1"></i>Flush</>}
+                      ? <><i className="bx bx-loader-alt bx-spin text-sm"></i>Flushing…</>
+                      : <><i className="bx bx-refresh text-sm"></i>Flush App Settings</>}
                   </button>
                 </div>
 
                 {/* Rates */}
-                <div className="border rounded-lg p-4 flex flex-col gap-3">
+                <div className="border border-[#e9edf4] rounded-lg p-4 flex flex-col gap-3">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded bg-success/10 text-success">
                       <i className="bx bx-trending-up text-xl"></i>
@@ -297,11 +306,12 @@ const SettingsPage = () => {
                   <button
                     onClick={() => handleFlush('rates')}
                     disabled={flushing !== null}
-                    className="ti-btn ti-btn-sm ti-btn-success-full !text-white w-full"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[0.813rem] font-medium rounded-md text-white w-full disabled:opacity-60 cursor-pointer"
+                    style={{ background: '#10b981' }}
                   >
                     {flushing === 'rates'
-                      ? <><span className="loading loading-spinner loading-xs mr-1"></span>Flushing…</>
-                      : <><i className="bx bx-refresh mr-1"></i>Flush</>}
+                      ? <><i className="bx bx-loader-alt bx-spin text-sm"></i>Flushing…</>
+                      : <><i className="bx bx-refresh text-sm"></i>Flush Silver Rates</>}
                   </button>
                 </div>
               </div>
@@ -311,18 +321,23 @@ const SettingsPage = () => {
                 <div>
                   <p className="font-semibold text-sm text-danger">Flush All Caches</p>
                   <p className="text-[0.75rem] text-[#8c9097]">
-                    Removes all {13} known cache keys. The next request on each endpoint will hit the database.
-                    {lastFlushed.all && <span className="text-success ml-2"><i className="bx bx-check-circle"></i> Last flushed at {lastFlushed.all}</span>}
+                    Removes all 13 known cache keys. The next request on each endpoint will hit the database.
+                    {lastFlushed.all && (
+                      <span className="text-success ml-2">
+                        <i className="bx bx-check-circle"></i> Last flushed at {lastFlushed.all}
+                      </span>
+                    )}
                   </p>
                 </div>
                 <button
                   onClick={() => handleFlush('all')}
                   disabled={flushing !== null}
-                  className="ti-btn ti-btn-sm ti-btn-danger-full !text-white shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-[0.813rem] font-medium rounded-md text-white shrink-0 disabled:opacity-60 cursor-pointer"
+                  style={{ background: '#ef4444' }}
                 >
                   {flushing === 'all'
-                    ? <><span className="loading loading-spinner loading-xs mr-1"></span>Flushing all…</>
-                    : <><i className="bx bx-trash mr-1"></i>Flush All Caches</>}
+                    ? <><i className="bx bx-loader-alt bx-spin text-sm"></i>Flushing all…</>
+                    : <><i className="bx bx-trash text-sm"></i>Flush All Caches</>}
                 </button>
               </div>
             </div>
