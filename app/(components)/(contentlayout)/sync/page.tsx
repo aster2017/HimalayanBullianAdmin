@@ -4,9 +4,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { SyncService, SyncHealth, SyncError, SyncLog, SyncLogFilter, EntityMapStats } from '@/shared/services/syncService';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 export default function SyncDashboardPage() {
   useProtectedRoute();
+  const { prompt } = useDialog();
 
   const [health, setHealth] = useState<SyncHealth | null>(null);
   const [errors, setErrors] = useState<SyncError[]>([]);
@@ -129,7 +131,7 @@ export default function SyncDashboardPage() {
 
   /** Mark a dead-letter row as manually Resolved (admin fixed it elsewhere). */
   const handleResolveErrorRow = async (errorId: string, label: string) => {
-    const notes = window.prompt(`Resolve "${label}"?\n\nOptional resolution notes (left blank if you just want it off the list):`);
+    const notes = await prompt('Add optional resolution notes, or leave blank to simply remove it from the list.', { title: `Resolve "${label}"?`, confirmLabel: 'Resolve', placeholder: 'Resolution notes (optional)...' });
     if (notes === null) return; // user cancelled
     setRetryingId(errorId);
     try {
@@ -145,7 +147,7 @@ export default function SyncDashboardPage() {
 
   /** Mark a dead-letter row as Ignored (known broken, won't retry). */
   const handleIgnoreErrorRow = async (errorId: string, label: string) => {
-    const notes = window.prompt(`Ignore "${label}"?\n\nOptional reason (e.g. "stale test data"):`);
+    const notes = await prompt('Add an optional reason for ignoring this error (e.g. "stale test data").', { title: `Ignore "${label}"?`, variant: 'warning', confirmLabel: 'Ignore', placeholder: 'Reason (optional)...' });
     if (notes === null) return;
     setRetryingId(errorId);
     try {

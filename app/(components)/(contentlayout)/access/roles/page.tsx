@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
@@ -68,6 +69,7 @@ const SKELETON_ROWS = Array.from({ length: 5 });
 
 export default function RolesPage() {
   useProtectedRoute();
+  const { confirm } = useDialog();
   const [roles, setRoles] = useState<Role[]>([]);
   const [permGroups, setPermGroups] = useState<PermissionGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,7 +200,7 @@ export default function RolesPage() {
   };
 
   const deleteRole = async (role: Role) => {
-    if (!confirm(`Delete role "${role.name}"? This cannot be undone.`)) return;
+    if (!await confirm('This action cannot be undone. Users assigned to this role will lose its permissions.', { title: `Delete role "${role.name}"?`, variant: 'danger', confirmLabel: 'Delete' })) return;
     try {
       const r = await fetch(`${API}/admin/roles/${role.id}`, { method: 'DELETE', headers: getAuthHeaders() });
       const d = await r.json();

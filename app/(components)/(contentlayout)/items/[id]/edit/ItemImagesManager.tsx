@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbcapi.semis.app/api';
 // API serves images from the same host but without the /api prefix.
@@ -22,6 +23,7 @@ type Img = {
  * Self-contained — no Redux; uses fetch with the existing auth header helper.
  */
 export default function ItemImagesManager({ itemId }: { itemId: string }) {
+  const { confirm } = useDialog();
   const [images, setImages] = useState<Img[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -97,7 +99,7 @@ export default function ItemImagesManager({ itemId }: { itemId: string }) {
   };
 
   const remove = async (imageId: string) => {
-    if (!confirm('Delete this image? This cannot be undone.')) return;
+    if (!await confirm('This image will be permanently deleted and cannot be recovered.', { title: 'Delete Image', variant: 'danger', confirmLabel: 'Delete' })) return;
     setActing(imageId);
     try {
       const r = await fetch(`${API}/items/${itemId}/images/${imageId}`, {

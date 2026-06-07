@@ -24,7 +24,7 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 			const rawRole = auth.user.roles[0];
 			// Map backend PascalCase roles to the nav's two-tier "admin" / "user" system
 			const navRole = ['SuperAdmin', 'Admin', 'Manager', 'Staff'].includes(rawRole) ? 'admin' : 'user';
-			const filteredItems = getMenuItemsByRole(navRole);
+			const filteredItems = getMenuItemsByRole(navRole, rawRole);
 			setMenuitems(filteredItems);
 		}
 	}, [auth?.user?.roles]);

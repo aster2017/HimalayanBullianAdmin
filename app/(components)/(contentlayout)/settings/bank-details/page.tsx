@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
@@ -44,6 +45,7 @@ const emptyWallet = (): Wallet => ({ name: '', id: '', isActive: true });
 
 export default function BankDetailsPage() {
   useProtectedRoute();
+  const { confirm } = useDialog();
   const [config, setConfig] = useState<Config>({ accounts: [], wallets: [], instructions: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -94,8 +96,8 @@ export default function BankDetailsPage() {
     setConfig({ ...config, accounts });
   };
 
-  const removeAccount = (idx: number) => {
-    if (!confirm('Remove this bank account?')) return;
+  const removeAccount = async (idx: number) => {
+    if (!await confirm('This bank account will be removed from the payment options.', { title: 'Remove Bank Account', variant: 'danger', confirmLabel: 'Remove' })) return;
     setConfig({ ...config, accounts: config.accounts.filter((_, i) => i !== idx) });
   };
 

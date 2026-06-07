@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
@@ -65,6 +66,7 @@ const PAGE_SIZE = 25;
 
 export default function InvoiceOverduePage() {
   useProtectedRoute();
+  const { confirm } = useDialog();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [emailing, setEmailing] = useState<string | null>(null);
@@ -95,7 +97,7 @@ export default function InvoiceOverduePage() {
   useEffect(() => { load(); }, []);
 
   const sendReminder = async (invoiceId: string, customerEmail: string) => {
-    if (!window.confirm(`Email the invoice to ${customerEmail}?`)) return;
+    if (!await confirm(`Send a payment reminder to ${customerEmail}?`, { title: 'Send Reminder', confirmLabel: 'Send' })) return;
     setEmailing(invoiceId);
     try {
       const r = await fetch(`${API}/invoices/${invoiceId}/send-email`, { method: 'POST', headers: getAuthHeaders() });

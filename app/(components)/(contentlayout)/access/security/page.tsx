@@ -6,6 +6,7 @@ import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
@@ -42,6 +43,7 @@ const SKELETON_ROWS = Array.from({ length: 8 });
 
 export default function SecurityPage() {
   useProtectedRoute();
+  const { confirm } = useDialog();
   const [locked, setLocked] = useState<LockedAccount[]>([]);
   const [lockedLoading, setLockedLoading] = useState(true);
   const [unlocking, setUnlocking] = useState<string | null>(null);
@@ -97,7 +99,7 @@ export default function SecurityPage() {
   useEffect(() => { loadAttempts(); }, [page, pageSize, onlyFailed, search.value, ipDebounced]);
 
   const unlock = async (userId: string, email: string) => {
-    if (!window.confirm(`Unlock ${email}?`)) return;
+    if (!await confirm('The account lockout will be lifted immediately.', { title: `Unlock ${email}?`, variant: 'warning', confirmLabel: 'Unlock' })) return;
     setUnlocking(userId);
     try {
       const r = await fetch(`${API}/admin/security/unlock/${userId}`, { method: 'POST', headers: getAuthHeaders() });

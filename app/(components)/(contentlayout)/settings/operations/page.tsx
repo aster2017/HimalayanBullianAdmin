@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
@@ -31,7 +32,7 @@ type AppConfig = {
 
 const DEFAULT_CONFIG: AppConfig = {
   contactPhone: '9820999999',
-  contactEmail: 'info@asterinnovations.com',
+  contactEmail: 'info@himalayanbullion.com',
   contactAddress: 'Gyaneshwor, Kathmandu, Nepal',
   supportHours: 'Sun–Fri, 10:00–18:00 NPT',
   maintenanceActive: false,
@@ -47,6 +48,7 @@ const DEFAULT_CONFIG: AppConfig = {
 
 export default function OperationsSettingsPage() {
   useProtectedRoute();
+  const { confirm } = useDialog();
   const [creditsEnabled, setCreditsEnabled] = useState(true);
   const [cipsEnv, setCipsEnv] = useState<'UAT' | 'Production'>('UAT');
   const [appConfig, setAppConfig] = useState<AppConfig>(DEFAULT_CONFIG);
@@ -90,7 +92,7 @@ export default function OperationsSettingsPage() {
   };
 
   const saveEnv = async (next: 'UAT' | 'Production') => {
-    if (next === 'Production' && !confirm('Switch ConnectIPS to PRODUCTION? Real money will move. Confirm?')) return;
+    if (next === 'Production' && !await confirm('Real money will move. This switches ConnectIPS to live mode and cannot be undone without support.', { title: 'Switch to Production?', variant: 'danger', confirmLabel: 'Switch to Production' })) return;
     setSavingEnv(true);
     try {
       const r = await fetch(`${API}/settings/connectips-env`, {

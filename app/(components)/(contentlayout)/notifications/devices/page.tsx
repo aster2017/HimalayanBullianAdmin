@@ -7,6 +7,7 @@ import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch';
 import { Pagination } from '@/shared/components/Pagination';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
@@ -25,6 +26,7 @@ type Device = {
 
 export default function DevicesPage() {
   useProtectedRoute();
+  const { confirm } = useDialog();
   const [rows, setRows] = useState<Device[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -52,7 +54,7 @@ export default function DevicesPage() {
   useEffect(() => { load(); }, [page, pageSize, onlyActive, search.value]);
 
   const revoke = async (id: string, label: string) => {
-    if (!window.confirm(`Revoke this device for ${label}? They'll need to re-open the app to re-register.`)) return;
+    if (!await confirm(`The user will need to re-open the app to re-register their device.`, { title: `Revoke device for ${label}?`, variant: 'warning', confirmLabel: 'Revoke' })) return;
     setRevoking(id);
     try {
       const r = await fetch(`${API}/push/admin/devices/${id}`, { method: 'DELETE', headers: getAuthHeaders() });

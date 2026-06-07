@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
 
@@ -125,6 +126,7 @@ function ViewBtn({href}: {href:string}) {
 // ── page ──────────────────────────────────────────────────────────────────────
 export default function CustomerDetailPage() {
   useProtectedRoute();
+  const { confirm } = useDialog();
   const { id } = useParams();
   const router  = useRouter();
 
@@ -213,7 +215,7 @@ export default function CustomerDetailPage() {
 
   const forceVerifyEmail = async ()=>{
     if(!id)return;
-    if(!window.confirm('Override the OTP and mark this email as verified?'))return;
+    if(!await confirm('This will bypass the OTP check and mark the email as verified.', { title: 'Force Verify Email?', variant: 'warning', confirmLabel: 'Force Verify' }))return;
     setActing('force-verify');
     try{
       const r=await fetch(`${API}/auth/admin/force-verify-email/${id}`,{method:'POST',headers:getAuthHeaders()});

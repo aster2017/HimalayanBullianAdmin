@@ -6,6 +6,7 @@ import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { useRouter, useParams } from 'next/navigation';
 import { fetchItemById, deleteItem, fetchStockHistory, adjustStock, clearError, clearItemDetail } from '@/shared/redux/itemsSlice';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 import { StockStatus } from '@/shared/types';
 import apiClient from '@/shared/services/apiClient';
 
@@ -57,6 +58,7 @@ function InfoGrid({ fields }: { fields: {label:string; value:React.ReactNode}[] 
 
 export default function ItemDetailPage() {
   useProtectedRoute();
+  const { confirm } = useDialog();
   const dispatch   = useAppDispatch();
   const router     = useRouter();
   const params     = useParams();
@@ -107,7 +109,7 @@ export default function ItemDetailPage() {
   };
 
   const handleDeleteImage = async (imageId: string)=>{
-    if (!confirm('Delete this image?')) return;
+    if (!await confirm('This image will be permanently deleted.', { title: 'Delete Image', variant: 'danger', confirmLabel: 'Delete' })) return;
     try { await apiClient.delete(`/items/${itemId}/images/${imageId}`); toast.success('Image deleted'); await loadImages(); }
     catch { toast.error('Failed to delete image'); }
   };

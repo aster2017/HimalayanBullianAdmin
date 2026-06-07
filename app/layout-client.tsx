@@ -5,6 +5,7 @@ import store from '@/shared/redux/store';
 import PrelineScript from './PrelineScript';
 import { useEffect, useState } from 'react';
 import { Initialload } from '@/shared/contextapi';
+import { DialogProvider } from '@/shared/context/DialogContext';
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
   const [pageloading, setpageloading] = useState(false);
@@ -41,7 +42,9 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
   return (
     <Provider store={store}>
       <Initialload.Provider value={{ pageloading, setpageloading }}>
-        {children}
+        <DialogProvider>
+          {children}
+        </DialogProvider>
       </Initialload.Provider>
       <PrelineScript />
     </Provider>

@@ -34,8 +34,11 @@ export interface MenuItem {
   target?: string;
   dirchange?: boolean;
   badge?: React.ReactNode;
+  badgetxt?: string;
+  class?: string;
   children?: MenuItem[];
-  roles?: string[]; // For permission-based filtering
+  roles?: string[];         // role-based visibility ("admin" | "user")
+  superAdminOnly?: boolean; // when true, only shown to SuperAdmin role
 }
 
 /**
@@ -362,12 +365,15 @@ export const MenuItems: MenuItem[] = [
   {
     icon: SettingsIcon,
     title: "Settings",
-    type: "link",
+    type: "sub",
     active: false,
     selected: false,
     dirchange: false,
-    path: "/settings",
     roles: ["admin", "user"],
+    children: [
+      { path: "/settings", type: "link", active: false, selected: false, dirchange: false, title: "General" },
+      { path: "/settings/notifications", type: "link", active: false, selected: false, dirchange: false, title: "Notifications", superAdminOnly: true },
+    ],
   },
 
   // Help Section
@@ -393,28 +399,29 @@ export const MenuItems: MenuItem[] = [
  * @param role - User role ("admin" or "user")
  * @returns Filtered menu items
  */
-export const getMenuItemsByRole = (role: string = "user"): MenuItem[] => {
-  return MenuItems.map((item) => {
-    // Include menu titles
-    if (!item.type) return item;
+export const getMenuItemsByRole = (role: string = "user", rawRole: string = ""): MenuItem[] => {
+  const isSuperAdmin = rawRole === "SuperAdmin";
 
-    // If no roles specified, include for all users
+  const filterChildren = (children: MenuItem[]): MenuItem[] =>
+    children.filter(child => {
+      if (child.superAdminOnly && !isSuperAdmin) return false;
+      if (child.roles && !child.roles.includes(role)) return false;
+      return true;
+    });
+
+  return MenuItems.map((item) => {
+    if (!item.type) return item;
     if (!item.roles) return item;
 
-    // Filter based on role
-    if (item.roles.includes(role)) {
-      // If it's a sub-menu, filter children recursively
-      if (item.children) {
-        return {
-          ...item,
-          children: item.children.filter(
-            (child) => !child.roles || child.roles.includes(role)
-          ),
-        };
-      }
-      return item;
+    if (!item.roles.includes(role)) return null;
+
+    if (item.children) {
+      const filteredChildren = filterChildren(item.children);
+      // Hide sub-menu entirely if all children are filtered out
+      if (filteredChildren.length === 0) return null;
+      return { ...item, children: filteredChildren };
     }
 
-    return null;
+    return item;
   }).filter((item) => item !== null) as MenuItem[];
 };

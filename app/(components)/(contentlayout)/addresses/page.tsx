@@ -6,9 +6,11 @@ import { fetchAddresses, deleteAddress } from '@/shared/redux/addressesSlice';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import Seo from '@/shared/layout-components/seo/seo';
 import Link from 'next/link';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const AddressesPage = () => {
   useProtectedRoute();
+  const { confirm } = useDialog();
 
   const dispatch = useAppDispatch();
   const { items, loading, error } = useAppSelector((state) => state.addresses);
@@ -30,10 +32,9 @@ const AddressesPage = () => {
     );
   }, [items, search]);
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this address?')) {
-      dispatch(deleteAddress(id));
-    }
+  const handleDelete = async (id: string) => {
+    if (!await confirm('This address will be permanently removed.', { title: 'Delete Address', variant: 'danger', confirmLabel: 'Delete' })) return;
+    dispatch(deleteAddress(id));
   };
 
   return (

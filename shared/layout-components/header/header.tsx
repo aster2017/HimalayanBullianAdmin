@@ -7,7 +7,7 @@ import store from '@/shared/redux/store';
 import { useAppSelector, useAppDispatch } from '@/shared/redux/hooks';
 import { logout } from '@/shared/redux/authSlice';
 import { useRouter } from 'next/navigation';
-import Modalsearch from '../modal-search/modalsearch';
+import GlobalSearch from '@/shared/components/GlobalSearch/GlobalSearch';
 import { basePath } from '@/next.config';
 
 const Header = ({ local_varaiable, ThemeChanger }: any) => {
@@ -16,6 +16,7 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
   const router = useRouter();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const toggleFullscreen = () => {
     if (!isFullscreen) {
@@ -35,6 +36,17 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
     const handleResize = () => {};
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(s => !s);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, []);
 
   function menuClose() {
@@ -243,8 +255,13 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
 
               {/* Search */}
               <div className="header-element py-[1rem] md:px-[0.65rem] px-2 header-search">
-                <button aria-label="button" type="button" data-hs-overlay="#search-modal"
-                  className="inline-flex flex-shrink-0 justify-center items-center gap-2 rounded-full font-medium focus:ring-offset-0 focus:ring-offset-white transition-all text-xs dark:bg-bgdark dark:hover:bg-black/20 dark:text-[#8c9097] dark:text-white/50 dark:hover:text-white dark:focus:ring-white/10 dark:focus:ring-offset-white/10">
+                <button
+                  aria-label="Open search"
+                  type="button"
+                  onClick={() => setSearchOpen(true)}
+                  className="inline-flex flex-shrink-0 justify-center items-center gap-2 rounded-full font-medium focus:ring-offset-0 focus:ring-offset-white transition-all text-xs dark:bg-bgdark dark:hover:bg-black/20 dark:text-[#8c9097] dark:text-white/50 dark:hover:text-white dark:focus:ring-white/10 dark:focus:ring-offset-white/10"
+                  title="Search (⌘K)"
+                >
                   <i className="bx bx-search-alt-2 header-link-icon"></i>
                 </button>
               </div>
@@ -311,7 +328,7 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
           </div>
         </nav>
       </div>
-      <Modalsearch />
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </Fragment>
   );
 };

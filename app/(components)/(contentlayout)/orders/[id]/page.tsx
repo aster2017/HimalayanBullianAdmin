@@ -10,9 +10,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import apiClient from '@/shared/services/apiClient';
 import toast from 'react-hot-toast';
+import { useDialog } from '@/shared/context/DialogContext';
 
 const OrderDetailPage = () => {
   useProtectedRoute();
+  const { confirm } = useDialog();
 
   const params = useParams();
   const id = params.id as string;
@@ -30,12 +32,11 @@ const OrderDetailPage = () => {
     }
   }, [dispatch, id]);
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this order?')) {
-      dispatch(deleteOrder(id)).then(() => {
-        router.push('/orders');
-      });
-    }
+  const handleDelete = async () => {
+    if (!await confirm('This order will be permanently deleted and cannot be recovered.', { title: 'Delete Order', variant: 'danger', confirmLabel: 'Delete' })) return;
+    dispatch(deleteOrder(id)).then(() => {
+      router.push('/orders');
+    });
   };
 
   /** Generic action runner — posts to an endpoint, shows toast, refetches. */
@@ -43,9 +44,9 @@ const OrderDetailPage = () => {
     label: string,
     endpoint: string,
     successMsg: string,
-    confirm?: string
+    confirmMsg?: string
   ) => {
-    if (confirm && !window.confirm(confirm)) return;
+    if (confirmMsg && !await confirm(confirmMsg, { title: 'Confirm Action' })) return;
     setActionBusy(label);
     try {
       const r = await apiClient.post(endpoint);
