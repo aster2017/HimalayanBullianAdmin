@@ -20,10 +20,19 @@ export class OrderService {
   /**
    * Get user's orders with pagination
    */
-  static async getOrders(page: number = 1, pageSize: number = 20, status?: OrderStatus, search?: string): Promise<PagedResult<SalesOrder>> {
+  static async getOrders(
+    page: number = 1,
+    pageSize: number = 20,
+    status?: OrderStatus | string,
+    search?: string,
+    dateFrom?: string,
+    dateTo?: string,
+  ): Promise<PagedResult<SalesOrder>> {
     const params: any = { page, pageSize };
     if (status) params.status = status;
     if (search) params.search = search;
+    if (dateFrom) params.dateFrom = dateFrom;
+    if (dateTo) params.dateTo = dateTo;
 
     const response = await apiClient.get<ApiResponse<PagedResult<SalesOrder>>>('/orders', { params });
     return response.data.data!;

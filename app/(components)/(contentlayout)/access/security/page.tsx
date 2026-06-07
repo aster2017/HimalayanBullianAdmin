@@ -1,10 +1,9 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { useDebouncedSearch } from '@/shared/hooks/useDebouncedSearch';
-import { Pagination } from '@/shared/components/Pagination';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 
@@ -28,6 +27,19 @@ type Attempt = {
   attemptedAt: string;
 };
 
+const AVATAR_COLORS = ['#C8A86B','#2563eb','#7c3aed','#059669','#dc2626','#d97706','#0891b2','#4f46e5'];
+function avatarBg(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
+}
+
+const SKELETON_ROWS = Array.from({ length: 8 });
+
 export default function SecurityPage() {
   useProtectedRoute();
   const [locked, setLocked] = useState<LockedAccount[]>([]);
@@ -42,6 +54,16 @@ export default function SecurityPage() {
   const [onlyFailed, setOnlyFailed] = useState(true);
   const search = useDebouncedSearch('', 300);
   const [ipFilter, setIpFilter] = useState('');
+  const [ipDebounced, setIpDebounced] = useState('');
+  const ipTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    clearTimeout(ipTimerRef.current);
+    ipTimerRef.current = setTimeout(() => setIpDebounced(ipFilter), 350);
+    return () => clearTimeout(ipTimerRef.current);
+  }, [ipFilter]);
+
+  const hasTextFilter = !!(search.immediate || ipFilter);
 
   const loadLocked = async () => {
     setLockedLoading(true);
@@ -59,7 +81,7 @@ export default function SecurityPage() {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (onlyFailed) params.set('onlyFailed', 'true');
       if (search.value.trim()) params.set('email', search.value.trim());
-      if (ipFilter.trim()) params.set('ip', ipFilter.trim());
+      if (ipDebounced.trim()) params.set('ip', ipDebounced.trim());
       const r = await fetch(`${API}/admin/security/login-attempts?${params}`, { headers: getAuthHeaders() });
       const d = await r.json();
       setAttempts(d?.data || []);
@@ -69,8 +91,10 @@ export default function SecurityPage() {
   };
 
   useEffect(() => { loadLocked(); }, []);
-  useEffect(() => { setPage(1); }, [onlyFailed, search.value, ipFilter, pageSize]);
-  useEffect(() => { loadAttempts(); }, [page, pageSize, onlyFailed, search.value, ipFilter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setPage(1); }, [onlyFailed, search.value, ipDebounced, pageSize]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadAttempts(); }, [page, pageSize, onlyFailed, search.value, ipDebounced]);
 
   const unlock = async (userId: string, email: string) => {
     if (!window.confirm(`Unlock ${email}?`)) return;
@@ -87,70 +111,200 @@ export default function SecurityPage() {
     const ms = new Date(iso).getTime() - Date.now();
     if (ms <= 0) return 'expired';
     const m = Math.floor(ms / 60000);
-    return m < 60 ? `${m}m left` : `${Math.floor(m / 60)}h ${m % 60}m left`;
+    return m < 60 ? `${m}m remaining` : `${Math.floor(m / 60)}h ${m % 60}m remaining`;
   };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const pageStart = totalCount === 0 ? 0 : Math.min((page - 1) * pageSize + 1, totalCount);
+  const pageEnd = Math.min(page * pageSize, totalCount);
+
+  const pageBtns: number[] = [];
+  if (totalPages <= 5) {
+    for (let i = 1; i <= totalPages; i++) pageBtns.push(i);
+  } else if (page <= 3) {
+    pageBtns.push(1, 2, 3, 4, 5);
+  } else if (page >= totalPages - 2) {
+    for (let i = totalPages - 4; i <= totalPages; i++) pageBtns.push(i);
+  } else {
+    for (let i = page - 2; i <= page + 2; i++) pageBtns.push(i);
+  }
 
   return (
     <Fragment>
-      <div className="my-[1.5rem]">
-        <p className="font-semibold text-[1.125rem] !mb-0">Security &amp; Audit</p>
-        <p className="text-[0.813rem] text-[#8c9097]">
-          Locked-out accounts and login attempt history.
-          <Link href="/access/users" className="text-primary ms-2">Staff users →</Link>
-        </p>
+      {/* Page header */}
+      <div className="my-[1.5rem] flex items-center gap-3">
+        <div
+          className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg,#C8A86B 0%,#a8863d 100%)' }}
+        >
+          <i className="ri-shield-keyhole-line text-white text-lg" />
+        </div>
+        <div>
+          <p className="font-semibold text-[1.125rem] !mb-0">Security &amp; Audit</p>
+          <p className="text-[0.813rem] text-[#8c9097]">
+            Locked-out accounts and login attempt history.{' '}
+            <Link href="/access/users" className="text-primary">Staff users →</Link>
+          </p>
+        </div>
       </div>
 
-      {/* Locked accounts */}
-      <div className="box mb-6">
-        <div className="box-header">
-          <h6 className="box-title mb-0">Locked accounts ({locked.length})</h6>
+      {/* Stat tiles */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+        {/* Locked accounts — color-coded by state */}
+        <div
+          className="box p-4 flex items-center gap-3"
+          style={{ borderLeft: `3px solid ${!lockedLoading && locked.length > 0 ? '#dc2626' : '#15803d'}` }}
+        >
+          <div
+            className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: !lockedLoading && locked.length > 0 ? '#fee2e2' : '#dcfce7' }}
+          >
+            <i
+              className={`${!lockedLoading && locked.length > 0 ? 'ri-lock-line' : 'ri-shield-check-line'} text-base`}
+              style={{ color: !lockedLoading && locked.length > 0 ? '#dc2626' : '#15803d' }}
+            />
+          </div>
+          <div>
+            <p className="text-[1.125rem] font-bold leading-tight">
+              {lockedLoading ? '—' : locked.length}
+            </p>
+            <p className="text-[11px] text-[#8c9097]">Locked Accounts</p>
+          </div>
         </div>
+
+        {/* Total attempts */}
+        <div className="box p-4 flex items-center gap-3" style={{ borderLeft: '3px solid #2563eb' }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#dbeafe' }}>
+            <i className="ri-login-box-line text-base" style={{ color: '#2563eb' }} />
+          </div>
+          <div>
+            <p className="text-[1.125rem] font-bold leading-tight">
+              {attemptsLoading ? '—' : totalCount.toLocaleString()}
+            </p>
+            <p className="text-[11px] text-[#8c9097]">Login Attempts</p>
+          </div>
+        </div>
+
+        {/* Page indicator */}
+        <div className="box p-4 flex items-center gap-3 col-span-2 sm:col-span-1" style={{ borderLeft: '3px solid #C8A86B' }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: '#fdf8ee' }}>
+            <i className="ri-pages-line text-base" style={{ color: '#C8A86B' }} />
+          </div>
+          <div>
+            <p className="text-[1.125rem] font-bold leading-tight">
+              {attemptsLoading ? '—' : `${page} / ${totalPages}`}
+            </p>
+            <p className="text-[11px] text-[#8c9097]">{onlyFailed ? 'Failures only' : 'All attempts'}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Locked Accounts Box ── */}
+      <div className="box mb-4">
         <div className="box-body">
+          {/* Section label */}
+          <div className="flex items-center gap-2 mb-4">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: !lockedLoading && locked.length > 0 ? '#fee2e2' : '#dcfce7' }}
+            >
+              <i
+                className={`${!lockedLoading && locked.length > 0 ? 'ri-lock-line' : 'ri-shield-check-line'} text-sm`}
+                style={{ color: !lockedLoading && locked.length > 0 ? '#dc2626' : '#15803d' }}
+              />
+            </div>
+            <span className="font-semibold text-[0.875rem]">Locked Accounts</span>
+            <span
+              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+              style={!lockedLoading && locked.length > 0
+                ? { background: '#fee2e2', color: '#dc2626' }
+                : { background: '#dcfce7', color: '#15803d' }}
+            >
+              {lockedLoading ? '…' : locked.length}
+            </span>
+          </div>
+
           {lockedLoading ? (
-            <div className="text-center py-6">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary inline-block"></div>
+            <div className="flex items-center gap-3 px-1">
+              <div className="w-8 h-8 rounded-full animate-pulse bg-[#f1f5f9] flex-shrink-0" />
+              <div className="h-3 w-48 rounded animate-pulse bg-[#f1f5f9]" />
             </div>
           ) : locked.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">
-              <i className="ri-shield-check-line text-2xl text-success block mb-1"></i>
-              No accounts currently locked out.
-            </p>
+            <div
+              className="flex items-center gap-3 px-4 py-3 rounded-xl"
+              style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}
+            >
+              <i className="ri-shield-check-line text-xl flex-shrink-0" style={{ color: '#15803d' }} />
+              <p className="text-[0.813rem] font-medium" style={{ color: '#166534' }}>
+                All clear — no accounts currently locked out.
+              </p>
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="table w-full">
+            <div className="overflow-x-auto w-full">
+              <table className="ti-custom-table ti-custom-table-hover w-full">
                 <thead>
-                  <tr className="text-xs text-gray-500 uppercase">
-                    <th className="text-left p-2">Account</th>
-                    <th className="text-right p-2">Failed</th>
-                    <th className="text-left p-2 hidden md:table-cell">Lockout ends</th>
-                    <th className="text-right p-2">Action</th>
+                  <tr style={{ background: '#f8fafc' }}>
+                    <th className="py-2.5 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">Account</th>
+                    <th className="py-2.5 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b] hidden sm:table-cell">Failed Attempts</th>
+                    <th className="py-2.5 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b] hidden md:table-cell">Lockout Ends</th>
+                    <th className="py-2.5 px-4 text-right text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {locked.map(u => (
-                    <tr key={u.id} className="border-t">
-                      <td className="p-2">
-                        <Link href={`/customers/${u.id}`} className="text-primary text-sm font-semibold hover:underline">
-                          {u.fullName.trim() || u.email}
-                        </Link>
-                        <div className="text-[0.7rem] text-gray-400">{u.email}</div>
-                      </td>
-                      <td className="p-2 text-right font-mono">{u.accessFailedCount}</td>
-                      <td className="p-2 text-xs hidden md:table-cell">
-                        {new Date(u.lockoutEnd).toLocaleString('en-NP')}
-                        <div className="text-warning">{lockoutCountdown(u.lockoutEnd)}</div>
-                      </td>
-                      <td className="p-2 text-right">
-                        <button
-                          onClick={() => unlock(u.id, u.email)}
-                          disabled={unlocking === u.id}
-                          className="ti-btn ti-btn-warning ti-btn-sm !text-white !opacity-100 disabled:!opacity-50"
-                        >
-                          {unlocking === u.id ? '…' : <><i className="ri-lock-unlock-line me-1"></i>Unlock</>}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {locked.map(u => {
+                    const displayName = u.fullName.trim() || u.email;
+                    const bg = avatarBg(displayName);
+                    return (
+                      <tr key={u.id} className="border-t border-[var(--defaultborder)]">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-white flex-shrink-0 font-bold"
+                              style={{ background: bg, fontSize: '11px' }}
+                            >
+                              {initials(displayName)}
+                            </div>
+                            <div>
+                              <Link
+                                href={`/customers/${u.id}`}
+                                className="text-[0.813rem] font-semibold hover:underline"
+                                style={{ color: '#C8A86B' }}
+                              >
+                                {displayName}
+                              </Link>
+                              <p className="text-[0.7rem] text-[#8c9097]">{u.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 hidden sm:table-cell">
+                          <span
+                            className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                            style={{ background: '#fee2e2', color: '#dc2626' }}
+                          >
+                            {u.accessFailedCount} failures
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 hidden md:table-cell">
+                          <p className="text-[0.813rem]">{new Date(u.lockoutEnd).toLocaleString('en-NP')}</p>
+                          <p className="text-[0.75rem]" style={{ color: '#d97706' }}>
+                            {lockoutCountdown(u.lockoutEnd)}
+                          </p>
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            onClick={() => unlock(u.id, u.email)}
+                            disabled={unlocking === u.id}
+                            className="px-3 py-1.5 text-[0.813rem] font-medium rounded-md text-white inline-flex items-center gap-1.5 disabled:opacity-50"
+                            style={{ background: 'linear-gradient(135deg,#f59e0b 0%,#d97706 100%)' }}
+                          >
+                            {unlocking === u.id
+                              ? <><i className="ri-loader-4-line animate-spin" />Unlocking…</>
+                              : <><i className="ri-lock-unlock-line" />Unlock</>}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -158,86 +312,243 @@ export default function SecurityPage() {
         </div>
       </div>
 
-      {/* Login attempts */}
+      {/* ── Login Attempts Box ── */}
       <div className="box">
-        <div className="box-header flex items-center justify-between gap-2 flex-wrap">
-          <h6 className="box-title mb-0">Login attempts</h6>
-          <div className="flex gap-2 flex-wrap">
+        {/* Filter bar — one row */}
+        <div
+          className="box-body flex flex-nowrap gap-2 overflow-x-auto items-center"
+          style={{ borderBottom: '1px solid var(--defaultborder)' }}
+        >
+          {/* Section label */}
+          <div className="flex items-center gap-2 flex-shrink-0 pr-1">
+            <i className="ri-login-box-line text-[#C8A86B]" />
+            <span className="font-semibold text-[0.875rem] whitespace-nowrap">Login Attempts</span>
+          </div>
+
+          {/* Email search */}
+          <div className="relative flex-1 min-w-[140px]">
+            <i className="ri-mail-line absolute left-3 top-1/2 -translate-y-1/2 text-[#8c9097] text-sm pointer-events-none" />
             <input
               type="text"
               value={search.immediate}
               onChange={e => search.setValue(e.target.value)}
-              placeholder="Email…"
-              className="form-control form-control-sm w-44"
+              placeholder="Search email…"
+              className="form-control pl-8 text-[0.813rem]"
             />
+          </div>
+
+          {/* IP filter */}
+          <div className="relative flex-shrink-0 w-[134px]">
+            <i className="ri-global-line absolute left-3 top-1/2 -translate-y-1/2 text-[#8c9097] text-sm pointer-events-none" />
             <input
               type="text"
               value={ipFilter}
               onChange={e => setIpFilter(e.target.value)}
-              placeholder="IP…"
-              className="form-control form-control-sm w-32 font-mono"
+              placeholder="IP address…"
+              className="form-control pl-8 font-mono text-[0.813rem]"
             />
-            <label className="flex items-center gap-1 text-xs text-gray-600">
-              <input type="checkbox" checked={onlyFailed} onChange={e => setOnlyFailed(e.target.checked)} />
-              Only failures
-            </label>
           </div>
-        </div>
-        <div className="box-body">
-          {attemptsLoading ? (
-            <div className="text-center py-6">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary inline-block"></div>
-            </div>
-          ) : attempts.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">No login attempts match the filter.</p>
-          ) : (
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <table className="table w-full min-w-[640px] sm:min-w-0">
-                <thead>
-                  <tr className="text-xs text-gray-500 uppercase">
-                    <th className="text-left p-2">When</th>
-                    <th className="text-left p-2">Email</th>
-                    <th className="text-left p-2 hidden md:table-cell">IP</th>
-                    <th className="text-left p-2 hidden lg:table-cell">User-Agent</th>
-                    <th className="text-center p-2">Result</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attempts.map(a => (
-                    <tr key={a.id} className="border-t">
-                      <td className="p-2 text-[0.813rem] whitespace-nowrap">
-                        {new Date(a.attemptedAt).toLocaleDateString('en-NP')}
-                        <div className="text-[0.7rem] text-gray-400">
-                          {new Date(a.attemptedAt).toLocaleTimeString('en-NP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        </div>
-                      </td>
-                      <td className="p-2 text-sm font-mono">{a.email}</td>
-                      <td className="p-2 text-[0.813rem] font-mono hidden md:table-cell">{a.ipAddress || '—'}</td>
-                      <td className="p-2 text-[0.7rem] text-gray-500 hidden lg:table-cell truncate max-w-[300px]" title={a.userAgent || ''}>
-                        {a.userAgent || '—'}
-                      </td>
-                      <td className="p-2 text-center">
-                        {a.success
-                          ? <span className="badge bg-success/20 text-success text-[10px] px-2 py-0.5 rounded">success</span>
-                          : <span className="badge bg-danger/20 text-danger text-[10px] px-2 py-0.5 rounded" title={a.failureReason || ''}>{a.failureReason || 'failed'}</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+
+          {/* Failures toggle button */}
+          <button
+            onClick={() => setOnlyFailed(!onlyFailed)}
+            className="px-3 py-1.5 text-[0.813rem] font-medium rounded-md flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap"
+            style={onlyFailed
+              ? { background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5' }
+              : { background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}
+          >
+            <i className={`ri-${onlyFailed ? 'close-circle-fill' : 'filter-3-line'}`} />
+            {onlyFailed ? 'Failures only' : 'All attempts'}
+          </button>
+
+          {/* Clear text filters */}
+          {hasTextFilter && (
+            <button
+              onClick={() => { search.setValue(''); setIpFilter(''); }}
+              className="px-3 py-1.5 text-[0.813rem] font-medium rounded-md flex-shrink-0 flex items-center gap-1"
+              style={{ border: '1px solid #e2e8f0', color: '#64748b', background: '#f8fafc' }}
+            >
+              <i className="ri-close-line" />Clear
+            </button>
+          )}
+
+          {/* Count */}
+          {!attemptsLoading && totalCount > 0 && (
+            <span className="ml-auto flex-shrink-0 text-[0.75rem] text-[#8c9097] whitespace-nowrap">
+              {pageStart}–{pageEnd} of {totalCount.toLocaleString()}
+            </span>
           )}
         </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto w-full">
+          {attemptsLoading ? (
+            <table className="ti-custom-table ti-custom-table-hover w-full">
+              <thead>
+                <tr style={{ background: '#f8fafc' }}>
+                  {['When','Email','IP Address','User-Agent','Result'].map((h, i) => (
+                    <th key={i} className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {SKELETON_ROWS.map((_, i) => (
+                  <tr key={i} className="border-t border-[var(--defaultborder)]">
+                    <td className="py-3 px-4">
+                      <div className="h-3 w-20 rounded animate-pulse bg-[#f1f5f9]" />
+                      <div className="h-2 w-14 rounded animate-pulse bg-[#f1f5f9] mt-1.5" />
+                    </td>
+                    <td className="py-3 px-4"><div className="h-3 w-40 rounded animate-pulse bg-[#f1f5f9]" /></td>
+                    <td className="py-3 px-4 hidden md:table-cell"><div className="h-3 w-24 rounded animate-pulse bg-[#f1f5f9]" /></td>
+                    <td className="py-3 px-4 hidden lg:table-cell"><div className="h-3 w-52 rounded animate-pulse bg-[#f1f5f9]" /></td>
+                    <td className="py-3 px-4"><div className="h-5 w-24 rounded-full animate-pulse bg-[#f1f5f9]" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : attempts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: '#f8fafc' }}>
+                <i className="ri-login-box-line text-3xl" style={{ color: '#C8A86B' }} />
+              </div>
+              <p className="font-semibold text-[#374151] mb-1">No login attempts found</p>
+              <p className="text-[0.813rem] text-[#8c9097]">Try adjusting the filters above.</p>
+            </div>
+          ) : (
+            <table className="ti-custom-table ti-custom-table-hover w-full">
+              <thead>
+                <tr style={{ background: '#f8fafc' }}>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">When</th>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">Email</th>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b] hidden md:table-cell">IP Address</th>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b] hidden lg:table-cell">User-Agent</th>
+                  <th className="py-3 px-4 text-left text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attempts.map(a => (
+                  <tr key={a.id} className="border-t border-[var(--defaultborder)]">
+                    {/* When */}
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <p className="text-[0.813rem] font-medium leading-tight">
+                        {new Date(a.attemptedAt).toLocaleDateString('en-NP')}
+                      </p>
+                      <p className="text-[0.7rem] text-[#8c9097]">
+                        {new Date(a.attemptedAt).toLocaleTimeString('en-NP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </p>
+                    </td>
+
+                    {/* Email */}
+                    <td className="py-3 px-4">
+                      <span className="text-[0.813rem] font-mono text-[#374151]">{a.email}</span>
+                    </td>
+
+                    {/* IP */}
+                    <td className="py-3 px-4 hidden md:table-cell">
+                      {a.ipAddress ? (
+                        <span className="font-mono text-[0.75rem] text-[#475569] flex items-center gap-1">
+                          <i className="ri-global-line text-[#8c9097] text-sm" />
+                          {a.ipAddress}
+                        </span>
+                      ) : (
+                        <span className="text-[#8c9097]">—</span>
+                      )}
+                    </td>
+
+                    {/* User-Agent */}
+                    <td className="py-3 px-4 hidden lg:table-cell" style={{ maxWidth: '260px' }} title={a.userAgent || ''}>
+                      <span className="text-[0.75rem] text-[#64748b] line-clamp-1 block">
+                        {a.userAgent || <span className="text-[#8c9097]">—</span>}
+                      </span>
+                    </td>
+
+                    {/* Result pill */}
+                    <td className="py-3 px-4">
+                      <span
+                        className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap"
+                        title={(!a.success && a.failureReason) ? a.failureReason : undefined}
+                        style={a.success
+                          ? { background: '#dcfce7', color: '#15803d' }
+                          : { background: '#fee2e2', color: '#dc2626' }}
+                      >
+                        {a.success ? 'Success' : (a.failureReason || 'Failed')}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Inline pagination */}
         {!attemptsLoading && totalCount > 0 && (
-          <div className="px-4 pb-4">
-            <Pagination
-              page={page}
-              pageSize={pageSize}
-              totalCount={totalCount}
-              onPageChange={setPage}
-              pageSizeOptions={[25, 50, 100]}
-              onPageSizeChange={setPageSize}
-            />
+          <div
+            className="flex items-center justify-between px-4 py-3 flex-wrap gap-2"
+            style={{ borderTop: '1px solid var(--defaultborder)' }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[0.75rem] text-[#8c9097]">Rows per page:</span>
+              <select
+                className="form-select !w-auto text-[0.813rem] py-1"
+                value={pageSize}
+                onChange={e => setPageSize(Number(e.target.value))}
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+              <span className="text-[0.75rem] text-[#8c9097]">
+                {pageStart}–{pageEnd} of {totalCount.toLocaleString()}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                className="px-2 py-1.5 text-[0.813rem] rounded-md disabled:opacity-40"
+                style={{ border: '1px solid #e2e8f0', color: '#64748b', background: '#f8fafc' }}
+              >
+                <i className="ri-arrow-left-double-line" />
+              </button>
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-2 py-1.5 text-[0.813rem] rounded-md disabled:opacity-40"
+                style={{ border: '1px solid #e2e8f0', color: '#64748b', background: '#f8fafc' }}
+              >
+                <i className="ri-arrow-left-s-line" />
+              </button>
+              {pageBtns.map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className="min-w-[32px] px-2 py-1.5 text-[0.813rem] font-medium rounded-md"
+                  style={page === p
+                    ? { background: 'linear-gradient(135deg,#C8A86B 0%,#a8863d 100%)', color: '#fff', border: '1px solid #C8A86B' }
+                    : { border: '1px solid #e2e8f0', color: '#64748b', background: '#f8fafc' }}
+                >
+                  {p}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-2 py-1.5 text-[0.813rem] rounded-md disabled:opacity-40"
+                style={{ border: '1px solid #e2e8f0', color: '#64748b', background: '#f8fafc' }}
+              >
+                <i className="ri-arrow-right-s-line" />
+              </button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={page === totalPages}
+                className="px-2 py-1.5 text-[0.813rem] rounded-md disabled:opacity-40"
+                style={{ border: '1px solid #e2e8f0', color: '#64748b', background: '#f8fafc' }}
+              >
+                <i className="ri-arrow-right-double-line" />
+              </button>
+            </div>
           </div>
         )}
       </div>

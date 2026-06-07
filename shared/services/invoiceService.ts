@@ -12,10 +12,19 @@ export class InvoiceService {
   /**
    * Get user's invoices with pagination
    */
-  static async getInvoices(page: number = 1, pageSize: number = 20, status?: InvoiceStatus, search?: string): Promise<PagedResult<Invoice>> {
+  static async getInvoices(
+    page: number = 1,
+    pageSize: number = 20,
+    status?: InvoiceStatus | string,
+    search?: string,
+    dateFrom?: string,
+    dateTo?: string,
+  ): Promise<PagedResult<Invoice>> {
     const params: any = { page, pageSize };
     if (status) params.status = status;
     if (search) params.search = search;
+    if (dateFrom) params.dateFrom = dateFrom;
+    if (dateTo) params.dateTo = dateTo;
 
     const response = await apiClient.get<ApiResponse<PagedResult<Invoice>>>('/invoices', { params });
     return response.data.data!;

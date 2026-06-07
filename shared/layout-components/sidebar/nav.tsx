@@ -171,10 +171,10 @@ export const MenuItems: MenuItem[] = [
     roles: ["admin"],
   },
 
-  // Inventory/Items Module
+  // Products/Items Module
   {
     icon: ItemsIcon,
-    title: "Inventory",
+    title: "Products",
     type: "link",
     active: false,
     selected: false,
