@@ -10,6 +10,9 @@ import Menuloop from "./menuloop";
 import { usePathname, useRouter } from "next/navigation";
 import { MenuItems, getMenuItemsByRole } from "./nav";
 import { useAppSelector } from "@/shared/redux/hooks";
+import { getAuthHeaders } from "@/shared/services/apiConfig";
+
+const ADMIN_API = process.env.NEXT_PUBLIC_API_URL || 'https://hbcapi.semis.app/api';
 
 const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 	const auth = useAppSelector((state: any) => state.auth);
@@ -18,12 +21,36 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 	// Filter menu items based on user role
 	React.useEffect(() => {
 		if (auth?.user?.roles && auth.user.roles.length > 0) {
-			// Get primary role (typically "admin" or "user")
-			const userRole = auth.user.roles[0];
-			const filteredItems = getMenuItemsByRole(userRole);
+			const rawRole = auth.user.roles[0];
+			// Map backend PascalCase roles to the nav's two-tier "admin" / "user" system
+			const navRole = ['SuperAdmin', 'Admin', 'Manager', 'Staff'].includes(rawRole) ? 'admin' : 'user';
+			const filteredItems = getMenuItemsByRole(navRole);
 			setMenuitems(filteredItems);
 		}
 	}, [auth?.user?.roles]);
+
+	// Poll pending PayAtStore count and badge the "Store Payments" sidebar item
+	useEffect(() => {
+		const updateBadge = async () => {
+			try {
+				const r = await fetch(`${ADMIN_API}/targets/payments/store-pending?pageSize=1`, { headers: getAuthHeaders() });
+				if (!r.ok) return;
+				const d = await r.json();
+				const count: number = d.totalCount ?? 0;
+				setMenuitems((prev: any) => prev.map((section: any) => ({
+					...section,
+					children: section.children?.map((child: any) =>
+						child.path === '/payments/store-pending'
+							? { ...child, badgetxt: count > 0 ? String(count) : undefined, class: 'badge bg-warning text-white text-[0.65rem] px-1.5 ms-1 rounded' }
+							: child
+					),
+				})));
+			} catch { /* ignore — badge is non-critical */ }
+		};
+		updateBadge();
+		const t = setInterval(updateBadge, 60_000);
+		return () => clearInterval(t);
+	}, [auth?.user]);
 
 	const path = usePathname()	
 
@@ -34,7 +61,7 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 				closeMenudata(item.children);
 			});
 		};
-		closeMenudata(MenuItems);
+		closeMenudata(menuitems);
 		setMenuitems((arr: any) => [...arr]);
 	}
 
@@ -449,7 +476,7 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 				setSubmenuRecursively(item.children);
 			});
 		};
-		setSubmenuRecursively(MenuItems);
+		setSubmenuRecursively(menuitems);
 	}
 	const [previousUrl, setPreviousUrl] = useState("/");
 
@@ -689,7 +716,7 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 							</svg></div>
 
 							<ul className="main-menu" onClick={() => Sideclick()}>
-								{MenuItems.map((levelone: any, index:any) => (
+								{menuitems.map((levelone: any, index:any) => (
 									<Fragment key={index}>
 										<li className={`${levelone.menutitle ? 'slide__category' : ''} ${levelone.type === 'link' ? 'slide' : ''}
                                                ${levelone.type === 'sub' ? 'slide has-sub' : ''} ${levelone?.active ? 'open' : ''} ${levelone?.selected ? 'active' : ''}`}>

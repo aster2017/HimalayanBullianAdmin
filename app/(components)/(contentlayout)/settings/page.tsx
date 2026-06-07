@@ -5,6 +5,7 @@ import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { useAppSelector } from '@/shared/redux/hooks';
 import Seo from '@/shared/layout-components/seo/seo';
 import apiClient from '@/shared/services/apiClient';
+import { CacheService, FlushGroup } from '@/shared/services/cacheService';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
@@ -16,6 +17,10 @@ const SettingsPage = () => {
   const [profile, setProfile] = useState({ firstName: '', lastName: '', phoneNumber: '' });
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
+  const [flushing, setFlushing] = useState<FlushGroup | null>(null);
+  const [lastFlushed, setLastFlushed] = useState<Record<FlushGroup, string | null>>({
+    products: null, settings: null, rates: null, all: null,
+  });
 
   useEffect(() => {
     // Load Zoho status
@@ -36,6 +41,18 @@ const SettingsPage = () => {
       toast.error(err?.response?.data?.message || 'Failed to update profile');
     }
     setLoading(false);
+  };
+
+  const handleFlush = async (group: FlushGroup) => {
+    setFlushing(group);
+    try {
+      const result = await CacheService.flush(group);
+      setLastFlushed(prev => ({ ...prev, [group]: new Date().toLocaleTimeString() }));
+      toast.success(`Flushed ${result.flushed.length} cache key${result.flushed.length !== 1 ? 's' : ''}`);
+    } catch {
+      toast.error('Cache flush failed');
+    }
+    setFlushing(null);
   };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -181,6 +198,123 @@ const SettingsPage = () => {
                   </div>
                   <i className="bx bx-chevron-right text-xl text-[#8c9097]"></i>
                 </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Cache Management */}
+        <div className="col-span-12">
+          <div className="box">
+            <div className="box-header">
+              <h4 className="box-title">Cache Management</h4>
+              <p className="text-[0.75rem] text-[#8c9097] mt-1">
+                Force-refresh Redis cache groups. Use after manual data changes that bypass the Zoho sync.
+              </p>
+            </div>
+            <div className="box-body">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+
+                {/* Products */}
+                <div className="border rounded-lg p-4 flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded bg-primary/10 text-primary">
+                      <i className="bx bx-package text-xl"></i>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">Products &amp; Catalog</p>
+                      <p className="text-[0.7rem] text-[#8c9097]">Target products, featured, categories</p>
+                    </div>
+                  </div>
+                  {lastFlushed.products && (
+                    <p className="text-[0.7rem] text-success flex items-center gap-1">
+                      <i className="bx bx-check-circle"></i> Flushed at {lastFlushed.products}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => handleFlush('products')}
+                    disabled={flushing !== null}
+                    className="ti-btn ti-btn-sm ti-btn-primary-full !text-white w-full"
+                  >
+                    {flushing === 'products'
+                      ? <><span className="loading loading-spinner loading-xs mr-1"></span>Flushing…</>
+                      : <><i className="bx bx-refresh mr-1"></i>Flush</>}
+                  </button>
+                </div>
+
+                {/* Settings */}
+                <div className="border rounded-lg p-4 flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded bg-warning/10 text-warning">
+                      <i className="bx bx-cog text-xl"></i>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">App Settings</p>
+                      <p className="text-[0.7rem] text-[#8c9097]">Bank details, app config, ConnectIPS</p>
+                    </div>
+                  </div>
+                  {lastFlushed.settings && (
+                    <p className="text-[0.7rem] text-success flex items-center gap-1">
+                      <i className="bx bx-check-circle"></i> Flushed at {lastFlushed.settings}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => handleFlush('settings')}
+                    disabled={flushing !== null}
+                    className="ti-btn ti-btn-sm ti-btn-warning-full !text-white w-full"
+                  >
+                    {flushing === 'settings'
+                      ? <><span className="loading loading-spinner loading-xs mr-1"></span>Flushing…</>
+                      : <><i className="bx bx-refresh mr-1"></i>Flush</>}
+                  </button>
+                </div>
+
+                {/* Rates */}
+                <div className="border rounded-lg p-4 flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded bg-success/10 text-success">
+                      <i className="bx bx-trending-up text-xl"></i>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">Silver Rates</p>
+                      <p className="text-[0.7rem] text-[#8c9097]">Buy rate, buyback rate</p>
+                    </div>
+                  </div>
+                  {lastFlushed.rates && (
+                    <p className="text-[0.7rem] text-success flex items-center gap-1">
+                      <i className="bx bx-check-circle"></i> Flushed at {lastFlushed.rates}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => handleFlush('rates')}
+                    disabled={flushing !== null}
+                    className="ti-btn ti-btn-sm ti-btn-success-full !text-white w-full"
+                  >
+                    {flushing === 'rates'
+                      ? <><span className="loading loading-spinner loading-xs mr-1"></span>Flushing…</>
+                      : <><i className="bx bx-refresh mr-1"></i>Flush</>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Flush All */}
+              <div className="border border-danger/30 rounded-lg p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-danger/5">
+                <div>
+                  <p className="font-semibold text-sm text-danger">Flush All Caches</p>
+                  <p className="text-[0.75rem] text-[#8c9097]">
+                    Removes all {13} known cache keys. The next request on each endpoint will hit the database.
+                    {lastFlushed.all && <span className="text-success ml-2"><i className="bx bx-check-circle"></i> Last flushed at {lastFlushed.all}</span>}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleFlush('all')}
+                  disabled={flushing !== null}
+                  className="ti-btn ti-btn-sm ti-btn-danger-full !text-white shrink-0"
+                >
+                  {flushing === 'all'
+                    ? <><span className="loading loading-spinner loading-xs mr-1"></span>Flushing all…</>
+                    : <><i className="bx bx-trash mr-1"></i>Flush All Caches</>}
+                </button>
               </div>
             </div>
           </div>

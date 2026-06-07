@@ -335,7 +335,6 @@ export default function TargetDetailPage() {
           </div>
         </div>
       )}
-    </div>
 
       {/* Pay at Store — Mark Paid modal */}
       {storeNoteTarget && (
@@ -367,5 +366,6 @@ export default function TargetDetailPage() {
           </div>
         </div>
       )}
+    </div>
   );
 }
