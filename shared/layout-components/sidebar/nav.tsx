@@ -372,6 +372,8 @@ export const MenuItems: MenuItem[] = [
     roles: ["admin", "user"],
     children: [
       { path: "/settings", type: "link", active: false, selected: false, dirchange: false, title: "General" },
+      { path: "/settings/operations", type: "link", active: false, selected: false, dirchange: false, title: "Operations" },
+      { path: "/settings/ubo", type: "link", active: false, selected: false, dirchange: false, title: "UBO Declaration", superAdminOnly: true },
       { path: "/settings/notifications", type: "link", active: false, selected: false, dirchange: false, title: "Notifications", superAdminOnly: true },
     ],
   },

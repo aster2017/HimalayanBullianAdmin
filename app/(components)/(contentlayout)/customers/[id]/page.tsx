@@ -144,6 +144,11 @@ export default function CustomerDetailPage() {
   const [panImgUrl,  setPanImgUrl]  = useState<string|null>(null);
   const [panLightbox,setPanLightbox]= useState(false);
 
+  const [addCreditsModal, setAddCreditsModal] = useState(false);
+  const [addCreditsAmount, setAddCreditsAmount] = useState('');
+  const [addCreditsNote, setAddCreditsNote] = useState('');
+  const [addCreditsLoading, setAddCreditsLoading] = useState(false);
+
   type TimelineItem = {
     id:string; eventType:string; color:string; timestamp:string;
     title:string; summary:string; link:string; amount:number|null; badge:string;
@@ -233,6 +238,33 @@ export default function CustomerDetailPage() {
       if(d.success!==false){toast.success('Customer updated');setEditMode(false);loadAll();}else toast.error(d.message||'Failed');
     }catch{toast.error('Update failed');}
     setActing(null);
+  };
+
+  const submitAddCredits = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(addCreditsAmount);
+    if (!amount || amount < 100) { toast.error('Minimum amount is NPR 100'); return; }
+    setAddCreditsLoading(true);
+    try {
+      const r = await fetch(`${API}/credits/add`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: id, amount, note: addCreditsNote || undefined }),
+      });
+      const d = await r.json();
+      if (d.success) {
+        toast.success(d.message || `NPR ${amount.toLocaleString()} added`);
+        setAddCreditsModal(false);
+        setAddCreditsAmount('');
+        setAddCreditsNote('');
+        loadAll();
+      } else {
+        toast.error(d.message || 'Failed to add credits');
+      }
+    } catch {
+      toast.error('Request failed');
+    }
+    setAddCreditsLoading(false);
   };
 
   // ── loading / not-found ───────────────────────────────────────────────────
@@ -526,9 +558,16 @@ export default function CustomerDetailPage() {
               title="Wallet"
               sub={`${wallet.totalCount??0} transaction${(wallet.totalCount??0)===1?'':''}`}
               right={
-                <Link href={`/credits?search=${encodeURIComponent(customer.email||'')}`}>
-                  <button className="text-[0.75rem] text-[#C8A86B] hover:underline font-medium">View all</button>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setAddCreditsModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-[0.75rem] font-semibold rounded-lg text-white transition-colors"
+                    style={{background:'linear-gradient(135deg,#C8A86B 0%,#a8863d 100%)'}}>
+                    <i className="ri-add-line text-xs"/> Add Credits
+                  </button>
+                  <Link href={`/credits?search=${encodeURIComponent(customer.email||'')}`}>
+                    <button className="text-[0.75rem] text-[#C8A86B] hover:underline font-medium">View all</button>
+                  </Link>
+                </div>
               }
             />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
@@ -886,6 +925,68 @@ export default function CustomerDetailPage() {
                   className="ti-btn !rounded-xl font-semibold disabled:opacity-50"
                   style={{background:'linear-gradient(135deg,#C8A86B 0%,#a8863d 100%)',color:'#fff'}}>
                   {acting==='edit'?<><i className="ri-loader-4-line animate-spin mr-1"/>Saving…</>:'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add Credits Modal ── */}
+      {addCreditsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-bodybg rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'#fdf8ee'}}>
+                <i className="ri-wallet-3-line" style={{color:'#C8A86B'}}/>
+              </div>
+              <div>
+                <h3 className="text-[1rem] font-bold text-defaulttextcolor mb-0">Add Credits</h3>
+                <p className="text-[0.72rem] text-[#94a3b8]">{customer.fullName}</p>
+              </div>
+            </div>
+            <form onSubmit={submitAddCredits} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor mb-1.5">
+                  Amount (NPR) <span className="text-[#94a3b8] font-normal text-xs">min 100</span>
+                </label>
+                <input
+                  type="number" min="100" step="1" required
+                  className="form-control !rounded-xl"
+                  placeholder="e.g. 5000"
+                  value={addCreditsAmount}
+                  onChange={e => setAddCreditsAmount(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor mb-1.5">
+                  Note <span className="text-[#94a3b8] font-normal text-xs">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control !rounded-xl"
+                  placeholder="e.g. Refund for cancelled order"
+                  value={addCreditsNote}
+                  onChange={e => setAddCreditsNote(e.target.value)}
+                />
+              </div>
+              {addCreditsAmount && parseFloat(addCreditsAmount) >= 100 && (
+                <div className="rounded-xl p-3" style={{background:'#fdf8ee'}}>
+                  <p className="text-[0.8rem] text-defaulttextcolor mb-0">
+                    <span className="font-semibold" style={{color:'#C8A86B'}}>Rs. {parseFloat(addCreditsAmount).toLocaleString()}</span>
+                    {' '}will be added to <span className="font-semibold">{customer.firstName}</span>&apos;s wallet
+                  </p>
+                </div>
+              )}
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={() => { setAddCreditsModal(false); setAddCreditsAmount(''); setAddCreditsNote(''); }}
+                  className="ti-btn ti-btn-light !rounded-xl" disabled={addCreditsLoading}>Cancel</button>
+                <button type="submit" disabled={addCreditsLoading}
+                  className="ti-btn !rounded-xl font-semibold disabled:opacity-50"
+                  style={{background:'linear-gradient(135deg,#C8A86B 0%,#a8863d 100%)',color:'#fff'}}>
+                  {addCreditsLoading
+                    ? <><i className="ri-loader-4-line animate-spin mr-1"/>Adding…</>
+                    : <><i className="ri-add-line mr-1"/>Add Credits</>}
                 </button>
               </div>
             </form>
