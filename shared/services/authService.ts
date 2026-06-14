@@ -55,4 +55,17 @@ export class AuthService {
   static async changePassword(request: ChangePasswordRequest): Promise<void> {
     await apiClient.post<ApiResponse<boolean>>('/auth/change-password', request);
   }
+
+  /**
+   * Revoke the current access token server-side. Best-effort: callers still clear
+   * local token storage regardless of the result. Without this, logging out only
+   * dropped the token locally and it stayed valid on the server until expiry.
+   */
+  static async logout(): Promise<void> {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch {
+      // ignore — local sign-out proceeds regardless
+    }
+  }
 }
