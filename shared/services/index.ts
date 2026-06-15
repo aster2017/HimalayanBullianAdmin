@@ -9,6 +9,7 @@ export { OrderService } from './orderService';
 export { AddressService } from './addressService';
 export { PaymentService } from './paymentService';
 export { InvoiceService } from './invoiceService';
+export { ConnectIpsService } from './connectipsService';
 
 /**
  * Token utilities
