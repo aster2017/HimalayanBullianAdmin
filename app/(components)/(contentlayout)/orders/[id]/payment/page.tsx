@@ -8,7 +8,7 @@ import apiClient from '@/shared/services/apiClient';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 
-const API_HOST = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002/api').replace('/api', '');
+const API_HOST = (process.env.NEXT_PUBLIC_API_URL ?? '').replace('/api', '');
 
 export default function OrderPaymentPage() {
   useProtectedRoute();
@@ -79,7 +79,7 @@ export default function OrderPaymentPage() {
           <p className="text-[#8c9097] text-[0.813rem]">{d.customerName}</p>
         </div>
         <div className="flex gap-2 mt-2 md:mt-0">
-          <a href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002/api'}/orders/${id}/invoice-pdf`} target="_blank" rel="noopener noreferrer">
+          <a href={`${process.env.NEXT_PUBLIC_API_URL}/orders/${id}/invoice-pdf`} target="_blank" rel="noopener noreferrer">
             <button className="ti-btn ti-btn-success-full !text-white">Download Invoice</button>
           </a>
           <Link href={`/orders/${id}`}><button className="ti-btn ti-btn-light !opacity-100">Back to Order</button></Link>

@@ -1,6 +1,6 @@
 import { getAuthHeaders } from './apiConfig';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 export interface CustomerResult {
   id: string; name: string; email: string;

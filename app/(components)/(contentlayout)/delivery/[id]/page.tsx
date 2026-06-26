@@ -7,7 +7,7 @@ import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 const STATUS_COLOUR: Record<string, string> = {
   Requested: 'bg-yellow-500/10 text-yellow-700 border-yellow-500',

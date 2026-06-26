@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { getAuthHeaders } from "@/shared/services/apiConfig";
 import { useProtectedRoute } from "@/shared/hooks/useProtectedRoute";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5003/api";
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

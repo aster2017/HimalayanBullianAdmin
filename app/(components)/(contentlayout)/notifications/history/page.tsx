@@ -8,7 +8,7 @@ import { Pagination } from '@/shared/components/Pagination';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 type Row = {
   id: string;

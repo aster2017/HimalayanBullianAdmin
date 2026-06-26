@@ -12,7 +12,7 @@ import { MenuItems, getMenuItemsByRole } from "./nav";
 import { useAppSelector } from "@/shared/redux/hooks";
 import { getAuthHeaders } from "@/shared/services/apiConfig";
 
-const ADMIN_API = process.env.NEXT_PUBLIC_API_URL || 'https://hbcapi.semis.app/api';
+const ADMIN_API = process.env.NEXT_PUBLIC_API_URL;
 
 const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 	const auth = useAppSelector((state: any) => state.auth);
