@@ -4,6 +4,8 @@ import { Fragment, useEffect, useState } from 'react';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import Seo from '@/shared/layout-components/seo/seo';
 import apiClient from '@/shared/services/apiClient';
+import { exportCsv, csvDateStamp } from '@/shared/utils/exportCsv';
+import toast from 'react-hot-toast';
 import Link from 'next/link';
 
 const CustomerReportPage = () => {
@@ -12,6 +14,34 @@ const CustomerReportPage = () => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const [exporting, setExporting] = useState(false);
+
+  // The page only loads the first 50 for its summary tables; pull a full batch on
+  // demand so the CSV is the complete customer list, not just what's on screen.
+  const downloadCsv = async () => {
+    setExporting(true);
+    try {
+      const res = await apiClient.get('/customers', { params: { page: 1, pageSize: 1000 } });
+      const rows = res.data?.data?.items || [];
+      const ok = exportCsv(
+        rows,
+        [
+          { header: 'Name', value: (c: any) => c.fullName },
+          { header: 'Email', value: (c: any) => c.email || '' },
+          { header: 'Phone', value: (c: any) => c.phoneNumber || '' },
+          { header: 'Active', value: (c: any) => (c.isActive ? 'Yes' : 'No') },
+          { header: 'Total Orders', value: (c: any) => c.totalOrders ?? 0 },
+          { header: 'Lifetime Value', value: (c: any) => c.lifetimeValue ?? 0 },
+        ],
+        `customers-${csvDateStamp()}`,
+      );
+      if (!ok) toast.error('No customers to export');
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetch = async () => {
@@ -45,6 +75,15 @@ const CustomerReportPage = () => {
           <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">Customer Report</p>
           <p className="font-normal text-[#8c9097] text-[0.813rem]">Customer analytics and insights</p>
         </div>
+        <button
+          onClick={downloadCsv}
+          disabled={exporting || totalCount === 0}
+          className="ti-btn ti-btn-primary-full !opacity-100 mt-2 md:mt-0 disabled:!opacity-50"
+        >
+          {exporting
+            ? <><i className="ri-loader-4-line animate-spin me-1"></i>Preparing…</>
+            : <><i className="ri-download-2-line me-1"></i>Export CSV</>}
+        </button>
       </div>
 
       {/* Summary */}
