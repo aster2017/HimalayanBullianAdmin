@@ -30,7 +30,8 @@ export default function PushNotificationsPage() {
   // Broadcast mode
   const [audience, setAudience] = useState<'approved' | 'all'>('approved');
 
-  // Recent sends — kept in component memory only (no backend history yet)
+  // Recent sends — session-local convenience widget for instant post-send feedback.
+  // The full persistent log lives on /notifications/history (GET /push/admin/history).
   const [history, setHistory] = useState<Array<{ at: Date; mode: string; title: string; recipients: number | string }>>([]);
 
   // Customer typeahead
@@ -271,7 +272,8 @@ export default function PushNotificationsPage() {
             )}
             <p className="text-[11px] text-gray-400 mt-4">
               <i className="ri-information-line me-1"></i>
-              History is in-memory only and clears on page refresh. Use server logs for permanent record.
+              This list clears on refresh. For the permanent delivery log, see{' '}
+              <a href="/notifications/history" className="text-primary hover:underline">History</a>.
             </p>
           </div>
         </div>
