@@ -115,6 +115,11 @@ export default function RegisterPage() {
   const [panFile, setPanFile] = useState<File | null>(null);
   const [panPreview, setPanPreview] = useState<string | null>(null);
   const [clientType, setClientType] = useState<'Individual' | 'Business'>('Individual');
+  // Address / KYC contact (backend requires these on /auth/register)
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [addrState, setAddrState] = useState('');
+  const [postalCode, setPostalCode] = useState('');
   const [uboAccepted, setUboAccepted] = useState(false);
   const [showUbo, setShowUbo] = useState(false);
   const [step2Error, setStep2Error] = useState('');
@@ -150,8 +155,8 @@ export default function RegisterPage() {
     if (!step1.firstName.trim()) return setStep1Error('First name is required');
     if (!step1.lastName.trim()) return setStep1Error('Last name is required');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(step1.email)) return setStep1Error('Valid email is required');
-    if (step1.phone && !/^\d{10}$/.test(step1.phone.replace(/\s/g, '')))
-      return setStep1Error('Phone must be 10 digits');
+    if (!/^9[78]\d{8}$/.test(step1.phone.replace(/\s/g, '')))
+      return setStep1Error('A valid Nepal mobile number is required (98/97 + 8 digits)');
     if (step1.password.length < 8) return setStep1Error('Password must be at least 8 characters');
     if (step1.password !== step1.confirmPassword) return setStep1Error('Passwords do not match');
     setStep(2);
@@ -174,6 +179,10 @@ export default function RegisterPage() {
     setStep2Error('');
     if (!/^\d{9}$/.test(panNumber)) return setStep2Error('PAN number must be exactly 9 digits');
     if (!panFile) return setStep2Error('PAN card photo is required');
+    if (!address.trim()) return setStep2Error('Address is required');
+    if (!city.trim()) return setStep2Error('City is required');
+    if (!addrState.trim()) return setStep2Error('State / Province is required');
+    if (!postalCode.trim()) return setStep2Error('Postal code is required');
     if (!uboAccepted) return setStep2Error('You must accept the UBO declaration to continue');
 
     setSubmitLoading(true);
@@ -182,10 +191,14 @@ export default function RegisterPage() {
       fd.append('firstName', step1.firstName.trim());
       fd.append('lastName', step1.lastName.trim());
       fd.append('email', step1.email.trim());
-      fd.append('phone', step1.phone.trim());
+      fd.append('phoneNumber', step1.phone.replace(/\s/g, ''));
       fd.append('password', step1.password);
       fd.append('confirmPassword', step1.confirmPassword);
       fd.append('panNumber', panNumber);
+      fd.append('address', address.trim());
+      fd.append('city', city.trim());
+      fd.append('state', addrState.trim());
+      fd.append('postalCode', postalCode.trim());
       fd.append('clientType', clientType);
       fd.append('uboConfirmed', 'true');
       fd.append('panCardImage', panFile);
@@ -421,6 +434,51 @@ export default function RegisterPage() {
                   <p className="text-xs text-[#8c9097]">JPG or PNG · Max 5 MB</p>
                 </button>
               )}
+            </div>
+
+            {/* Address (required by AML/KYC) */}
+            <div>
+              <label className="block text-sm font-medium text-defaulttextcolor dark:text-white mb-1.5">Address</label>
+              <input
+                type="text"
+                className="form-control form-control-lg w-full !rounded-xl"
+                placeholder="Street / Tole / House no."
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor dark:text-white mb-1.5">City</label>
+                <input
+                  type="text"
+                  className="form-control form-control-lg w-full !rounded-xl"
+                  placeholder="Kathmandu"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor dark:text-white mb-1.5">State / Province</label>
+                <input
+                  type="text"
+                  className="form-control form-control-lg w-full !rounded-xl"
+                  placeholder="Bagmati"
+                  value={addrState}
+                  onChange={(e) => setAddrState(e.target.value)}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-defaulttextcolor dark:text-white mb-1.5">Postal Code</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                className="form-control form-control-lg w-full !rounded-xl"
+                placeholder="44600"
+                value={postalCode}
+                onChange={(e) => setPostalCode(e.target.value)}
+              />
             </div>
 
             {/* Client Type */}
