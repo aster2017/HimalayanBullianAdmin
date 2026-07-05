@@ -30,6 +30,9 @@ type AppConfig = {
     payAtStore:  PaymentMethodConfig;
     creditsNchl: PaymentMethodConfig;
   };
+  // Dynamic mobile API routing — null = apps use their hardcoded bootstrap URL
+  apiBaseUrl:         string | null;
+  apiBaseUrlFallback: string | null;
 };
 
 const DEFAULT_CONFIG: AppConfig = {
@@ -46,6 +49,8 @@ const DEFAULT_CONFIG: AppConfig = {
     payAtStore:  { enabled: false, label: 'Pay at Store',       useCustomIcon: false },
     creditsNchl: { enabled: true,  label: 'Credits + ConnectIPS', useCustomIcon: false },
   },
+  apiBaseUrl:         null,
+  apiBaseUrlFallback: null,
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://hbcapi.semis.app';
@@ -87,6 +92,8 @@ export default function OperationsSettingsPage() {
           payAtStore:  { ...DEFAULT_CONFIG.paymentMethods.payAtStore,  ...(cfg.paymentMethods?.payAtStore  || {}) },
           creditsNchl: { ...DEFAULT_CONFIG.paymentMethods.creditsNchl, ...(cfg.paymentMethods?.creditsNchl || {}) },
         },
+        apiBaseUrl:         cfg.apiBaseUrl         ?? null,
+        apiBaseUrlFallback: cfg.apiBaseUrlFallback ?? null,
       });
     } catch { toast.error('Failed to load operations settings'); }
     finally { setLoading(false); }
@@ -416,6 +423,89 @@ export default function OperationsSettingsPage() {
               <div className="flex items-start gap-2 p-3 bg-[#f8fafc] border border-[#e9edf4] rounded-lg text-[11px] text-[#8c9097]">
                 <i className="bx bx-info-circle mt-0.5 shrink-0"></i>
                 <span>Toggle changes are saved instantly. Label changes require clicking <strong>Save app config</strong> in the Contact info section above. App cache refreshes within 30 minutes.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile API endpoint */}
+          <div className="box lg:col-span-2">
+            <div className="box-header flex items-center justify-between">
+              <div>
+                <h6 className="box-title mb-0">Mobile API endpoint</h6>
+                <p className="text-xs text-[#8c9097] mt-0.5">
+                  Override the base URL for all iOS &amp; Android clients. Apps refresh this within 1 hour.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-warning/10 text-warning border border-warning/20">
+                <i className="bx bx-shield-quarter"></i> Sensitive
+              </span>
+            </div>
+            <div className="box-body space-y-4">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20 text-[12px] text-warning">
+                <i className="bx bx-error-circle mt-0.5 shrink-0 text-base"></i>
+                <span>
+                  Changing this redirects <strong>all</strong> mobile clients to a different API server.
+                  Apps with the old URL cached may take up to 1 hour to switch.
+                  Confirm the new URL is live and healthy before saving.
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[#8c9097]">Active:</span>
+                {appConfig.apiBaseUrl ? (
+                  <code className="text-xs bg-[#f1f5f9] px-2 py-0.5 rounded font-mono text-primary border border-[#e2e8f0]">
+                    {appConfig.apiBaseUrl}
+                  </code>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-xs text-success font-medium">
+                    <i className="bx bx-check-circle"></i> Default (hardcoded bootstrap)
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="form-label">Primary API base URL</label>
+                  <input
+                    type="url"
+                    className="form-control font-mono text-sm"
+                    value={appConfig.apiBaseUrl || ''}
+                    onChange={e => setAppConfig({ ...appConfig, apiBaseUrl: e.target.value.trim() || null })}
+                    placeholder="https://api.himalayanbullion.com/api/"
+                  />
+                  <p className="text-xs text-[#8c9097] mt-1">Must be HTTPS with trailing slash. Leave blank to use the hardcoded default.</p>
+                </div>
+                <div>
+                  <label className="form-label">Fallback API base URL <span className="text-[#8c9097] font-normal">(optional)</span></label>
+                  <input
+                    type="url"
+                    className="form-control font-mono text-sm"
+                    value={appConfig.apiBaseUrlFallback || ''}
+                    onChange={e => setAppConfig({ ...appConfig, apiBaseUrlFallback: e.target.value.trim() || null })}
+                    placeholder="https://api-backup.himalayanbullion.com/api/"
+                  />
+                  <p className="text-xs text-[#8c9097] mt-1">App retries failed requests here. Defaults to primary when blank.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1 border-t border-[#e9edf4]">
+                <button
+                  onClick={() => {
+                    setAppConfig({ ...appConfig, apiBaseUrl: null, apiBaseUrlFallback: null });
+                  }}
+                  className="text-xs text-danger hover:underline flex items-center gap-1"
+                >
+                  <i className="bx bx-reset"></i> Clear — revert to default
+                </button>
+                <button
+                  onClick={() => saveAppConfig()}
+                  disabled={savingApp}
+                  className="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  {savingApp
+                    ? <><i className="ri-loader-4-line animate-spin me-1"></i>Saving…</>
+                    : 'Save API endpoint'}
+                </button>
               </div>
             </div>
           </div>
