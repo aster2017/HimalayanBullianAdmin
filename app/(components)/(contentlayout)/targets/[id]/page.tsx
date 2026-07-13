@@ -5,7 +5,7 @@ import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
+const API = process.env.NEXT_PUBLIC_API_URL;
 const STATUS_COLORS: Record<string,string> = {
   Active:'bg-blue-500/10 text-blue-700', Completed:'bg-green-500/10 text-green-700',
   Delivered:'bg-purple-500/10 text-purple-700', Cancelled:'bg-red-500/10 text-red-700',

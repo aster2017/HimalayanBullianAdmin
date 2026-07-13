@@ -7,7 +7,7 @@ import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 import { useDialog } from '@/shared/context/DialogContext';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
+const API = process.env.NEXT_PUBLIC_API_URL;
 
 type Role = {
   id: string;

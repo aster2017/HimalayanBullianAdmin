@@ -232,7 +232,7 @@ export default function SyncDashboardPage() {
           </div>
           <div className="flex items-center gap-2 mt-2 md:mt-0 flex-wrap">
             <a
-              href="https://hbc-api.semis.app/hangfire"
+              href="https://hbcapi.semis.app/hangfire"
               target="_blank"
               rel="noreferrer"
               className="px-3 py-1.5 text-[0.813rem] border border-defaultborder rounded-sm bg-white text-defaulttextcolor hover:bg-gray-50 transition-colors inline-flex items-center"

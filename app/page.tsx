@@ -213,12 +213,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-xs text-[#8c9097] mt-8">
-            Don't have an account?{' '}
-            <Link href="/register" className="font-semibold hover:underline" style={{ color: '#C8A86B' }}>
-              Create account
-            </Link>
-          </p>
+          {/* Self-registration is admin-only — link hidden intentionally */}
         </div>
       </div>
     </div>

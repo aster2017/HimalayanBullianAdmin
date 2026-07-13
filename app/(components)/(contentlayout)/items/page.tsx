@@ -5,8 +5,8 @@ import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 
-const API      = process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api';
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api').replace('/api', '');
+const API      = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? '').replace('/api', '');
 
 function imgSrc(url: string) {
   return url?.startsWith('http') ? url : `${API_BASE}${url}`;

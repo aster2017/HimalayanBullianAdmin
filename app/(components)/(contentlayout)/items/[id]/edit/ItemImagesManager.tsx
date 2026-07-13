@@ -5,9 +5,9 @@ import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 import { useDialog } from '@/shared/context/DialogContext';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://hbcapi.semis.app/api';
+const API = process.env.NEXT_PUBLIC_API_URL;
 // API serves images from the same host but without the /api prefix.
-const IMAGE_BASE = API.replace(/\/api\/?$/, '');
+const IMAGE_BASE = (API ?? '').replace(/\/api\/?$/, '');
 
 type Img = {
   id: string;

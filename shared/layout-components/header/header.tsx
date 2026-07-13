@@ -6,6 +6,7 @@ import { connect } from 'react-redux';
 import store from '@/shared/redux/store';
 import { useAppSelector, useAppDispatch } from '@/shared/redux/hooks';
 import { logout } from '@/shared/redux/authSlice';
+import { AuthService } from '@/shared/services/authService';
 import { useRouter } from 'next/navigation';
 import GlobalSearch from '@/shared/components/GlobalSearch/GlobalSearch';
 import { basePath } from '@/next.config';
@@ -213,7 +214,9 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
     };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Revoke the token server-side first (best-effort), then clear local state.
+    await AuthService.logout();
     dispatch(logout());
     router.push('/');
   };

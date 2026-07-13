@@ -375,6 +375,9 @@ export const MenuItems: MenuItem[] = [
       { path: "/settings/operations", type: "link", active: false, selected: false, dirchange: false, title: "Operations" },
       { path: "/settings/ubo", type: "link", active: false, selected: false, dirchange: false, title: "UBO Declaration", superAdminOnly: true },
       { path: "/settings/notifications", type: "link", active: false, selected: false, dirchange: false, title: "Notifications", superAdminOnly: true },
+      { path: "/settings/connectips", type: "link", active: false, selected: false, dirchange: false, title: "ConnectIPS / NCHL", superAdminOnly: true },
+      { path: "/settings/payments", type: "link", active: false, selected: false, dirchange: false, title: "Payment Methods", superAdminOnly: true },
+      { path: "/settings/gateway-fees", type: "link", active: false, selected: false, dirchange: false, title: "Gateway Fees", superAdminOnly: true },
     ],
   },
 

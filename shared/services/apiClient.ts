@@ -9,7 +9,7 @@ import { getStoredToken, setStoredToken, clearStoredToken } from '@/shared/utils
 /**
  * API client configuration
  */
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5003/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const API_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '30000', 10);
 const CLIENT_ID = process.env.NEXT_PUBLIC_CLIENT_ID || 'hbc-web-dashboard';
 

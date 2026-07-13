@@ -13,8 +13,23 @@ import {
 
 export class AuthService {
   static async login(request: LoginRequest): Promise<LoginResponse> {
-    const response = await apiClient.post<LoginResponse>('/auth/login', request);
-    return response.data;
+    // The admin web portal is staff-only: use the /admin/login path so the backend
+    // rejects Customer accounts (they must sign in via the mobile app). Customers get
+    // a 403 here, which surfaces as the message below.
+    const response = await apiClient.post<LoginResponse>('/auth/admin/login', request);
+    const data = response.data;
+    // Belt-and-suspenders: refuse a customer-only session on the client too.
+    const roles: string[] = (data as any)?.user?.roles ?? [];
+    const staffRoles = ['SuperAdmin', 'Admin', 'Manager', 'Staff'];
+    if (data?.success && !roles.some((r) => staffRoles.includes(r))) {
+      return {
+        ...data,
+        success: false,
+        token: undefined as any,
+        message: 'This portal is for HBC staff. Please use the Himalayan Bullion mobile app to sign in.',
+      } as LoginResponse;
+    }
+    return data;
   }
 
   static async register(request: RegisterRequest): Promise<LoginResponse> {
@@ -54,5 +69,18 @@ export class AuthService {
 
   static async changePassword(request: ChangePasswordRequest): Promise<void> {
     await apiClient.post<ApiResponse<boolean>>('/auth/change-password', request);
+  }
+
+  /**
+   * Revoke the current access token server-side. Best-effort: callers still clear
+   * local token storage regardless of the result. Without this, logging out only
+   * dropped the token locally and it stayed valid on the server until expiry.
+   */
+  static async logout(): Promise<void> {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch {
+      // ignore — local sign-out proceeds regardless
+    }
   }
 }

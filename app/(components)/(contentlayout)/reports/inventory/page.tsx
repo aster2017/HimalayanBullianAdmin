@@ -4,7 +4,11 @@ import { Fragment, useEffect, useState } from 'react';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import Seo from '@/shared/layout-components/seo/seo';
 import apiClient from '@/shared/services/apiClient';
+import { exportCsv, csvDateStamp } from '@/shared/utils/exportCsv';
 import Link from 'next/link';
+
+const stockStatus = (i: any) =>
+  i.stockOnHand === 0 ? 'Out of Stock' : i.stockOnHand <= i.reorderLevel ? 'Low Stock' : 'In Stock';
 
 const InventoryReportPage = () => {
   useProtectedRoute();
@@ -12,6 +16,23 @@ const InventoryReportPage = () => {
   const [items, setItems] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const downloadCsv = () => {
+    exportCsv(
+      items,
+      [
+        { header: 'Item', value: i => i.name },
+        { header: 'SKU', value: i => i.sku },
+        { header: 'Category', value: i => i.category || '' },
+        { header: 'Rate', value: i => i.rate ?? 0 },
+        { header: 'Stock On Hand', value: i => i.stockOnHand ?? 0 },
+        { header: 'Reorder Level', value: i => i.reorderLevel ?? 0 },
+        { header: 'Status', value: i => stockStatus(i) },
+        { header: 'Stock Value', value: i => (i.stockOnHand || 0) * (i.rate || 0) },
+      ],
+      `inventory-${csvDateStamp()}`,
+    );
+  };
 
   useEffect(() => {
     const fetch = async () => {
@@ -46,6 +67,13 @@ const InventoryReportPage = () => {
           <p className="font-semibold text-[1.125rem] text-defaulttextcolor dark:text-defaulttextcolor/70 !mb-0">Inventory Report</p>
           <p className="font-normal text-[#8c9097] text-[0.813rem]">Stock levels and inventory analysis</p>
         </div>
+        <button
+          onClick={downloadCsv}
+          disabled={items.length === 0}
+          className="ti-btn ti-btn-primary-full !opacity-100 mt-2 md:mt-0 disabled:!opacity-50"
+        >
+          <i className="ri-download-2-line me-1"></i>Export CSV
+        </button>
       </div>
 
       {/* Summary */}
@@ -97,7 +125,7 @@ const InventoryReportPage = () => {
               </thead>
               <tbody>
                 {items.map((item) => {
-                  const status = item.stockOnHand === 0 ? 'Out of Stock' : item.stockOnHand <= item.reorderLevel ? 'Low Stock' : 'In Stock';
+                  const status = stockStatus(item);
                   const statusColor = status === 'Out of Stock' ? 'danger' : status === 'Low Stock' ? 'warning' : 'success';
                   return (
                     <tr key={item.id}>

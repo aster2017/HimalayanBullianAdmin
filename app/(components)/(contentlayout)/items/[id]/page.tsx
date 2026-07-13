@@ -14,7 +14,7 @@ interface ProductImage {
   id: string; imageUrl: string; isPrimary: boolean; displayOrder: number; altText?: string;
 }
 
-const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'https://hbc-api.semis.app/api').replace('/api', '');
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? '').replace('/api', '');
 function imgSrc(url: string) { return url?.startsWith('http') ? url : `${API_BASE}${url}`; }
 
 function fmtDate(iso: string) {
