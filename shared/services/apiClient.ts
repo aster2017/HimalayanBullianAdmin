@@ -56,10 +56,10 @@ apiClient.interceptors.response.use(
       try {
         const token = getStoredToken();
 
-        // If no refresh token, clear auth and let login handle it
+        // No refresh token — session is dead, kick to login
         if (!token?.refreshToken) {
           clearStoredToken();
-          // Redirect to login would happen in app-level interceptor
+          window.dispatchEvent(new CustomEvent('hbc:session-expired'));
           return Promise.reject(error);
         }
 
@@ -85,7 +85,9 @@ apiClient.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newToken.token}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
+        // Refresh failed — server revoked the session (role/status/password change)
         clearStoredToken();
+        window.dispatchEvent(new CustomEvent('hbc:session-expired'));
         return Promise.reject(refreshError);
       }
     }

@@ -2,10 +2,21 @@
 
 import { Provider } from 'react-redux';
 import store from '@/shared/redux/store';
+import { logout } from '@/shared/redux/authSlice';
+import { clearStoredToken, getStoredToken } from '@/shared/utils/tokenStorage';
 import PrelineScript from './PrelineScript';
 import { useEffect, useState } from 'react';
 import { Initialload } from '@/shared/contextapi';
 import { DialogProvider } from '@/shared/context/DialogContext';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const SESSION_POLL_MS = 60_000; // check every 60 seconds
+
+/** Force the user back to the login page and wipe local auth state. */
+function forceLogout() {
+  store.dispatch(logout());
+  window.location.href = '/';
+}
 
 export default function RootLayoutClient({ children }: { children: React.ReactNode }) {
   const [pageloading, setpageloading] = useState(false);
@@ -36,6 +47,54 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
       window.removeEventListener('error', onError);
       window.removeEventListener('unhandledrejection', onError);
       clearTimeout(t);
+    };
+  }, []);
+
+  // VAPT: Session Misconfiguration + Role-Based Session Misconfiguration.
+  // The backend revokes tokens immediately on role change, deactivation, or
+  // password change. We need the frontend to detect this and redirect to login.
+  //
+  // Two complementary mechanisms:
+  // 1. Event listener: apiClient fires 'hbc:session-expired' on any 401 that
+  //    survives the refresh attempt → immediate redirect.
+  // 2. Proactive poll: every 60 s we ping /auth/me with the stored token.
+  //    If the server returns 401 the tab is redirected even if the user hasn't
+  //    made a manual API call since their session was killed server-side.
+  useEffect(() => {
+    const onSessionExpired = () => forceLogout();
+    window.addEventListener('hbc:session-expired', onSessionExpired);
+
+    const staffRoles = ['SuperAdmin', 'Admin', 'Manager', 'Staff'];
+    const pollInterval = setInterval(async () => {
+      const stored = getStoredToken();
+      // Only poll when a token is actually present (user is logged in)
+      if (!stored?.token) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${stored.token}` },
+        });
+        if (res.status === 401) {
+          clearStoredToken();
+          forceLogout();
+          return;
+        }
+        // VAPT: if token belongs to a Customer, they have no business here
+        if (res.ok) {
+          const body = await res.json().catch(() => null);
+          const roles: string[] = body?.data?.roles ?? body?.roles ?? [];
+          if (roles.length > 0 && !roles.some((r: string) => staffRoles.includes(r))) {
+            clearStoredToken();
+            forceLogout();
+          }
+        }
+      } catch {
+        // Network error — don't log out; the user may just be offline
+      }
+    }, SESSION_POLL_MS);
+
+    return () => {
+      window.removeEventListener('hbc:session-expired', onSessionExpired);
+      clearInterval(pollInterval);
     };
   }, []);
 
