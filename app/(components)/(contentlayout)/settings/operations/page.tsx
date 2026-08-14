@@ -36,10 +36,10 @@ type AppConfig = {
 };
 
 const DEFAULT_CONFIG: AppConfig = {
-  contactPhone: '9820999999',
+  contactPhone: '9700020999',
   contactEmail: 'info@himalayanbullion.com',
   contactAddress: 'Gyaneshwor, Kathmandu, Nepal',
-  supportHours: 'Sun–Fri, 10:00–18:00 NPT',
+  supportHours: 'Sun–Fri, 11:00–18:00 NPT',
   maintenanceActive: false,
   maintenanceMessage: '',
   minOrderAmount: 0,
