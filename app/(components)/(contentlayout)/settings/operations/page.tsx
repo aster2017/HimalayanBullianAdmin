@@ -21,6 +21,7 @@ type AppConfig = {
   contactEmail: string;
   contactAddress: string;
   supportHours: string;
+  contactWhatsapp: string;
   maintenanceActive: boolean;
   maintenanceMessage: string;
   minOrderAmount: number;
@@ -40,6 +41,7 @@ const DEFAULT_CONFIG: AppConfig = {
   contactEmail: 'info@himalayanbullion.com',
   contactAddress: 'Gyaneshwor, Kathmandu, Nepal',
   supportHours: 'Sun–Fri, 11:00–18:00 NPT',
+  contactWhatsapp: '9820999999',
   maintenanceActive: false,
   maintenanceMessage: '',
   minOrderAmount: 0,
@@ -316,6 +318,11 @@ export default function OperationsSettingsPage() {
                   <label className="form-label">Contact email</label>
                   <input type="email" className="form-control" value={appConfig.contactEmail} onChange={e => setAppConfig({ ...appConfig, contactEmail: e.target.value })} placeholder="support@himalayanbullion.com" />
                 </div>
+              </div>
+              <div>
+                <label className="form-label">WhatsApp number</label>
+                <input className="form-control" value={appConfig.contactWhatsapp} onChange={e => setAppConfig({ ...appConfig, contactWhatsapp: e.target.value })} placeholder="9820999999" />
+                <p className="text-xs text-gray-500 mt-1">Bare digits, no country code — apps prepend it for wa.me links.</p>
               </div>
               <div>
                 <label className="form-label">Store address</label>
