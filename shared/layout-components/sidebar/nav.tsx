@@ -377,6 +377,7 @@ export const MenuItems: MenuItem[] = [
       { path: "/settings/legal", type: "link", active: false, selected: false, dirchange: false, title: "Terms & Conditions", superAdminOnly: true },
       { path: "/settings/faq", type: "link", active: false, selected: false, dirchange: false, title: "FAQ", superAdminOnly: true },
       { path: "/settings/notifications", type: "link", active: false, selected: false, dirchange: false, title: "Notifications", superAdminOnly: true },
+      { path: "/settings/email-templates", type: "link", active: false, selected: false, dirchange: false, title: "Email Templates", superAdminOnly: true },
       { path: "/settings/connectips", type: "link", active: false, selected: false, dirchange: false, title: "ConnectIPS / NCHL", superAdminOnly: true },
       { path: "/settings/connectips-banks", type: "link", active: false, selected: false, dirchange: false, title: "ConnectIPS Bank List", superAdminOnly: true },
       { path: "/settings/payments", type: "link", active: false, selected: false, dirchange: false, title: "Payment Methods", superAdminOnly: true },
