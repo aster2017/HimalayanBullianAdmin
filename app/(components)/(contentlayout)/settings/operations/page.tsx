@@ -22,6 +22,11 @@ type AppConfig = {
   contactAddress: string;
   supportHours: string;
   contactWhatsapp: string;
+  privacyPolicyUrl: string;
+  termsOfServiceUrl: string;
+  cancellationPolicySummary: string;
+  custodianFeePercent: number;
+  custodianFeeMessage: string;
   maintenanceActive: boolean;
   maintenanceMessage: string;
   minOrderAmount: number;
@@ -42,6 +47,11 @@ const DEFAULT_CONFIG: AppConfig = {
   contactAddress: 'Gyaneshwor, Kathmandu, Nepal',
   supportHours: 'Sun–Fri, 11:00–18:00 NPT',
   contactWhatsapp: '9820999999',
+  privacyPolicyUrl: 'https://himalayanbullion.com/privacy',
+  termsOfServiceUrl: 'https://himalayanbullion.com/terms',
+  cancellationPolicySummary: '',
+  custodianFeePercent: 0,
+  custodianFeeMessage: '',
   maintenanceActive: false,
   maintenanceMessage: '',
   minOrderAmount: 0,
@@ -341,6 +351,48 @@ export default function OperationsSettingsPage() {
                 <div>
                   <label className="form-label">Max order amount (NPR, 0 = none)</label>
                   <input type="number" min="0" className="form-control font-mono" value={appConfig.maxOrderAmount} onChange={e => setAppConfig({ ...appConfig, maxOrderAmount: Number(e.target.value) || 0 })} />
+                </div>
+              </div>
+              <div className="pt-2 flex justify-end">
+                <button onClick={() => saveAppConfig()} disabled={savingApp} className="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                  {savingApp ? <><i className="ri-loader-4-line animate-spin me-1"></i>Saving…</> : 'Save app config'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Legal & policy copy */}
+          <div className="box lg:col-span-2">
+            <div className="box-header">
+              <h6 className="box-title mb-0">Legal &amp; policy copy</h6>
+              <p className="text-xs text-[#8c9097] mt-0.5">
+                Full Terms &amp; FAQ text live under <Link href="/settings/legal" className="text-primary">Terms &amp; Conditions</Link> and{' '}
+                <Link href="/settings/faq" className="text-primary">FAQ</Link> — these are the short values shown elsewhere in the apps.
+              </p>
+            </div>
+            <div className="box-body space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label">Terms of Service URL</label>
+                  <input className="form-control" value={appConfig.termsOfServiceUrl} onChange={e => setAppConfig({ ...appConfig, termsOfServiceUrl: e.target.value })} placeholder="https://himalayanbullion.com/terms" />
+                </div>
+                <div>
+                  <label className="form-label">Privacy Policy URL</label>
+                  <input className="form-control" value={appConfig.privacyPolicyUrl} onChange={e => setAppConfig({ ...appConfig, privacyPolicyUrl: e.target.value })} placeholder="https://himalayanbullion.com/privacy" />
+                </div>
+              </div>
+              <div>
+                <label className="form-label">Cancellation policy summary</label>
+                <textarea rows={3} className="form-control" value={appConfig.cancellationPolicySummary} onChange={e => setAppConfig({ ...appConfig, cancellationPolicySummary: e.target.value })} placeholder="Shown in the highlighted cancellation-policy callout before a target is locked and on the Cancel Target screen." />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr] gap-3">
+                <div>
+                  <label className="form-label">Custodian fee amount (NPR, 0 = hide banner)</label>
+                  <input type="number" min="0" className="form-control font-mono" value={appConfig.custodianFeePercent} onChange={e => setAppConfig({ ...appConfig, custodianFeePercent: Number(e.target.value) || 0 })} />
+                </div>
+                <div>
+                  <label className="form-label">Custodian fee banner message</label>
+                  <input className="form-control" value={appConfig.custodianFeeMessage} onChange={e => setAppConfig({ ...appConfig, custodianFeeMessage: e.target.value })} placeholder="Custodian charges are free for the first year…" />
                 </div>
               </div>
               <div className="pt-2 flex justify-end">
