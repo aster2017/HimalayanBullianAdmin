@@ -17,6 +17,7 @@ interface Item {
   category: string | null; subCategory: string | null; unit: string | null;
   rate: number; stockOnHand: number; reorderLevel: number;
   isActive: boolean; isFeatured: boolean; showInMobile: boolean; isTargetProduct: boolean;
+  visibleToIndividual: boolean; visibleToBusiness: boolean;
   zohoItemId: string | null; syncStatus: number; lastSyncedAt: string | null;
   images: { id: string; imageUrl: string; isPrimary: boolean }[];
 }
@@ -426,10 +427,12 @@ export default function ItemsPage() {
               {/* Toggles */}
               <div className="rounded-xl border border-defaultborder overflow-hidden">
                 {[
-                  {key:'isActive',        label:'Active',             desc:'Available for purchase',             icon:'ri-check-double-line', color:'#16a34a', bg:'#dcfce7'},
-                  {key:'showInMobile',    label:'Show in Mobile App', desc:'Visible in iOS customer catalog',    icon:'ri-smartphone-line',   color:'#0891b2', bg:'#e0f2fe'},
-                  {key:'isFeatured',      label:'Featured',           desc:'Highlighted on the home screen',     icon:'ri-star-line',         color:'#d97706', bg:'#fef3c7'},
-                  {key:'isTargetProduct', label:'Target Product',     desc:'Appears in layaway / saving picker', icon:'ri-trophy-line',       color:'#7c3aed', bg:'#ede9fe'},
+                  {key:'isActive',            label:'Active',                  desc:'Available for purchase',                    icon:'ri-check-double-line', color:'#16a34a', bg:'#dcfce7'},
+                  {key:'showInMobile',        label:'Show in Mobile App',      desc:'Visible in iOS customer catalog',           icon:'ri-smartphone-line',   color:'#0891b2', bg:'#e0f2fe'},
+                  {key:'visibleToIndividual', label:'Visible to Individual',   desc:'Shown to Individual-type customers',        icon:'ri-user-line',         color:'#0d9488', bg:'#ccfbf1'},
+                  {key:'visibleToBusiness',   label:'Visible to Business',     desc:'Shown to Business-type customers',          icon:'ri-briefcase-line',    color:'#4f46e5', bg:'#e0e7ff'},
+                  {key:'isFeatured',          label:'Featured',                desc:'Highlighted on the home screen',            icon:'ri-star-line',         color:'#d97706', bg:'#fef3c7'},
+                  {key:'isTargetProduct',     label:'Target Product',          desc:'Appears in layaway / saving picker',        icon:'ri-trophy-line',       color:'#7c3aed', bg:'#ede9fe'},
                 ].map(({key,label,desc,icon,color,bg},idx,arr)=>(
                   <label key={key} className={`flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[#fafafa] transition-colors ${idx<arr.length-1?'border-b border-defaultborder':''}`}>
                     <div className="flex items-center gap-3">
