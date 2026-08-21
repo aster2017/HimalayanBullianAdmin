@@ -395,10 +395,12 @@ export default function ItemDetailPage() {
               <SectionHeader icon="ri-toggle-line" iconBg="#fdf8ee" iconColor="#C8A86B" title="Product Flags"/>
               <div className="p-4 space-y-3">
                 {[
-                  {key:'isActive',        label:'Active',           icon:'ri-check-double-line', color:'#16a34a', bg:'#dcfce7'},
-                  {key:'showInMobile',    label:'Mobile Visible',   icon:'ri-smartphone-line',   color:'#0891b2', bg:'#e0f2fe'},
-                  {key:'isFeatured',      label:'Featured',         icon:'ri-star-line',         color:'#d97706', bg:'#fef3c7'},
-                  {key:'isTargetProduct', label:'Target Product',   icon:'ri-trophy-line',       color:'#7c3aed', bg:'#ede9fe'},
+                  {key:'isActive',            label:'Active',                icon:'ri-check-double-line', color:'#16a34a', bg:'#dcfce7'},
+                  {key:'showInMobile',        label:'Mobile Visible',        icon:'ri-smartphone-line',   color:'#0891b2', bg:'#e0f2fe'},
+                  {key:'visibleToIndividual', label:'Visible to Individual', icon:'ri-user-line',         color:'#0d9488', bg:'#ccfbf1'},
+                  {key:'visibleToBusiness',   label:'Visible to Business',   icon:'ri-briefcase-line',    color:'#4f46e5', bg:'#e0e7ff'},
+                  {key:'isFeatured',          label:'Featured',              icon:'ri-star-line',         color:'#d97706', bg:'#fef3c7'},
+                  {key:'isTargetProduct',     label:'Target Product',        icon:'ri-trophy-line',       color:'#7c3aed', bg:'#ede9fe'},
                 ].map(({key,label,icon,color,bg})=>{
                   const on = (item as any)[key];
                   return (
