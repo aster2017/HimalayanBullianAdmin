@@ -376,6 +376,7 @@ export const MenuItems: MenuItem[] = [
       { path: "/settings/ubo", type: "link", active: false, selected: false, dirchange: false, title: "UBO Declaration", superAdminOnly: true },
       { path: "/settings/legal", type: "link", active: false, selected: false, dirchange: false, title: "Terms & Conditions", superAdminOnly: true },
       { path: "/settings/faq", type: "link", active: false, selected: false, dirchange: false, title: "FAQ", superAdminOnly: true },
+      { path: "/settings/labels", type: "link", active: false, selected: false, dirchange: false, title: "Business Labels", superAdminOnly: true },
       { path: "/settings/notifications", type: "link", active: false, selected: false, dirchange: false, title: "Notifications", superAdminOnly: true },
       { path: "/settings/email-templates", type: "link", active: false, selected: false, dirchange: false, title: "Email Templates", superAdminOnly: true },
       { path: "/settings/connectips", type: "link", active: false, selected: false, dirchange: false, title: "ConnectIPS / NCHL", superAdminOnly: true },

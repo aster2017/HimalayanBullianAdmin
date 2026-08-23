@@ -26,7 +26,9 @@ export interface Item {
   category?: string;
   subCategory?: string;
   weight?: number;         // in grams
-  purity?: string;         // e.g. "22K", "24K"
+  purity?: string;         // e.g. "22K", "24K" — display label only, not used in pricing
+  purityPercent: number;   // 0-100, structured purity that price calculations read
+  makingChargePercent: number; // 0-100, making charge that price calculations read (4 for coins, 0 for bars)
   material?: string;       // e.g. "Gold", "Silver"
   design?: string;
   rate: number;            // Unit price in currency
@@ -83,6 +85,8 @@ export interface CreateItemRequest {
   subCategory?: string;
   weight?: number;
   purity?: string;
+  purityPercent?: number;
+  makingChargePercent?: number;
   material?: string;
   design?: string;
   rate: number;
@@ -108,6 +112,8 @@ export interface UpdateItemRequest {
   subCategory?: string;
   weight?: number;
   purity?: string;
+  purityPercent?: number;
+  makingChargePercent?: number;
   material?: string;
   design?: string;
   rate?: number;

@@ -31,6 +31,8 @@ export default function EditItemPage() {
     subCategory: '',
     weight: undefined,
     purity: '',
+    purityPercent: 99.9,
+    makingChargePercent: 0,
     material: '',
     design: '',
     rate: 0,
@@ -62,6 +64,8 @@ export default function EditItemPage() {
         subCategory: item.subCategory || '',
         weight: item.weight,
         purity: item.purity || '',
+        purityPercent: item.purityPercent ?? 99.9,
+        makingChargePercent: item.makingChargePercent ?? 0,
         material: item.material || '',
         design: item.design || '',
         rate: item.rate || 0,
@@ -410,6 +414,34 @@ export default function EditItemPage() {
                     <option value="Sterling Silver">Sterling Silver</option>
                     <option value="Platinum">Platinum</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="form-label">Purity % (used for pricing)</label>
+                  <input
+                    type="number"
+                    name="purityPercent"
+                    value={formData.purityPercent}
+                    onChange={handleChange}
+                    className="form-control form-control-lg"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Making Charge % (used for pricing)</label>
+                  <input
+                    type="number"
+                    name="makingChargePercent"
+                    value={formData.makingChargePercent}
+                    onChange={handleChange}
+                    className="form-control form-control-lg"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                  />
                 </div>
 
                 <div>

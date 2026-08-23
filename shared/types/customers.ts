@@ -38,6 +38,8 @@ export interface UpdateCustomerRequest {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
+  /** Business-only, admin-settable. Reporting-only — never enforced/blocking (spec 0006). */
+  creditLimit?: number | null;
 }
 
 /**

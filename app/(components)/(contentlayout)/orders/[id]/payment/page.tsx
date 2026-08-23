@@ -67,7 +67,13 @@ export default function OrderPaymentPage() {
   if (!data) return <div className="my-[1.5rem]"><p className="text-danger">Order not found</p></div>;
 
   const d = data;
-  const isPaid = d.paymentStatus === 'paid';
+  // Backend paymentStatus is computed against bookingAmount, not totalAmount (spec 0006 pay-later):
+  // a Business order that only met its deposit already reports 'paid' there (and is Converted
+  // server-side, not blocked) even though balanceDue > 0. Badge label below distinguishes that
+  // "deposit satisfied, balance still owed" case from an actually-fully-paid order so this page
+  // doesn't look broken/misleading when the two amounts diverge.
+  const isFullyPaid = (d.balanceDue ?? 0) <= 0;
+  const isDepositPaid = !isFullyPaid && d.paymentStatus === 'paid';
 
   return (
     <Fragment>
@@ -118,8 +124,13 @@ export default function OrderPaymentPage() {
               </div>
 
               <div className="flex items-center gap-2 mb-4">
-                <span className={`badge ${isPaid ? 'bg-success/20 text-success' : d.paidAmount > 0 ? 'bg-warning/20 text-warning' : 'bg-danger/20 text-danger'} text-[0.875rem] px-3 py-1`}>
-                  {isPaid ? 'Fully Paid' : d.paidAmount > 0 ? 'Partially Paid' : 'Unpaid'}
+                <span className={`badge ${
+                  isFullyPaid ? 'bg-success/20 text-success'
+                  : isDepositPaid ? 'bg-info/20 text-info'
+                  : d.paidAmount > 0 ? 'bg-warning/20 text-warning'
+                  : 'bg-danger/20 text-danger'
+                } text-[0.875rem] px-3 py-1`}>
+                  {isFullyPaid ? 'Fully Paid' : isDepositPaid ? 'Deposit Paid — Balance Due' : d.paidAmount > 0 ? 'Partially Paid' : 'Unpaid'}
                 </span>
                 {d.pendingVerification > 0 && (
                   <span className="badge bg-info/20 text-info px-3 py-1">{d.receiptsPendingCount} receipt(s) pending verification</span>

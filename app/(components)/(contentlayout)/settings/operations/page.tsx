@@ -67,6 +67,21 @@ const DEFAULT_CONFIG: AppConfig = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://hbcapi.semis.app';
 
+// Pay-later config (spec 0006) — two scalar settings stored as plain AppSettings string rows
+// (pay_later_min_deposit_percent / pay_later_term_days), read via the generic GET /settings/all
+// dump and written via the dedicated PUT /settings/pay-later-config endpoint. Deliberately kept
+// separate from AppConfig above: that type is the JSON blob behind GET/PUT /settings/app-config,
+// a different storage key entirely.
+type PayLaterConfig = {
+  minDepositPercent: number;
+  termDays: number;
+};
+
+const DEFAULT_PAY_LATER: PayLaterConfig = {
+  minDepositPercent: 40,
+  termDays: 30,
+};
+
 export default function OperationsSettingsPage() {
   useProtectedRoute();
   const { confirm } = useDialog();
@@ -80,20 +95,29 @@ export default function OperationsSettingsPage() {
   const [savingMethod, setSavingMethod] = useState<string | null>(null);
   const [uploadingMethod, setUploadingMethod] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [payLater, setPayLater] = useState<PayLaterConfig>(DEFAULT_PAY_LATER);
+  const [savingPayLater, setSavingPayLater] = useState(false);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [creditsR, envR, cfgR] = await Promise.all([
+      const [creditsR, envR, cfgR, allR] = await Promise.all([
         fetch(`${API}/settings/credits-enabled`),
         fetch(`${API}/settings/connectips-env`),
         fetch(`${API}/settings/app-config`),
+        // Admin-only generic settings dump (gated by the same policy as the pay-later write below).
+        fetch(`${API}/settings/all`, { headers: getAuthHeaders() }),
       ]);
       const credits = await creditsR.json();
       const env = await envR.json();
       const cfg = await cfgR.json();
+      const all = allR.ok ? await allR.json() : {};
       setCreditsEnabled(credits?.creditsEnabled !== false);
       setCipsEnv(env?.environment === 'Production' ? 'Production' : 'UAT');
+      setPayLater({
+        minDepositPercent: Number(all?.pay_later_min_deposit_percent ?? DEFAULT_PAY_LATER.minDepositPercent),
+        termDays: Number(all?.pay_later_term_days ?? DEFAULT_PAY_LATER.termDays),
+      });
       setAppConfig({
         ...DEFAULT_CONFIG,
         ...cfg,
@@ -155,6 +179,29 @@ export default function OperationsSettingsPage() {
       else toast.error(d?.message || 'Failed to save');
     } catch { toast.error('Failed to save'); }
     finally { setSavingApp(false); }
+  };
+
+  const savePayLater = async () => {
+    if (payLater.minDepositPercent < 1 || payLater.minDepositPercent > 100) {
+      toast.error('Minimum deposit % must be between 1 and 100');
+      return;
+    }
+    if (payLater.termDays <= 0 || payLater.termDays > 3650) {
+      toast.error('Payment term must be between 1 and 3650 days');
+      return;
+    }
+    setSavingPayLater(true);
+    try {
+      const r = await fetch(`${API}/settings/pay-later-config`, {
+        method: 'PUT',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(payLater),
+      });
+      const d = await r.json();
+      if (r.ok && d?.success !== false) toast.success('Pay-later config saved');
+      else toast.error(d?.message || 'Failed to save');
+    } catch { toast.error('Failed to save'); }
+    finally { setSavingPayLater(false); }
   };
 
   const togglePaymentMethod = async (key: keyof AppConfig['paymentMethods'], enabled: boolean) => {
@@ -310,6 +357,40 @@ export default function OperationsSettingsPage() {
               {cipsEnv === 'Production' && (
                 <p className="text-xs text-danger mt-2"><i className="ri-alert-line me-1"></i>Live mode — real customer money will move.</p>
               )}
+            </div>
+          </div>
+
+          {/* Pay-later (Business customers) */}
+          <div className="box">
+            <div className="box-header"><h6 className="box-title mb-0">Pay-later (Business customers)</h6></div>
+            <div className="box-body space-y-3">
+              <p className="text-sm">
+                Deposit required at checkout and the number of days until the remaining balance is due.
+                Applies to Business customers only — Individual customers always pay 100% upfront.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label">Minimum deposit %</label>
+                  <input
+                    type="number" min="1" max="100" className="form-control font-mono"
+                    value={payLater.minDepositPercent}
+                    onChange={e => setPayLater({ ...payLater, minDepositPercent: Number(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Payment term (days)</label>
+                  <input
+                    type="number" min="1" max="3650" className="form-control font-mono"
+                    value={payLater.termDays}
+                    onChange={e => setPayLater({ ...payLater, termDays: Number(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+              <div className="pt-1 flex justify-end">
+                <button onClick={savePayLater} disabled={savingPayLater} className="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                  {savingPayLater ? <><i className="ri-loader-4-line animate-spin me-1"></i>Saving…</> : 'Save pay-later config'}
+                </button>
+              </div>
             </div>
           </div>
 

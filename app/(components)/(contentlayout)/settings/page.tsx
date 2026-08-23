@@ -213,6 +213,15 @@ const SettingsPage = () => {
                   <i className="bx bx-chevron-right text-xl text-[#8c9097]"></i>
                 </Link>
 
+                <Link href="/settings/labels" className="border rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-start gap-3">
+                  <div className="p-2 rounded bg-warning/10 text-warning"><i className="bx bx-purchase-tag-alt text-2xl"></i></div>
+                  <div className="flex-1">
+                    <p className="font-semibold mb-1">Business Labels <span className="text-[0.65rem] font-medium px-1.5 py-0.5 rounded bg-danger/10 text-danger ml-1">SuperAdmin</span></p>
+                    <p className="text-[0.75rem] text-[#8c9097]">Rename business terms shown in the apps (e.g. &quot;Making Charge&quot;) without a store release.</p>
+                  </div>
+                  <i className="bx bx-chevron-right text-xl text-[#8c9097]"></i>
+                </Link>
+
                 <Link href="/rates" className="border rounded-lg p-4 hover:border-primary hover:bg-primary/5 transition-colors flex items-start gap-3">
                   <div className="p-2 rounded bg-primary/10 text-primary"><i className="bx bx-time-five text-2xl"></i></div>
                   <div className="flex-1">

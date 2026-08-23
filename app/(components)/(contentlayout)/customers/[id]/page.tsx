@@ -138,7 +138,7 @@ export default function CustomerDetailPage() {
   const [loading,  setLoading]  = useState(true);
   const [acting,   setActing]   = useState<string|null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState({firstName:'',lastName:'',phoneNumber:''});
+  const [editData, setEditData] = useState({firstName:'',lastName:'',phoneNumber:'',creditLimit:''});
   const [rejectModal,  setRejectModal]  = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [panImgUrl,  setPanImgUrl]  = useState<string|null>(null);
@@ -170,7 +170,7 @@ export default function CustomerDetailPage() {
       fetch(`${API}/targets/customer/${id}`,{headers:getAuthHeaders()}).then(r=>r.json()),
       fetch(`${API}/credits/admin/customers/${id}?page=1&pageSize=10`,{headers:getAuthHeaders()}).then(r=>r.json()),
     ]);
-    if (cr.status==='fulfilled'){const c=cr.value.data;setCustomer(c);setEditData({firstName:c?.firstName||'',lastName:c?.lastName||'',phoneNumber:c?.phoneNumber||''});}
+    if (cr.status==='fulfilled'){const c=cr.value.data;setCustomer(c);setEditData({firstName:c?.firstName||'',lastName:c?.lastName||'',phoneNumber:c?.phoneNumber||'',creditLimit:c?.creditLimit!=null?String(c.creditLimit):''});}
     if (or.status==='fulfilled') setOrders(or.value.data?.items||or.value.data||[]);
     if (ir.status==='fulfilled') setInvoices(ir.value.data?.items||ir.value.data||[]);
     if (tr.status==='fulfilled') setTargets(tr.value.data||[]);
@@ -233,7 +233,10 @@ export default function CustomerDetailPage() {
   const saveEdit = async (e:React.FormEvent)=>{
     e.preventDefault(); setActing('edit');
     try{
-      const r=await fetch(`${API}/customers/${id}`,{method:'PUT',headers:{...getAuthHeaders(),'Content-Type':'application/json'},body:JSON.stringify(editData)});
+      // creditLimit is a text input (allows empty/null) — convert to number|null before sending;
+      // Number('') is 0, so the empty check must run first or a cleared field would save as 0.
+      const payload = {...editData, creditLimit: editData.creditLimit===''?null:Number(editData.creditLimit)};
+      const r=await fetch(`${API}/customers/${id}`,{method:'PUT',headers:{...getAuthHeaders(),'Content-Type':'application/json'},body:JSON.stringify(payload)});
       const d=await r.json();
       if(d.success!==false){toast.success('Customer updated');setEditMode(false);loadAll();}else toast.error(d.message||'Failed');
     }catch{toast.error('Update failed');}
@@ -291,6 +294,9 @@ export default function CustomerDetailPage() {
   const ac   = avatarColor(customer.fullName||'');
   const ai   = avatarInitials(customer.firstName,customer.lastName);
   const activeTargets = targets.filter((t:any)=>t.status==='Active').length;
+  // Sum of already-loaded invoices' balanceAmount — no extra API call. Reflects only the
+  // customer's 10 most recent invoices (same page-size limit as the Invoices zone below).
+  const outstandingBalance = invoices.reduce((s:number,inv:any)=>s+(inv.balanceAmount||0),0);
 
   const filtered = timelineFilter==='all'
     ? timeline
@@ -514,6 +520,22 @@ export default function CustomerDetailPage() {
                   <div>
                     <p className="text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wide mb-1">Reg. Number</p>
                     <p className="font-mono text-[0.85rem] font-semibold text-defaulttextcolor">{customer.businessRegistrationNumber || <span className="text-[#cbd5e1] font-sans font-normal">—</span>}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wide mb-1">Credit Limit</p>
+                    <p className="text-[0.85rem] font-semibold text-defaulttextcolor">
+                      {customer.creditLimit != null
+                        ? `Rs. ${Number(customer.creditLimit).toLocaleString()}`
+                        : <span className="text-[#cbd5e1] font-normal">Not set</span>}
+                    </p>
+                    <p className="text-[10px] text-[#94a3b8] mb-0">Informational — not enforced</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold text-[#94a3b8] uppercase tracking-wide mb-1">Outstanding Balance</p>
+                    <p className="text-[0.85rem] font-semibold" style={{color: outstandingBalance>0 ? '#dc2626' : '#16a34a'}}>
+                      Rs. {outstandingBalance.toLocaleString()}
+                    </p>
+                    <p className="text-[10px] text-[#94a3b8] mb-0">From invoices shown below</p>
                   </div>
                 </div>
               )}
@@ -910,10 +932,15 @@ export default function CustomerDetailPage() {
                 {label:'First Name', key:'firstName'},
                 {label:'Last Name',  key:'lastName'},
                 {label:'Phone',      key:'phoneNumber'},
+                // Business-only, admin-settable, reporting-only (spec 0006) — never shown/sent for Individual customers.
+                ...(customer.clientType === 'Business' ? [{label:'Credit Limit (NPR)', key:'creditLimit'}] : []),
               ].map(f=>(
                 <div key={f.key}>
                   <label className="block text-sm font-medium text-defaulttextcolor mb-1.5">{f.label}</label>
                   <input className="form-control !rounded-xl"
+                    type={f.key==='creditLimit'?'number':'text'}
+                    min={f.key==='creditLimit'?0:undefined}
+                    placeholder={f.key==='creditLimit'?'e.g. 500000 (leave blank for none)':undefined}
                     value={(editData as any)[f.key]}
                     onChange={e=>setEditData({...editData,[f.key]:e.target.value})}/>
                 </div>
