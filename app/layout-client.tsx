@@ -8,6 +8,7 @@ import PrelineScript from './PrelineScript';
 import { useEffect, useState } from 'react';
 import { Initialload } from '@/shared/contextapi';
 import { DialogProvider } from '@/shared/context/DialogContext';
+import { Toaster } from 'react-hot-toast';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const SESSION_POLL_MS = 60_000; // check every 60 seconds
@@ -105,6 +106,7 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
           {children}
         </DialogProvider>
       </Initialload.Provider>
+      <Toaster position="top-right" />
       <PrelineScript />
     </Provider>
   );
