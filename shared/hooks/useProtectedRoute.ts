@@ -10,8 +10,6 @@ import { clearStoredToken, getStoredToken } from '@/shared/utils/tokenStorage';
 import { logout } from '@/shared/redux/authSlice';
 import store from '@/shared/redux/store';
 
-const STAFF_ROLES = ['SuperAdmin', 'Admin', 'Manager', 'Staff'];
-
 export function useProtectedRoute() {
   const router = useRouter();
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
@@ -22,8 +20,9 @@ export function useProtectedRoute() {
       router.push('/');
       return;
     }
-    // If user is in Redux and is Customer-only, reject immediately
-    if (user && !user.roles.some(r => STAFF_ROLES.includes(r))) {
+    // If user is in Redux and lacks portal access (e.g. Customer-only), reject immediately.
+    // Data-driven off the Portal.Access permission, not a hardcoded role-name list.
+    if (user && !user.permissions?.includes('Portal.Access')) {
       clearStoredToken();
       store.dispatch(logout());
       router.push('/');

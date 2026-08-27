@@ -14,8 +14,6 @@ import { Fragment, useEffect, useState } from "react"
 import { connect } from "react-redux"
 import { useRouter } from "next/navigation"
 
-const STAFF_ROLES = ['SuperAdmin', 'Admin', 'Manager', 'Staff'];
-
 const Layout = ({children,}:any) => {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -46,7 +44,9 @@ const Layout = ({children,}:any) => {
         resolvedUser = result.payload as any;
       }
 
-      const isStaff = resolvedUser?.roles?.some((r: string) => STAFF_ROLES.includes(r));
+      // Data-driven (Portal.Access permission), not a hardcoded role-name list, so any
+      // admin-created custom role with portal access passes this guard.
+      const isStaff = resolvedUser?.permissions?.includes('Portal.Access');
       if (!isStaff) {
         clearStoredToken();
         dispatch(logout());

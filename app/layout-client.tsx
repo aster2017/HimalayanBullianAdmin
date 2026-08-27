@@ -65,7 +65,6 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
     const onSessionExpired = () => forceLogout();
     window.addEventListener('hbc:session-expired', onSessionExpired);
 
-    const staffRoles = ['SuperAdmin', 'Admin', 'Manager', 'Staff'];
     const pollInterval = setInterval(async () => {
       const stored = getStoredToken();
       // Only poll when a token is actually present (user is logged in)
@@ -79,11 +78,14 @@ export default function RootLayoutClient({ children }: { children: React.ReactNo
           forceLogout();
           return;
         }
-        // VAPT: if token belongs to a Customer, they have no business here
+        // VAPT: if token belongs to a Customer (or any non-portal role), they have no
+        // business here. Data-driven off the Portal.Access permission, not a hardcoded
+        // role-name list, so any admin-created custom role with portal access survives.
         if (res.ok) {
           const body = await res.json().catch(() => null);
+          const permissions: string[] = body?.data?.permissions ?? body?.permissions ?? [];
           const roles: string[] = body?.data?.roles ?? body?.roles ?? [];
-          if (roles.length > 0 && !roles.some((r: string) => staffRoles.includes(r))) {
+          if (roles.length > 0 && !permissions.includes('Portal.Access')) {
             clearStoredToken();
             forceLogout();
           }

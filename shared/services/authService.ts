@@ -19,9 +19,10 @@ export class AuthService {
     const response = await apiClient.post<LoginResponse>('/auth/admin/login', request);
     const data = response.data;
     // Belt-and-suspenders: refuse a customer-only session on the client too.
-    const roles: string[] = (data as any)?.user?.roles ?? [];
-    const staffRoles = ['SuperAdmin', 'Admin', 'Manager', 'Staff'];
-    if (data?.success && !roles.some((r) => staffRoles.includes(r))) {
+    // Data-driven (Portal.Access permission), not a hardcoded role-name list, so any
+    // admin-created custom role with portal access works here without a client change.
+    const permissions: string[] = (data as any)?.user?.permissions ?? [];
+    if (data?.success && !permissions.includes('Portal.Access')) {
       return {
         ...data,
         success: false,

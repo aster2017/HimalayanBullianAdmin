@@ -82,6 +82,20 @@ const DEFAULT_PAY_LATER: PayLaterConfig = {
   termDays: 30,
 };
 
+// SDF tax config (spec 0011) — Individual-customer-only deduction, admin-configurable per
+// client type. Same storage shape as pay-later above: plain AppSettings string rows
+// (sdf_tax_percent_individual / sdf_tax_percent_business), read via GET /settings/all and
+// written via PUT /settings/sdf-tax-config.
+type SdfTaxConfig = {
+  individualPercent: number;
+  businessPercent: number;
+};
+
+const DEFAULT_SDF_TAX: SdfTaxConfig = {
+  individualPercent: 0.5,
+  businessPercent: 0,
+};
+
 export default function OperationsSettingsPage() {
   useProtectedRoute();
   const { confirm } = useDialog();
@@ -97,6 +111,8 @@ export default function OperationsSettingsPage() {
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [payLater, setPayLater] = useState<PayLaterConfig>(DEFAULT_PAY_LATER);
   const [savingPayLater, setSavingPayLater] = useState(false);
+  const [sdfTax, setSdfTax] = useState<SdfTaxConfig>(DEFAULT_SDF_TAX);
+  const [savingSdfTax, setSavingSdfTax] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -117,6 +133,10 @@ export default function OperationsSettingsPage() {
       setPayLater({
         minDepositPercent: Number(all?.pay_later_min_deposit_percent ?? DEFAULT_PAY_LATER.minDepositPercent),
         termDays: Number(all?.pay_later_term_days ?? DEFAULT_PAY_LATER.termDays),
+      });
+      setSdfTax({
+        individualPercent: Number(all?.sdf_tax_percent_individual ?? DEFAULT_SDF_TAX.individualPercent),
+        businessPercent: Number(all?.sdf_tax_percent_business ?? DEFAULT_SDF_TAX.businessPercent),
       });
       setAppConfig({
         ...DEFAULT_CONFIG,
@@ -202,6 +222,29 @@ export default function OperationsSettingsPage() {
       else toast.error(d?.message || 'Failed to save');
     } catch { toast.error('Failed to save'); }
     finally { setSavingPayLater(false); }
+  };
+
+  const saveSdfTax = async () => {
+    if (sdfTax.individualPercent < 0 || sdfTax.individualPercent > 100) {
+      toast.error('Individual SDF % must be between 0 and 100');
+      return;
+    }
+    if (sdfTax.businessPercent < 0 || sdfTax.businessPercent > 100) {
+      toast.error('Business SDF % must be between 0 and 100');
+      return;
+    }
+    setSavingSdfTax(true);
+    try {
+      const r = await fetch(`${API}/settings/sdf-tax-config`, {
+        method: 'PUT',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(sdfTax),
+      });
+      const d = await r.json();
+      if (r.ok && d?.success !== false) toast.success('SDF tax config saved');
+      else toast.error(d?.message || 'Failed to save');
+    } catch { toast.error('Failed to save'); }
+    finally { setSavingSdfTax(false); }
   };
 
   const togglePaymentMethod = async (key: keyof AppConfig['paymentMethods'], enabled: boolean) => {
@@ -389,6 +432,41 @@ export default function OperationsSettingsPage() {
               <div className="pt-1 flex justify-end">
                 <button onClick={savePayLater} disabled={savingPayLater} className="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors">
                   {savingPayLater ? <><i className="ri-loader-4-line animate-spin me-1"></i>Saving…</> : 'Save pay-later config'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* SDF tax config */}
+          <div className="box">
+            <div className="box-header"><h6 className="box-title mb-0">SDF Tax Configuration</h6></div>
+            <div className="box-body space-y-3">
+              <p className="text-sm">
+                Deducted from the subtotal and shown as its own line item on every target payment.
+                Applies to Individual customers only — Business customers are unaffected by the
+                Individual % below.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label">Individual %</label>
+                  <input
+                    type="number" min="0" max="100" step="0.1" className="form-control font-mono"
+                    value={sdfTax.individualPercent}
+                    onChange={e => setSdfTax({ ...sdfTax, individualPercent: Number(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Business %</label>
+                  <input
+                    type="number" min="0" max="100" step="0.1" className="form-control font-mono"
+                    value={sdfTax.businessPercent}
+                    onChange={e => setSdfTax({ ...sdfTax, businessPercent: Number(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+              <div className="pt-1 flex justify-end">
+                <button onClick={saveSdfTax} disabled={savingSdfTax} className="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                  {savingSdfTax ? <><i className="ri-loader-4-line animate-spin me-1"></i>Saving…</> : 'Save SDF tax config'}
                 </button>
               </div>
             </div>

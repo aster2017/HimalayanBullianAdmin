@@ -138,7 +138,7 @@ export default function CustomerDetailPage() {
   const [loading,  setLoading]  = useState(true);
   const [acting,   setActing]   = useState<string|null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState({firstName:'',lastName:'',phoneNumber:'',creditLimit:''});
+  const [editData, setEditData] = useState({firstName:'',lastName:'',email:'',phoneNumber:'',creditLimit:''});
   const [rejectModal,  setRejectModal]  = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [panImgUrl,  setPanImgUrl]  = useState<string|null>(null);
@@ -170,7 +170,7 @@ export default function CustomerDetailPage() {
       fetch(`${API}/targets/customer/${id}`,{headers:getAuthHeaders()}).then(r=>r.json()),
       fetch(`${API}/credits/admin/customers/${id}?page=1&pageSize=10`,{headers:getAuthHeaders()}).then(r=>r.json()),
     ]);
-    if (cr.status==='fulfilled'){const c=cr.value.data;setCustomer(c);setEditData({firstName:c?.firstName||'',lastName:c?.lastName||'',phoneNumber:c?.phoneNumber||'',creditLimit:c?.creditLimit!=null?String(c.creditLimit):''});}
+    if (cr.status==='fulfilled'){const c=cr.value.data;setCustomer(c);setEditData({firstName:c?.firstName||'',lastName:c?.lastName||'',email:c?.email||'',phoneNumber:c?.phoneNumber||'',creditLimit:c?.creditLimit!=null?String(c.creditLimit):''});}
     if (or.status==='fulfilled') setOrders(or.value.data?.items||or.value.data||[]);
     if (ir.status==='fulfilled') setInvoices(ir.value.data?.items||ir.value.data||[]);
     if (tr.status==='fulfilled') setTargets(tr.value.data||[]);
@@ -931,6 +931,7 @@ export default function CustomerDetailPage() {
               {[
                 {label:'First Name', key:'firstName'},
                 {label:'Last Name',  key:'lastName'},
+                {label:'Email',      key:'email'},
                 {label:'Phone',      key:'phoneNumber'},
                 // Business-only, admin-settable, reporting-only (spec 0006) — never shown/sent for Individual customers.
                 ...(customer.clientType === 'Business' ? [{label:'Credit Limit (NPR)', key:'creditLimit'}] : []),
@@ -938,7 +939,7 @@ export default function CustomerDetailPage() {
                 <div key={f.key}>
                   <label className="block text-sm font-medium text-defaulttextcolor mb-1.5">{f.label}</label>
                   <input className="form-control !rounded-xl"
-                    type={f.key==='creditLimit'?'number':'text'}
+                    type={f.key==='creditLimit'?'number':f.key==='email'?'email':'text'}
                     min={f.key==='creditLimit'?0:undefined}
                     placeholder={f.key==='creditLimit'?'e.g. 500000 (leave blank for none)':undefined}
                     value={(editData as any)[f.key]}
