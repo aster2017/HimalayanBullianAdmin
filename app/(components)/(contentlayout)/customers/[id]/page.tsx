@@ -6,6 +6,8 @@ import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
 import { getAuthHeaders } from '@/shared/services/apiConfig';
 import toast from 'react-hot-toast';
 import { useDialog } from '@/shared/context/DialogContext';
+import { useAppSelector } from '@/shared/redux/hooks';
+import { hasPermission } from '@/shared/utils/permissions';
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -32,6 +34,15 @@ function fmtDateTime(iso: string) {
   const d = new Date(iso);
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) + ' · ' +
     d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+
+// One key per opened Remove Credits modal, so a resubmit after a dropped response is
+// recognised by the server as a replay instead of deducting twice. randomUUID needs a
+// secure context; the fallback keeps the button working on a plain-http deployment.
+function newIdempotencyKey() {
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `deduct-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 function customerStatus(c: any) {
@@ -129,6 +140,12 @@ export default function CustomerDetailPage() {
   const { confirm } = useDialog();
   const { id } = useParams();
   const router  = useRouter();
+  // useProtectedRoute() returns only { isAuthenticated } — the logged-in user comes
+  // from redux, the same way sidebar.tsx reads it for resolveNavTier.
+  const user = useAppSelector(state => state.auth.user);
+  // Removing credit is gated on Credits.Reverse, the permission the endpoint declares.
+  // The button is hidden without it; the server is still the enforcement.
+  const canRemoveCredits = hasPermission(user, 'Credits.Reverse');
 
   const [customer, setCustomer] = useState<any>(null);
   const [orders,   setOrders]   = useState<any[]>([]);
@@ -148,6 +165,15 @@ export default function CustomerDetailPage() {
   const [addCreditsAmount, setAddCreditsAmount] = useState('');
   const [addCreditsNote, setAddCreditsNote] = useState('');
   const [addCreditsLoading, setAddCreditsLoading] = useState(false);
+
+  const [removeCreditsModal, setRemoveCreditsModal] = useState(false);
+  const [removeCreditsAmount, setRemoveCreditsAmount] = useState('');
+  const [removeCreditsReason, setRemoveCreditsReason] = useState('');
+  const [removeCreditsLoading, setRemoveCreditsLoading] = useState(false);
+  // Generated once when the modal opens, not per click, so a retry after a dropped
+  // response re-sends the same key and the server treats it as a replay rather than
+  // a second deduction.
+  const [removeCreditsKey, setRemoveCreditsKey] = useState('');
 
   type TimelineItem = {
     id:string; eventType:string; color:string; timestamp:string;
@@ -268,6 +294,55 @@ export default function CustomerDetailPage() {
       toast.error('Request failed');
     }
     setAddCreditsLoading(false);
+  };
+
+  const openRemoveCredits = () => {
+    setRemoveCreditsAmount('');
+    setRemoveCreditsReason('');
+    setRemoveCreditsKey(newIdempotencyKey());
+    setRemoveCreditsModal(true);
+  };
+
+  const closeRemoveCredits = () => {
+    setRemoveCreditsModal(false);
+    setRemoveCreditsAmount('');
+    setRemoveCreditsReason('');
+    setRemoveCreditsKey('');
+  };
+
+  const submitRemoveCredits = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = parseFloat(removeCreditsAmount);
+    const reason = removeCreditsReason.trim();
+    // These two checks are a convenience so the operator sees the problem without a
+    // round trip — the server rejects a non-positive amount and a blank reason itself,
+    // and it owns every other rule (no client-side floor here, deliberately).
+    if (!amount || amount <= 0) { toast.error('Amount must be greater than zero'); return; }
+    if (!reason) { toast.error('A reason is required'); return; }
+    if (!await confirm(
+      `Rs. ${amount.toLocaleString()} will be removed from ${customer.fullName}'s wallet. The customer is notified and the ledger keeps a permanent entry.`,
+      { title: 'Remove Credits?', variant: 'danger', confirmLabel: 'Remove Credits' })) return;
+    setRemoveCreditsLoading(true);
+    try {
+      const r = await fetch(`${API}/credits/admin/deduct`, {
+        method: 'POST',
+        headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: id, amount, reason, idempotencyKey: removeCreditsKey }),
+      });
+      const d = await r.json().catch(() => null);
+      if (r.ok && d?.success) {
+        toast.success(d.message || `NPR ${amount.toLocaleString()} removed`);
+        closeRemoveCredits();
+        loadAll();
+      } else {
+        // Surface the server's message verbatim — the insufficient-balance rejection
+        // names the customer's real balance, which is the most useful thing to show.
+        toast.error(d?.message || `Failed to remove credits (${r.status})`);
+      }
+    } catch {
+      toast.error('Request failed');
+    }
+    setRemoveCreditsLoading(false);
   };
 
   // ── loading / not-found ───────────────────────────────────────────────────
@@ -586,6 +661,13 @@ export default function CustomerDetailPage() {
                     style={{background:'linear-gradient(135deg,#C8A86B 0%,#a8863d 100%)'}}>
                     <i className="ri-add-line text-xs"/> Add Credits
                   </button>
+                  {canRemoveCredits && (
+                    <button onClick={openRemoveCredits}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[0.75rem] font-semibold rounded-lg border transition-colors"
+                      style={{borderColor:'#fecaca',color:'#dc2626',background:'#fff5f5'}}>
+                      <i className="ri-subtract-line text-xs"/> Remove Credits
+                    </button>
+                  )}
                   <Link href={`/credits?search=${encodeURIComponent(customer.email||'')}`}>
                     <button className="text-[0.75rem] text-[#C8A86B] hover:underline font-medium">View all</button>
                   </Link>
@@ -1015,6 +1097,78 @@ export default function CustomerDetailPage() {
                   {addCreditsLoading
                     ? <><i className="ri-loader-4-line animate-spin mr-1"/>Adding…</>
                     : <><i className="ri-add-line mr-1"/>Add Credits</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Remove Credits Modal ── */}
+      {removeCreditsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-bodybg rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'#fee2e2'}}>
+                <i className="ri-wallet-3-line" style={{color:'#dc2626'}}/>
+              </div>
+              <div>
+                <h3 className="text-[1rem] font-bold text-defaulttextcolor mb-0">Remove Credits</h3>
+                <p className="text-[0.72rem] text-[#94a3b8]">{customer.fullName}</p>
+              </div>
+            </div>
+            <form onSubmit={submitRemoveCredits} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor mb-1.5">Amount (NPR)</label>
+                <input
+                  type="number" min="0" step="0.01" required
+                  className="form-control !rounded-xl"
+                  placeholder="e.g. 500"
+                  value={removeCreditsAmount}
+                  onChange={e => setRemoveCreditsAmount(e.target.value)}
+                />
+                <p className="text-[0.72rem] text-[#94a3b8] mt-1 mb-0">
+                  Current balance Rs. {(wallet?.balance||0).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-defaulttextcolor mb-1.5">
+                  Reason <span className="text-[#dc2626] font-normal text-xs">(required)</span>
+                </label>
+                <textarea
+                  className="form-control !rounded-xl" rows={3} required
+                  placeholder="e.g. Reverses the duplicate deposit posted on 12 Aug"
+                  value={removeCreditsReason}
+                  onChange={e => setRemoveCreditsReason(e.target.value)}
+                />
+                <p className="text-[0.72rem] text-[#94a3b8] mt-1 mb-0">
+                  Recorded on the ledger entry for audit. Not shown to the customer.
+                </p>
+              </div>
+              {parseFloat(removeCreditsAmount) > 0 && (
+                <div className="rounded-xl p-3" style={{background:'#fff5f5'}}>
+                  <p className="text-[0.8rem] text-defaulttextcolor mb-0">
+                    <span className="font-semibold" style={{color:'#dc2626'}}>Rs. {parseFloat(removeCreditsAmount).toLocaleString()}</span>
+                    {' '}will be removed from <span className="font-semibold">{customer.firstName}</span>&apos;s wallet, leaving{' '}
+                    <span className="font-semibold">Rs. {((wallet?.balance||0) - parseFloat(removeCreditsAmount)).toLocaleString()}</span>
+                  </p>
+                  {parseFloat(removeCreditsAmount) > (wallet?.balance||0) && (
+                    <p className="text-[0.72rem] font-medium mt-1 mb-0" style={{color:'#dc2626'}}>
+                      This is more than the balance shown above — the server will reject it.
+                    </p>
+                  )}
+                </div>
+              )}
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={closeRemoveCredits}
+                  className="ti-btn ti-btn-light !rounded-xl" disabled={removeCreditsLoading}>Cancel</button>
+                <button type="submit"
+                  disabled={removeCreditsLoading || !removeCreditsReason.trim() || !(parseFloat(removeCreditsAmount) > 0)}
+                  className="ti-btn !rounded-xl !text-white font-semibold disabled:opacity-50"
+                  style={{background:'linear-gradient(135deg,#dc2626 0%,#b91c1c 100%)'}}>
+                  {removeCreditsLoading
+                    ? <><i className="ri-loader-4-line animate-spin mr-1"/>Removing…</>
+                    : <><i className="ri-subtract-line mr-1"/>Remove Credits</>}
                 </button>
               </div>
             </form>
