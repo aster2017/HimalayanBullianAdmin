@@ -11,6 +11,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { MenuItems, getMenuItemsByRole } from "./nav";
 import { useAppSelector } from "@/shared/redux/hooks";
 import { getAuthHeaders } from "@/shared/services/apiConfig";
+import { resolveNavTier } from "@/shared/utils/permissions";
 
 const ADMIN_API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -18,16 +19,18 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 	const auth = useAppSelector((state: any) => state.auth);
 	const [menuitems, setMenuitems] = useState(MenuItems);
 
-	// Filter menu items based on user role
+	// Filter menu items based on what the user is permitted to do
 	React.useEffect(() => {
-		if (auth?.user?.roles && auth.user.roles.length > 0) {
-			const rawRole = auth.user.roles[0];
-			// Map backend PascalCase roles to the nav's two-tier "admin" / "user" system
-			const navRole = ['SuperAdmin', 'Admin', 'Manager', 'Staff'].includes(rawRole) ? 'admin' : 'user';
-			const filteredItems = getMenuItemsByRole(navRole, rawRole);
-			setMenuitems(filteredItems);
-		}
-	}, [auth?.user?.roles]);
+		if (!auth?.user?.roles?.length && !auth?.user?.permissions?.length) return;
+		// Which tier of the nav ("admin" / "user") comes from the Portal.Access
+		// permission, not from a role-name list — see resolveNavTier.
+		const navRole = resolveNavTier(auth.user);
+		// nav.tsx's only remaining role check is superAdminOnly, so scan every
+		// role the user holds instead of trusting whichever one happens to be first.
+		const rawRole = auth.user.roles?.includes('SuperAdmin') ? 'SuperAdmin' : '';
+		const filteredItems = getMenuItemsByRole(navRole, rawRole);
+		setMenuitems(filteredItems);
+	}, [auth?.user?.roles, auth?.user?.permissions]);
 
 	// Poll pending PayAtStore count and badge the "Store Payments" sidebar item
 	useEffect(() => {

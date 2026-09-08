@@ -60,6 +60,9 @@ const MODULE_META: Record<string, { icon: string; color: string; bg: string }> =
   Addresses:   { icon: 'ri-map-pin-line',         color: '#0891b2', bg: '#e0f2fe' },
   Notifications:{ icon: 'ri-notification-line',  color: '#d97706', bg: '#fef3c7' },
   Products:    { icon: 'ri-store-line',           color: '#059669', bg: '#d1fae5' },
+  Credits:     { icon: 'ri-wallet-3-line',        color: '#C8A86B', bg: '#fdf8ee' },
+  Buyback:     { icon: 'ri-arrow-go-back-line',   color: '#059669', bg: '#d1fae5' },
+  Kyc:         { icon: 'ri-user-search-line',     color: '#2563eb', bg: '#dbeafe' },
 };
 function moduleMeta(cat: string) {
   return MODULE_META[cat] ?? { icon: 'ri-apps-2-line', color: '#64748b', bg: '#f1f5f9' };
