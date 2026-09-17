@@ -14,6 +14,14 @@ export interface ItemImage {
 }
 
 /**
+ * Product type — drives the Coin/Bar making-charge rule (coins 4%, bars 0%).
+ * The API serializes this enum as its NAME, not its integer value
+ * (global JsonStringEnumConverter registered in Program.cs), so the wire
+ * values are "Other" / "Coin" / "Bar".
+ */
+export type ProductType = 'Other' | 'Coin' | 'Bar';
+
+/**
  * Item/Product in inventory
  * Fields match backend ItemDto exactly
  */
@@ -41,6 +49,12 @@ export interface Item {
   unit?: string;           // e.g. "pcs", "grams", "set"
   isActive: boolean;
   isFeatured: boolean;
+  productType: ProductType;      // Other | Coin | Bar — string name on the wire, not an int
+  isTargetProduct: boolean;      // Appears in the layaway/saving picker
+  showInMobile: boolean;         // Visible in the mobile customer catalog
+  visibleToIndividual: boolean;  // Shown to Individual-type customers
+  visibleToBusiness: boolean;    // Shown to Business-type customers
+  displayOrder: number;          // Server-assigned; changed via PUT /api/items/reorder
   source?: string;         // Local, Zoho, ThirdParty
   syncStatus?: string;     // Pending, InProgress, Success, Failed
   lastSyncedAt?: string;
@@ -99,11 +113,18 @@ export interface CreateItemRequest {
   unit?: string;
   isActive?: boolean;
   isFeatured?: boolean;
+  productType?: ProductType;
+  isTargetProduct?: boolean;
+  showInMobile?: boolean;
+  visibleToIndividual?: boolean;
+  visibleToBusiness?: boolean;
+  // displayOrder is deliberately absent — the server assigns it on create.
 }
 
 /**
  * Update item request
  * Maps to backend UpdateItemDto (excludes SKU which cannot be changed)
+ * The flag fields are optional: an omitted key means "leave the stored value unchanged".
  */
 export interface UpdateItemRequest {
   name?: string;
@@ -126,6 +147,11 @@ export interface UpdateItemRequest {
   unit?: string;
   isActive?: boolean;
   isFeatured?: boolean;
+  productType?: ProductType;
+  isTargetProduct?: boolean;
+  showInMobile?: boolean;
+  visibleToIndividual?: boolean;
+  visibleToBusiness?: boolean;
 }
 
 /**

@@ -1,19 +1,39 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/shared/redux/hooks';
 import { useProtectedRoute } from '@/shared/hooks/useProtectedRoute';
+import { useDialog } from '@/shared/context/DialogContext';
 import { createItem } from '@/shared/redux/itemsSlice';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { CreateItemRequest } from '@/shared/types';
+import { CreateItemRequest, ProductType } from '@/shared/types';
+
+/**
+ * Making charge the business rule derives from the product type — HBC coins carry 4%,
+ * bars carry none. `null` means "no derived value", i.e. leave whatever is in the field.
+ */
+const MAKING_CHARGE_BY_PRODUCT_TYPE: Record<ProductType, number | null> = {
+  Coin: 4,
+  Bar: 0,
+  Other: null,
+};
+
+/** Catalog flags, rendered with the same toggle idiom as the items list quick-edit modal. */
+const PRODUCT_FLAGS: { key: 'showInMobile' | 'visibleToIndividual' | 'visibleToBusiness' | 'isTargetProduct'; label: string; desc: string; icon: string; color: string; bg: string }[] = [
+  {key:'showInMobile',        label:'Show in Mobile App',    desc:'Visible in the mobile customer catalog', icon:'ri-smartphone-line', color:'#0891b2', bg:'#e0f2fe'},
+  {key:'visibleToIndividual', label:'Visible to Individual', desc:'Shown to Individual-type customers',     icon:'ri-user-line',       color:'#0d9488', bg:'#ccfbf1'},
+  {key:'visibleToBusiness',   label:'Visible to Business',   desc:'Shown to Business-type customers',       icon:'ri-briefcase-line',  color:'#4f46e5', bg:'#e0e7ff'},
+  {key:'isTargetProduct',     label:'Target Product',        desc:'Appears in the layaway / saving picker', icon:'ri-trophy-line',     color:'#7c3aed', bg:'#ede9fe'},
+];
 
 export default function CreateItemPage() {
   useProtectedRoute();
 
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { confirm } = useDialog();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,7 +46,9 @@ export default function CreateItemPage() {
     weight: undefined,
     purity: '',
     purityPercent: 99.9,
-    makingChargePercent: 0,
+    // No hardcoded making charge: it is derived from the product type below (coins 4%, bars 0%)
+    // so a coin can never be born at a silent 0%, which undercharges every sale priced off it.
+    makingChargePercent: undefined,
     material: '',
     design: '',
     rate: 0,
@@ -39,7 +61,15 @@ export default function CreateItemPage() {
     unit: '',
     isActive: true,
     isFeatured: false,
+    productType: 'Other',
+    isTargetProduct: false,
+    showInMobile: true,
+    visibleToIndividual: true,
+    visibleToBusiness: true,
   });
+
+  // Once the operator types a making charge, the product type never overwrites it again.
+  const makingTouched = useRef(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -47,10 +77,20 @@ export default function CreateItemPage() {
                        type === 'number' ? (value === '' ? 0 : parseFloat(value)) :
                        value;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: fieldValue,
-    }));
+    if (name === 'makingChargePercent') makingTouched.current = true;
+
+    setFormData((prev) => {
+      const next = { ...prev, [name]: fieldValue };
+
+      // Picking a product type seeds the making charge it implies — but only while the
+      // operator has left that field alone, so a deliberate value is never clobbered.
+      if (name === 'productType' && !makingTouched.current) {
+        const derived = MAKING_CHARGE_BY_PRODUCT_TYPE[fieldValue as ProductType];
+        if (derived !== null) next.makingChargePercent = derived;
+      }
+
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -73,6 +113,17 @@ export default function CreateItemPage() {
     if (formData.costPrice < 0) {
       setError('Cost price cannot be negative');
       return;
+    }
+
+    // A coin priced away from its type-derived making charge is warned about, never blocked —
+    // the server owns rejection (it refuses a Coin at 0%); this only catches the typo.
+    const derivedMaking = MAKING_CHARGE_BY_PRODUCT_TYPE[formData.productType ?? 'Other'];
+    if (derivedMaking !== null && (formData.makingChargePercent ?? 0) !== derivedMaking) {
+      const ok = await confirm(
+        `A ${formData.productType} normally carries a ${derivedMaking}% making charge, but this one is set to ${formData.makingChargePercent ?? 0}%. Making charge feeds the sale and target price directly.`,
+        { title: 'Unusual making charge', variant: 'warning', confirmLabel: 'Save anyway' }
+      );
+      if (!ok) return;
     }
 
     setIsLoading(true);
@@ -368,16 +419,34 @@ export default function CreateItemPage() {
                 </div>
 
                 <div>
+                  <label className="form-label">Product Type</label>
+                  <select
+                    name="productType"
+                    value={formData.productType}
+                    onChange={handleChange}
+                    className="form-control form-control-lg"
+                  >
+                    <option value="Other">Other</option>
+                    <option value="Coin">Coin</option>
+                    <option value="Bar">Bar</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sets the making charge below — coins 4%, bars 0% — until you edit that field yourself.
+                  </p>
+                </div>
+
+                <div>
                   <label className="form-label">Making Charge % (used for pricing)</label>
                   <input
                     type="number"
                     name="makingChargePercent"
-                    value={formData.makingChargePercent}
+                    value={formData.makingChargePercent ?? ''}
                     onChange={handleChange}
                     className="form-control form-control-lg"
                     step="0.1"
                     min="0"
                     max="100"
+                    placeholder="e.g., 4 for coins, 0 for bars"
                   />
                 </div>
 
@@ -408,6 +477,40 @@ export default function CreateItemPage() {
                     className="form-control form-control-lg"
                     placeholder="e.g., Vintage, Modern, Traditional"
                   />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Visibility & Target Product */}
+          <div className="col-span-12">
+            <div className="box">
+              <div className="box-header">
+                <h4 className="box-title">Visibility & Target Product</h4>
+              </div>
+              <div className="box-body">
+                <div className="rounded-xl border border-defaultborder overflow-hidden">
+                  {PRODUCT_FLAGS.map(({key,label,desc,icon,color,bg},idx,arr)=>(
+                    <label key={key} className={`flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[#fafafa] transition-colors ${idx<arr.length-1?'border-b border-defaultborder':''}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:bg}}>
+                          <i className={`${icon} text-sm`} style={{color}}/>
+                        </div>
+                        <div>
+                          <p className="text-[0.85rem] font-medium text-defaulttextcolor mb-0">{label}</p>
+                          <p className="text-[0.72rem] text-[#94a3b8] mb-0">{desc}</p>
+                        </div>
+                      </div>
+                      <div className="relative flex-shrink-0 ml-3">
+                        <input type="checkbox" className="sr-only peer"
+                          name={key}
+                          checked={formData[key] ?? false}
+                          onChange={handleChange}/>
+                        <div className="w-10 h-5 rounded-full transition-colors bg-[#e2e8f0] peer-checked:bg-[#C8A86B]"/>
+                        <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"/>
+                      </div>
+                    </label>
+                  ))}
                 </div>
               </div>
             </div>
