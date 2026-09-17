@@ -53,7 +53,8 @@ export default function BankDetailsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${API}/settings/bank-details`);
+      // bank-details is not anonymous on the API — send the admin's token.
+      const r = await fetch(`${API}/settings/bank-details`, { headers: getAuthHeaders() });
       const d = await r.json();
       setConfig({
         accounts: Array.isArray(d?.accounts) ? d.accounts : [],

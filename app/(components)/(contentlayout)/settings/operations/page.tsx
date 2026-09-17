@@ -118,9 +118,13 @@ export default function OperationsSettingsPage() {
     setLoading(true);
     try {
       const [creditsR, envR, cfgR, allR] = await Promise.all([
-        fetch(`${API}/settings/credits-enabled`),
-        fetch(`${API}/settings/connectips-env`),
-        fetch(`${API}/settings/app-config`),
+        // All three need the admin's token: credits-enabled and connectips-env are
+        // [Authorize] (anonymous → 401 with an empty body, which r.json() cannot parse), and
+        // app-config returns only a public subset to anonymous callers — saving from that
+        // subset would overwrite the stored config with defaults.
+        fetch(`${API}/settings/credits-enabled`, { headers: getAuthHeaders() }),
+        fetch(`${API}/settings/connectips-env`, { headers: getAuthHeaders() }),
+        fetch(`${API}/settings/app-config`, { headers: getAuthHeaders() }),
         // Admin-only generic settings dump (gated by the same policy as the pay-later write below).
         fetch(`${API}/settings/all`, { headers: getAuthHeaders() }),
       ]);
