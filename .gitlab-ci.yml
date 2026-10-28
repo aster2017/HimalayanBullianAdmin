@@ -1,0 +1,53 @@
+# HBC admin (Next.js) on the shared deploy template (GitLab infra/ci-templates, /deploy-compose.yml): a push
+# to main builds on the autodeploy runner; the manual deploy job ships it to /opt/aster/apps/hbc; verify checks
+# https://hbc.semis.app/. This replaces deploy-prod-safe.sh and keeps what it did:
+# - the same build args (production API URL, NEXT_PUBLIC_ENV=production) and the hbc.commit=<sha> label.
+#   .dockerignore already keeps .git and .env.local out, so the checkout builds like its git archive did.
+# - deploy refuses when the compose file no longer runs hbc-web:latest (deploy-prod-safe.sh pins
+#   hbc-web:prod-<stamp>, and a pipeline deploy would then not take effect).
+# - verify_commit fails unless the running container carries this pipeline's commit.
+# Rollback, on the server: docker tag hbc-web:previous hbc-web:latest, then
+#   cd /opt/aster/apps/hbc && docker compose up -d --force-recreate
+
+include:
+  - project: infra/ci-templates
+    file: /deploy-compose.yml
+
+variables:
+  IMAGE_NAME: hbc-web
+  DEPLOY_APP_DIR: /opt/aster/apps/hbc
+  HEALTH_URL: https://hbc.semis.app/
+  # The /api suffix is required here (unlike KIMS): the app does not append it.
+  BUILD_ARGS: "--build-arg NEXT_PUBLIC_API_URL=https://hbcapi.semis.app/api --build-arg NEXT_PUBLIC_ENV=production --label hbc.commit=$CI_COMMIT_SHA"
+
+deploy:
+  before_script:
+    - !reference [.ssh_setup]
+    - |
+      ssh -i /tmp/deploy_key_$CI_JOB_ID "$DEPLOY_USER@$DEPLOY_HOST" "APP_DIR=$DEPLOY_APP_DIR IMG=$IMAGE_NAME bash -s" <<'CHECK'
+      set -eu
+      cd "$APP_DIR"
+      grep -qE "^[[:space:]]+image:[[:space:]]+$IMG:latest[[:space:]]*$" docker-compose.yml || {
+        echo "FAILED: $APP_DIR/docker-compose.yml does not run $IMG:latest (deploy-prod-safe.sh pins $IMG:prod-<stamp>)."
+        echo "Point its image line back at $IMG:latest, then run this job again."; exit 1; }
+      echo "preflight OK: compose runs $IMG:latest"
+      CHECK
+
+verify_commit:
+  stage: verify
+  tags: [autodeploy]
+  needs: [verify]
+  before_script: !reference [.ssh_setup]
+  script:
+    - |
+      label=$(ssh -i /tmp/deploy_key_$CI_JOB_ID "$DEPLOY_USER@$DEPLOY_HOST" \
+        "docker inspect --format '{{index .Config.Labels \"hbc.commit\"}}' $IMAGE_NAME") || label=""
+      if [ "$label" != "$CI_COMMIT_SHA" ]; then
+        echo "FAILED: running $IMAGE_NAME is commit ${label:-<none>}, not $CI_COMMIT_SHA; the deploy did not take"
+        exit 1
+      fi
+      echo "running $IMAGE_NAME is $CI_COMMIT_SHA"
+  after_script:
+    - rm -f /tmp/deploy_key_$CI_JOB_ID
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
